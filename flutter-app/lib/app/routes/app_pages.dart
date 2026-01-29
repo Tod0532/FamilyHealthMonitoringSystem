@@ -1,4 +1,6 @@
 import 'package:get/get.dart';
+import 'package:health_center_app/app/modules/home/home_binding.dart';
+import 'package:health_center_app/app/modules/home/home_page.dart';
 import 'package:health_center_app/app/modules/login/login_binding.dart';
 import 'package:health_center_app/app/modules/login/login_page.dart';
 import 'package:health_center_app/app/modules/register/register_binding.dart';
@@ -34,39 +36,13 @@ class AppPages {
       transition: Transition.rightToLeft,
     ),
 
-    // 首页（待开发，需要登录）
+    // 首页（底部导航框架）
     GetPage(
       name: '/home',
-      page: () => const SplashPage(), // 临时使用启动页占位
+      page: () => const HomePage(),
+      binding: HomeBinding(),
       middlewares: [AuthMiddleware()],
       transition: Transition.fadeIn,
-    ),
-
-    // 其他页面占位（待开发）
-    GetPage(
-      name: '/family',
-      page: () => const SplashPage(),
-      middlewares: [AuthMiddleware()],
-    ),
-    GetPage(
-      name: '/members',
-      page: () => const SplashPage(),
-      middlewares: [AuthMiddleware()],
-    ),
-    GetPage(
-      name: '/health-data',
-      page: () => const SplashPage(),
-      middlewares: [AuthMiddleware()],
-    ),
-    GetPage(
-      name: '/warnings',
-      page: () => const SplashPage(),
-      middlewares: [AuthMiddleware()],
-    ),
-    GetPage(
-      name: '/profile',
-      page: () => const SplashPage(),
-      middlewares: [AuthMiddleware()],
     ),
   ];
 }
