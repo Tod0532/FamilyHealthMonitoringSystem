@@ -1,0 +1,71 @@
+import 'user.dart';
+
+/// 认证响应
+class AuthResponse {
+  final String accessToken;
+  final String refreshToken;
+  final String tokenType;
+  final int expiresIn;
+  final UserInfo userInfo;
+
+  AuthResponse({
+    required this.accessToken,
+    required this.refreshToken,
+    this.tokenType = 'Bearer',
+    required this.expiresIn,
+    required this.userInfo,
+  });
+
+  factory AuthResponse.fromJson(Map<String, dynamic> json) {
+    return AuthResponse(
+      accessToken: json['accessToken'] ?? '',
+      refreshToken: json['refreshToken'] ?? '',
+      tokenType: json['tokenType'] ?? 'Bearer',
+      expiresIn: json['expiresIn'] ?? 7200,
+      userInfo: UserInfo.fromJson(json['userInfo'] ?? {}),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'accessToken': accessToken,
+      'refreshToken': refreshToken,
+      'tokenType': tokenType,
+      'expiresIn': expiresIn,
+      'userInfo': userInfo.toJson(),
+    };
+  }
+}
+
+/// 用户基本信息
+class UserInfo {
+  final String id;
+  final String phone;
+  final String nickname;
+  final String? avatar;
+
+  UserInfo({
+    required this.id,
+    required this.phone,
+    required this.nickname,
+    this.avatar,
+  });
+
+  factory UserInfo.fromJson(Map<String, dynamic> json) {
+    return UserInfo(
+      id: json['id']?.toString() ?? '',
+      phone: json['phone'] ?? '',
+      nickname: json['nickname'] ?? '',
+      avatar: json['avatar'],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'phone': phone,
+      'nickname': nickname,
+      'avatar': avatar,
+    };
+  }
+}

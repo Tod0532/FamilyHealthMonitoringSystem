@@ -1,0 +1,42 @@
+# 编译输出
+flutter-app/build/
+flutter-app/.dart_tool/
+flutter-app/.flutter-plugins
+flutter-app/.flutter-plugins-dependencies
+flutter-app/pubspec.lock
+
+# Spring Boot
+spring-boot-backend/target/
+spring-boot-backend/.mvn/
+spring-boot-backend/mvnw
+spring-boot-backend/mvnw.cmd
+spring-boot-backend/.DS_Store
+spring-boot-backend/logs/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+.project
+.classpath
+.settings/
+bin/
+
+# 日志
+*.log
+logs/
+
+# 临时文件
+*.tmp
+*.bak
+*.swp
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Claude Code
+.claude/settings.local.json

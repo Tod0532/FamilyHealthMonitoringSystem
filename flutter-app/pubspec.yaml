@@ -1,0 +1,91 @@
+name: health_center_app
+description: 家庭健康中心APP
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.2.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # 状态管理
+  get: ^4.6.6
+
+  # 网络请求
+  dio: ^5.4.0
+
+  # 本地存储
+  shared_preferences: ^2.2.2
+  sqflite: ^2.3.0
+  path_provider: ^2.1.1
+
+  # 安全存储
+  flutter_secure_storage: ^9.0.0
+
+  # JSON 序列化
+  json_annotation: ^4.8.1
+
+  # UI 组件
+  flutter_screenutil: ^5.9.0
+  flutter_svg: ^2.0.9
+  cached_network_image: ^3.3.0
+  shimmer: ^3.0.0
+
+  # 图表
+  fl_chart: ^0.65.0
+
+  # 日期时间
+  intl: ^0.18.1
+
+  # 工具类
+  logger: ^2.0.2
+  package_info_plus: ^5.0.1
+  device_info_plus: ^9.1.0
+
+  # 权限管理
+  permission_handler: ^11.1.0
+
+  # 蓝牙
+  flutter_blue_plus: ^1.31.5
+
+  # 二维码扫描
+  mobile_scanner: ^4.0.1
+
+  # 图片选择
+  image_picker: ^1.0.5
+
+  # 下拉刷新
+  pull_to_refresh: ^2.0.0
+
+  # Cupertino 风格图标
+  cupertino_icons: ^1.0.6
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  # 代码生成
+  build_runner: ^2.4.7
+  json_serializable: ^6.7.1
+
+  # 代码分析
+  flutter_lints: ^3.0.1
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/images/
+    - assets/icons/
+    - assets/fonts/
+
+  fonts:
+    - family: PingFang SC
+      fonts:
+        - asset: assets/fonts/PingFangSC-Regular.ttf
+        - asset: assets/fonts/PingFangSC-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/PingFangSC-Semibold.ttf
+          weight: 600
