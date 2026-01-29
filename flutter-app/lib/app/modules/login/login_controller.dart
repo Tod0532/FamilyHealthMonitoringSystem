@@ -37,10 +37,10 @@ class LoginController extends GetxController {
   }
 
   /// 加载保存的凭据
-  void _loadSavedCredentials() async {
+  void _loadSavedCredentials() {
     if (rememberPassword.value) {
-      final savedPhone = await _storage.getPhone();
-      final savedPassword = await _storage.getPassword();
+      final savedPhone = _storage.phone;
+      final savedPassword = _storage.password;
       if (savedPhone != null) {
         phoneController.text = savedPhone;
       }
@@ -173,5 +173,24 @@ class LoginController extends GetxController {
   /// 跳转到注册页面
   void onGoToRegister() {
     Get.toNamed('/register');
+  }
+
+  /// 进入体验模式
+  void onEnterDemoMode() async {
+    // 保存体验模式标记
+    await _storage.saveAccessToken('demo_token');
+    await _storage.saveUserId('demo_user');
+    await _storage.saveNickname('体验用户');
+
+    Get.snackbar(
+      '体验模式',
+      '已进入体验模式，可以体验所有功能',
+      snackPosition: SnackPosition.TOP,
+      backgroundColor: Colors.orange.shade100,
+      duration: const Duration(seconds: 2),
+    );
+
+    // 跳转到首页
+    Get.offAllNamed('/home');
   }
 }

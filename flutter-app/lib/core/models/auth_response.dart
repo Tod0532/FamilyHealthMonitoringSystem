@@ -1,5 +1,3 @@
-import 'user.dart';
-
 /// 认证响应
 class AuthResponse {
   final String accessToken;

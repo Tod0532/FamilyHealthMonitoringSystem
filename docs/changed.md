@@ -4,6 +4,127 @@
 
 ---
 
+## 2026-01-29 (晚上 - 第七次)
+
+### 📁 新增文件
+
+| 文件路径 | 说明 | 作者 |
+|----------|------|------|
+| flutter-app/lib/core/models/health_data.dart | 健康数据模型 | Claude |
+| flutter-app/lib/app/modules/health/health_data_controller.dart | 健康数据控制器 | Claude |
+| flutter-app/lib/app/modules/health/health_data_binding.dart | 健康数据绑定 | Claude |
+| flutter-app/lib/app/modules/health/health_data_entry_page.dart | 健康数据录入页面 | Claude |
+| flutter-app/lib/app/modules/members/members_page.dart | 成员管理页面 | Claude |
+| flutter-app/lib/app/modules/members/members_controller.dart | 成员管理控制器 | Claude |
+| flutter-app/lib/app/modules/members/members_binding.dart | 成员管理绑定 | Claude |
+| flutter-app/lib/app/modules/members/widgets/member_dialog.dart | 成员编辑弹窗 | Claude |
+| flutter-app/lib/core/models/family_member.dart | 家庭成员模型 | Claude |
+| flutter-app/COMPILE.md | Flutter编译指南 | Claude |
+
+### 📝 修改文件
+
+| 文件路径 | 说明 | 作者 |
+|----------|------|------|
+| flutter-app/lib/main.dart | 注册DioProvider单例 | Claude |
+| flutter-app/lib/app/routes/app_pages.dart | 添加健康数据和成员管理路由 | Claude |
+| flutter-app/lib/app/modules/login/login_controller.dart | 添加体验模式方法 | Claude |
+| flutter-app/lib/app/modules/login/login_page.dart | 添加体验模式按钮 | Claude |
+| flutter-app/lib/app/modules/home/pages/home_tab_page.dart | 修复Obx使用错误 | Claude |
+| flutter-app/lib/app/modules/home/pages/profile_tab_page.dart | 修复Obx使用错误 | Claude |
+| flutter-app/lib/app/modules/home/pages/health_data_tab_page.dart | 更新为健康数据列表页 | Claude |
+
+### 📋 变更内容
+
+#### 类型：feat（新功能）
+#### 范围：UI界面、数据模型
+#### 描述：家庭成员管理 + 健康数据录入功能开发完成
+
+**家庭成员管理模块**：
+
+1. **数据模型 (family_member.dart)**：
+   - `FamilyMember` 数据模型
+   - `MemberRole` 枚举（管理员、普通成员、访客）
+   - `MemberRelation` 枚举（父母、子女、配偶、祖父母、其他）
+   - JSON序列化支持
+   - 年龄计算、性别文本等辅助方法
+
+2. **成员管理控制器**：
+   - 成员列表管理
+   - 添加/编辑/删除成员
+   - 模拟数据支持
+
+3. **成员管理页面**：
+   - 成员列表展示
+   - 添加成员按钮
+   - 成员卡片（头像、姓名、关系、角色标签、操作按钮）
+   - 编辑/删除弹窗
+
+**健康数据录入模块**：
+
+1. **数据模型 (health_data.dart)**：
+   - `HealthDataType` 枚举：8种健康数据类型
+     - 血压 (bloodPressure)
+     - 心率 (heartRate)
+     - 血糖 (bloodSugar)
+     - 体温 (temperature)
+     - 体重 (weight)
+     - 身高 (height)
+     - 步数 (steps)
+     - 睡眠 (sleep)
+   - `HealthDataLevel` 枚举：正常、偏高、过高、过低
+   - `HealthData` 数据模型
+   - 自动健康级别判断功能
+   - 工厂方法：createBloodPressure、createHeartRate等
+
+2. **健康数据控制器**：
+   - 数据列表管理
+   - 添加/编辑/删除健康数据
+   - 按类型、成员、日期范围筛选
+   - 模拟数据支持（10条示例数据）
+
+3. **健康数据录入页面**：
+   - 成员选择器
+   - 数据类型选择器（横向滚动）
+   - 根据类型显示不同输入界面
+   - 日期时间选择
+   - 备注输入
+   - 支持添加和编辑模式
+
+4. **健康数据列表页**：
+   - 顶部统计头部
+   - 类型筛选器
+   - 数据卡片展示
+   - 底部详情弹窗
+   - 编辑/删除功能
+
+**其他更新**：
+
+5. **体验模式**：
+   - 登录页添加橙色的"体验模式"按钮
+   - 跳过登录验证，直接进入首页
+   - 使用模拟用户数据
+
+6. **编译文档**：
+   - 创建 `flutter-app/COMPILE.md`
+   - 记录环境配置、编译方式、已修复问题
+
+#### Bug修复
+
+1. **DioProvider未注册错误**：
+   - 在 `main.dart` 中添加 `Get.put(DioProvider())`
+
+2. **Obx使用错误**：
+   - `home_tab_page.dart`: 将 `Obx` 改为 `Builder`
+   - `profile_tab_page.dart`: 将 `Obx` 改为 `Builder`
+   - 原因：`storage.nickname` 等不是响应式变量
+
+#### 影响文件
+- 新增：10个文件
+- 修改：8个文件
+- APK成功编译：100.5 MB
+
+---
+
 ## 2026-01-29 (下午 - 第三次)
 
 ### 📁 新增文件
@@ -338,11 +459,11 @@
 ## 统计信息
 
 | 统计项 | 数量 |
-|--------|------|
-| 总变更次数 | 7 |
-| 本周变更 | 7 |
-| 新增文件 | 55 |
-| 修改文件 | 12 |
+|--------|--------|
+| 总变更次数 | 8 |
+| 本周变更 | 8 |
+| 新增文件 | 75 |
+| 修改文件 | 23 |
 | 删除文件 | 0 |
 
 ---

@@ -24,64 +24,71 @@ class ProfileTabPage extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  Obx(() {
-                    final avatar = storage.avatar;
-                    return Container(
-                      width: 64.w,
-                      height: 64.w,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF4CAF50),
-                        borderRadius: BorderRadius.circular(32.r),
-                      ),
-                      child: avatar != null && avatar!.isNotEmpty
-                          ? ClipRRect(
-                              borderRadius: BorderRadius.circular(32.r),
-                              child: Image.network(
-                                avatar,
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return const Icon(
-                                    Icons.person,
-                                    size: 32,
-                                    color: Colors.white,
-                                  );
-                                },
+                  Builder(
+                    builder: (context) {
+                      final avatar = storage.avatar;
+                      final avatarUrl = avatar?.isNotEmpty == true ? avatar : null;
+                      return Container(
+                        width: 64.w,
+                        height: 64.w,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF4CAF50),
+                          borderRadius: BorderRadius.circular(32.r),
+                        ),
+                        child: avatarUrl != null
+                            ? ClipRRect(
+                                borderRadius: BorderRadius.circular(32.r),
+                                child: Image.network(
+                                  avatarUrl,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return const Icon(
+                                      Icons.person,
+                                      size: 32,
+                                      color: Colors.white,
+                                    );
+                                  },
+                                ),
+                              )
+                            : const Icon(
+                                Icons.person,
+                                size: 32,
+                                color: Colors.white,
                               ),
-                            )
-                          : const Icon(
-                              Icons.person,
-                              size: 32,
-                              color: Colors.white,
-                            ),
-                    );
-                  }),
+                      );
+                    },
+                  ),
                   SizedBox(width: 16.w),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Obx(() {
-                          final nickname = storage.nickname ?? '健康用户';
-                          return Text(
-                            nickname,
-                            style: TextStyle(
-                              fontSize: 20.sp,
-                              fontWeight: FontWeight.bold,
-                              color: const Color(0xFF1A1A1A),
-                            ),
-                          );
-                        }),
+                        Builder(
+                          builder: (context) {
+                            final nickname = storage.nickname ?? '健康用户';
+                            return Text(
+                              nickname,
+                              style: TextStyle(
+                                fontSize: 20.sp,
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFF1A1A1A),
+                              ),
+                            );
+                          },
+                        ),
                         SizedBox(height: 4.h),
-                        Obx(() {
-                          final phone = storage.phone ?? '';
-                          return Text(
-                            phone.isNotEmpty ? phone.replaceRange(3, 7, '****') : '',
-                            style: TextStyle(
-                              fontSize: 14.sp,
-                              color: Colors.grey[600],
-                            ),
-                          );
-                        }),
+                        Builder(
+                          builder: (context) {
+                            final phone = storage.phone ?? '';
+                            return Text(
+                              phone.isNotEmpty ? phone.replaceRange(3, 7, '****') : '',
+                              style: TextStyle(
+                                fontSize: 14.sp,
+                                color: Colors.grey[600],
+                              ),
+                            );
+                          },
+                        ),
                       ],
                     ),
                   ),

@@ -47,20 +47,22 @@ q                          # 退出
 c                          # 清除屏幕
 
 # ========== 编译打包 ==========
-flutter build apk --release                    # Android APK
-flutter build appbundle --release              # Android App Bundle (上架用)
-flutter build windows --release                # Windows桌面版
-flutter build web --release                    # Web版本
+flutter build apk --debug                       # Android Debug APK
+flutter build apk --release                     # Android Release APK
+flutter build appbundle --release               # Android App Bundle (上架用)
+flutter build windows --release                 # Windows桌面版
+flutter build web --release                     # Web版本
 
 # 指定环境编译（如果有flavors）
 flutter build apk --release --flavor dev       # 开发环境
 flutter build apk --release --flavor prod      # 生产环境
 
 # ========== 构建产物位置 ==========
-# Android APK:     build/app/outputs/flutter-apk/app-release.apk
-# App Bundle:      build/app/outputs/bundle/release/app-release.aab
-# Windows:         build/windows/runner/Release/
-# Web:             build/web/
+# Android Debug APK:  build/app/outputs/flutter-apk/app-debug.apk
+# Android Release APK: build/app/outputs/flutter-apk/app-release.apk
+# App Bundle:          build/app/outputs/bundle/release/app-release.aab
+# Windows:             build/windows/runner/Release/
+# Web:                 build/web/
 ```
 
 ### Spring Boot 后端 - 常用命令
@@ -128,6 +130,7 @@ flutter doctor
 
 # 5. 运行或编译
 flutter run                    # 开发调试
+flutter build apk --debug      # Debug 打包
 flutter build apk --release    # 生产打包
 
 # ========== 后端完整编译流程 ==========
@@ -167,13 +170,15 @@ mvn checkstyle:check         # 代码风格检查
 
 ### 前端开发环境
 
-| 工具 | 版本要求 | 下载地址 |
-|------|----------|----------|
-| Flutter SDK | >= 3.16.0 | https://flutter.dev/docs/get-started/install |
-| Dart SDK | >= 3.2.0 | 随Flutter安装 |
-| Android Studio | >= 2023.1 | https://developer.android.com/studio |
-| Xcode (仅macOS) | >= 15.0 | Mac App Store |
-| JDK | >= 17 | https://adoptium.net/ |
+| 工具 | 版本要求 | 实际使用版本 | 状态 |
+|------|----------|-------------|------|
+| Flutter SDK | >= 3.16.0 | 3.24.5 | ✅ 已安装 `C:\flutter` |
+| Dart SDK | >= 3.2.0 | 3.5.4 | ✅ 内置于 Flutter |
+| Android Studio | >= 2023.1 | 2025.2.3 | ✅ 已安装 |
+| Android SDK | >= 33 | 36.1.0 | ✅ 已安装 |
+| JDK (编译用) | >= 17 | 17.0.17.10 | ✅ Eclipse Adoptium |
+| JDK (Android Studio) | - | 21.0.8 | ✅ 内置于 Android Studio |
+| Xcode (仅macOS) | >= 15.0 | - | - |
 
 ### 后端开发环境
 
@@ -190,8 +195,8 @@ mvn checkstyle:check         # 代码风格检查
 
 ```bash
 # Windows 系统环境变量
-JAVA_HOME=C:\Program Files\Java\jdk-17
-FLUTTER_HOME=D:\flutter
+JAVA_HOME=C:\Program Files\Eclipse Adoptium\jdk-17.0.17.10-hotspot
+FLUTTER_HOME=C:\flutter
 MAVEN_HOME=D:\apache-maven-3.9.0
 
 # 添加到 PATH
@@ -204,6 +209,10 @@ export JAVA_HOME=/usr/lib/jvm/java-17
 export FLUTTER_HOME=/opt/flutter
 export MAVEN_HOME=/opt/maven
 export PATH=$PATH:$JAVA_HOME/bin:$FLUTTER_HOME/bin:$MAVEN_HOME/bin
+
+# Flutter 国内镜像（必需）
+export PUB_HOSTED_URL=https://pub.flutter-io.cn
+export FLUTTER_STORAGE_BASE_URL=https://storage.flutter-io.cn
 ```
 
 ### 国内镜像配置
@@ -227,6 +236,69 @@ export FLUTTER_STORAGE_BASE_URL=https://storage.flutter-io.cn
 
 ## 📱 前端详细构建流程 (Flutter)
 
+### 项目实际编译配置（2026-01-29）
+
+#### 关键配置文件
+
+**1. `android/gradle.properties` - Java 版本配置**
+
+```properties
+org.gradle.jvmargs=-Xmx4G -XX:MaxMetaspaceSize=2G -XX:+HeapDumpOnOutOfMemoryError
+android.useAndroidX=true
+android.enableJetifier=true
+
+# ⚠️ 重要：使用 Java 17 解决 jlink 兼容性问题
+org.gradle.java.home=C:/Program Files/Eclipse Adoptium/jdk-17.0.17.10-hotspot
+
+# 使用阿里云镜像
+systemProp.https.proxyHost=
+systemProp.https.proxyPort=
+```
+
+**2. `android/settings.gradle` - 镜像源配置**
+
+```gradle
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
+    repositories {
+        // 使用 Flutter 镜像源
+        maven { url 'https://storage.flutter-io.cn/download.flutter.io' }
+        maven { url 'https://maven.aliyun.com/repository/google' }
+        maven { url 'https://maven.aliyun.com/repository/public' }
+        maven { url 'https://maven.aliyun.com/repository/central' }
+        google()
+        mavenCentral()
+        // 添加 Flutter 本地 Maven 仓库
+        def flutterSdkPath = {
+            def properties = new Properties()
+            file("local.properties").withInputStream { properties.load(it) }
+            def flutterSdkPath = properties.getProperty("flutter.sdk")
+            assert flutterSdkPath != null, "flutter.sdk not set in local.properties"
+            return flutterSdkPath
+        }()
+        maven { url "$flutterSdkPath/bin/cache/artifacts" }
+    }
+}
+```
+
+#### 实际编译输出
+
+```bash
+$ flutter build apk --debug
+
+Flutter assets will be downloaded from https://storage.flutter-io.cn.
+Changing current working directory to: D:\ReadHealthInfo\flutter-app
+
+Running Gradle task 'assembleDebug'...
+Running Gradle task 'assembleDebug'...                            217.1s
+√ Built build\app\outputs\flutter-apk\app-debug.apk
+```
+
+**APK 信息**：
+- 文件路径：`D:\ReadHealthInfo\flutter-app\build\app\outputs\flutter-apk\app-debug.apk`
+- 文件大小：105,415,698 字节 (约 100.5 MB)
+- 编译耗时：217.1 秒（首次编译，含依赖下载）
+
 ### 1. 首次环境检查
 
 ```bash
@@ -234,11 +306,11 @@ export FLUTTER_STORAGE_BASE_URL=https://storage.flutter-io.cn
 flutter doctor -v
 
 # 预期输出关键项：
-# ✓ Flutter (Channel stable, 3.x.x)
-# ✓ Android toolchain - develop for Android devices (Android SDK version xx)
+# ✓ Flutter (Channel stable, 3.24.5)
+# ✓ Android toolchain - develop for Android devices (Android SDK 36.1.0)
 # ✓ Chrome - develop for the web
-# ✓ Android Studio (version 2023.x)
-# ✓ VS Code (version 1.x)
+# ✓ Android Studio (version 2025.2.3)
+# ✓ VS Code (version 1.108.2)
 # ✓ Connected device (available devices)
 
 # 如有报错，按提示修复
@@ -293,7 +365,10 @@ s           # 保存调试信息
 ### 4. 构建发布版本
 
 ```bash
-# Android APK（直接安装）
+# Android Debug APK（开发调试）
+flutter build apk --debug
+
+# Android Release APK（生产发布）
 flutter build apk --release
 
 # Android App Bundle（用于Google Play上架，推荐）
@@ -322,7 +397,8 @@ flutter build apk --split-per-abi --release
 ### 5. 构建产物位置
 
 ```
-Android APK:        build/app/outputs/flutter-apk/app-release.apk
+Android Debug APK:  build/app/outputs/flutter-apk/app-debug.apk
+Android Release APK: build/app/outputs/flutter-apk/app-release.apk
 Android App Bundle: build/app/outputs/bundle/release/app-release.aab
 Windows EXE:        build/windows/runner/Release/
 macOS APP:          build/macos/Build/Products/Release/
@@ -559,7 +635,7 @@ echo %FLUTTER_HOME%         # Windows
 echo $PATH                  # Linux/macOS
 
 # 3. Windows: 在系统设置中添加环境变量
-#    FLUTTER_HOME = D:\flutter
+#    FLUTTER_HOME = C:\flutter
 #    PATH += %FLUTTER_HOME%\bin
 
 # 4. Linux/macOS: 在 ~/.bashrc 或 ~/.zshrc 中添加
@@ -707,6 +783,39 @@ allprojects {
         maven { url 'https://maven.aliyun.com/repository/public' }
     }
 }
+```
+
+#### 问题7：Java 21 jlink 兼容性问题 ⚠️ 重要
+
+**错误信息**
+```
+Execution failed for task ':flutter_plugin_android_lifecycle:compileDebugJavaWithJavac'
+> Failed to transform core-for-system-modules.jar
+> Error while executing process jlink.exe
+core.for.system.modules: Invalid module name: 'for' is not a Java identifier
+```
+
+**问题原因**
+- Android SDK 33/34/35/36 的 `core-for-system-modules.jar` 文件名包含 Java 关键字 `for`
+- Java 21 的 `jlink` 工具无法处理这个文件名
+- 这是 AGP 8.5+ 与 Java 21 的已知兼容性问题
+
+**解决方案**
+```bash
+# 1. 确认系统已安装 Java 17
+ls "C:\Program Files\Eclipse Adoptium\"
+
+# 2. 配置 Gradle 使用 Java 17
+# 在 android/gradle.properties 中添加：
+org.gradle.java.home=C:/Program Files/Eclipse Adoptium/jdk-17.0.17.10-hotspot
+
+# 3. 停止 Gradle 守护进程
+cd android
+./gradlew --stop
+
+# 4. 重新编译
+cd ..
+flutter build apk --debug
 ```
 
 ---
@@ -923,7 +1032,7 @@ spring:
 
 **环境信息**
 - 操作系统：Windows 11 / Ubuntu 22.04 / macOS 14
-- 工具版本：Flutter 3.16.0 / Java 17.0.2
+- 工具版本：Flutter 3.24.5 / Java 17.0.17
 - 相关依赖版本：
 
 **错误信息**
@@ -960,7 +1069,7 @@ spring:
 
 **解决方案**：
 1. 安装 Android Studio
-2. 通过 SDK Manager 安装 Android SDK 33
+2. 通过 SDK Manager 安装 Android SDK 33/36
 3. 接受 Android licenses：`flutter doctor --android-licenses`
 4. 重新运行 `flutter doctor`
 
@@ -976,6 +1085,65 @@ spring:
 - Windows: `netstat -ano | findstr :8080` 查找进程ID，`taskkill /PID xxx /F` 结束
 - Linux: `lsof -i :8080` 查找进程，`kill -9 <PID>` 结束
 - 或修改 `application.yml` 中的 `server.port` 改用其他端口
+
+---
+
+### 问题3：Java 21 jlink 兼容性问题 ⚠️ 关键问题
+
+**发生时间**：2026-01-29
+
+**环境信息**
+- 操作系统：Windows 11
+- Flutter：3.24.5
+- Android Studio：2025.2.3 (内置 Java 21)
+- Android SDK：36.1.0
+
+**错误信息**
+```
+Execution failed for task ':flutter_plugin_android_lifecycle:compileDebugJavaWithJavac'
+> Could not resolve all files for configuration ':flutter_plugin_android_lifecycle:androidJdkImage'
+> Failed to transform core-for-system-modules.jar
+> Execution failed for JdkImageTransform: C:\Users\m\AppData\Local\Android\sdk\platforms\android-34\core-for-system-modules.jar
+> Error while executing process C:\Program Files\Android\Android Studio\jbr\bin\jlink.exe
+> core.for.system.modules: Invalid module name: 'for' is not a Java identifier
+```
+
+**问题原因**
+1. Android SDK 33/34/35/36 的 `core-for-system-modules.jar` 文件名包含 Java 关键字 `for`
+2. Java 21 的 `jlink` 工具无法处理包含 Java 关键字的模块名
+3. 这是 Android Gradle Plugin 8.5+ 与 Java 21 的已知兼容性问题
+4. 即使配置 JAVA_HOME 环境变量，Gradle 仍使用 Android Studio 内置的 Java 21
+
+**解决方案**
+```bash
+# 1. 确认系统已安装 Java 17
+# 路径：C:\Program Files\Eclipse Adoptium\jdk-17.0.17.10-hotspot
+
+# 2. 配置 Gradle 使用 Java 17
+# 文件：android/gradle.properties
+# 添加：
+org.gradle.java.home=C:/Program Files/Eclipse Adoptium/jdk-17.0.17.10-hotspot
+
+# 3. 停止 Gradle 守护进程
+cd android
+./gradlew --stop
+
+# 4. 重新编译
+cd ..
+flutter build apk --debug
+```
+
+**验证结果**
+```
+√ Built build\app\outputs\flutter-apk\app-debug.apk
+```
+- APK 大小：105,415,698 字节 (约 100.5 MB)
+- 编译耗时：217.1 秒（首次编译）
+
+**预防措施**
+1. 在 `android/gradle.properties` 中永久配置 `org.gradle.java.home`
+2. 新开发环境初始化时直接配置 Java 17
+3. 避免使用 Android Studio 内置的 Java 21 进行 Gradle 编译
 
 ---
 
@@ -999,6 +1167,9 @@ spring:
 |------|----------|--------|
 | 2026-01-29 | 创建文档，添加基础编译流程和常见问题 | 开发团队 |
 | 2026-01-29 | 新增"快速参考"章节，整理常用编译命令 | 开发团队 |
+| 2026-01-29 | **记录 Java 21 jlink 兼容性问题及解决方案** | 开发团队 |
+| 2026-01-29 | **添加实际编译配置和输出信息** | 开发团队 |
+| 2026-01-29 | **更新环境配置，添加 Java 17 要求** | 开发团队 |
 
 ---
 

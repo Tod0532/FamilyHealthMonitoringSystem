@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:health_center_app/app/routes/app_pages.dart';
 import 'package:health_center_app/core/utils/logger.dart';
 import 'package:health_center_app/core/storage/storage_service.dart';
+import 'package:health_center_app/core/network/dio_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -13,6 +14,9 @@ void main() async {
 
   // 初始化存储服务
   await Get.putAsync(() => StorageService().init());
+
+  // 注册网络服务
+  Get.put(DioProvider());
 
   runApp(const HealthCenterApp());
 }
@@ -41,7 +45,7 @@ class HealthCenterApp extends StatelessWidget {
           builder: (context, widget) {
             return MediaQuery(
               // 禁用系统字体缩放
-              data: MediaQuery.of(context).copyWith(textScaleFactor: 1.0),
+              data: MediaQuery.of(context).copyWith(textScaler: const TextScaler.linear(1.0)),
               child: widget!,
             );
           },
@@ -60,7 +64,7 @@ class AppTheme {
         seedColor: const Color(0xFF4CAF50),
         brightness: Brightness.light,
       ),
-      fontFamily: 'PingFang SC',
+      // fontFamily: 'PingFang SC', // 使用系统默认字体
       scaffoldBackgroundColor: const Color(0xFFF5F5F5),
       appBarTheme: const AppBarTheme(
         centerTitle: true,
@@ -135,7 +139,7 @@ class AppTheme {
         seedColor: const Color(0xFF4CAF50),
         brightness: Brightness.dark,
       ),
-      fontFamily: 'PingFang SC',
+      // fontFamily: 'PingFang SC', // 使用系统默认字体
       scaffoldBackgroundColor: const Color(0xFF121212),
       appBarTheme: const AppBarTheme(
         centerTitle: true,

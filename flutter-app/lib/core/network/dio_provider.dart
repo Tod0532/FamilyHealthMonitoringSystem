@@ -3,7 +3,6 @@ import 'package:get/get.dart' as getx;
 import 'package:health_center_app/main.dart';
 import 'package:health_center_app/core/storage/storage_service.dart';
 import 'package:health_center_app/core/network/api_exception.dart';
-import 'package:health_center_app/core/network/api_response.dart';
 
 /// Dio 网络请求提供者
 ///
@@ -137,7 +136,7 @@ class DioProvider {
   // ==================== 便捷请求方法 ====================
 
   /// GET 请求
-  Future<ApiResponse<T>> get<T>(
+  Future<dynamic> get(
     String path, {
     Map<String, dynamic>? queryParameters,
     Options? options,
@@ -150,14 +149,14 @@ class DioProvider {
         options: options,
         cancelToken: cancelToken,
       );
-      return ApiResponse<T>.fromJson(response.data);
+      return response.data;
     } on DioException catch (e) {
       throw ApiException.fromDioError(e);
     }
   }
 
   /// POST 请求
-  Future<ApiResponse<T>> post<T>(
+  Future<dynamic> post(
     String path, {
     dynamic data,
     Map<String, dynamic>? queryParameters,
@@ -172,14 +171,14 @@ class DioProvider {
         options: options,
         cancelToken: cancelToken,
       );
-      return ApiResponse<T>.fromJson(response.data);
+      return response.data;
     } on DioException catch (e) {
       throw ApiException.fromDioError(e);
     }
   }
 
   /// PUT 请求
-  Future<ApiResponse<T>> put<T>(
+  Future<dynamic> put(
     String path, {
     dynamic data,
     Map<String, dynamic>? queryParameters,
@@ -194,14 +193,14 @@ class DioProvider {
         options: options,
         cancelToken: cancelToken,
       );
-      return ApiResponse<T>.fromJson(response.data);
+      return response.data;
     } on DioException catch (e) {
       throw ApiException.fromDioError(e);
     }
   }
 
   /// DELETE 请求
-  Future<ApiResponse<T>> delete<T>(
+  Future<dynamic> delete(
     String path, {
     dynamic data,
     Map<String, dynamic>? queryParameters,
@@ -216,14 +215,14 @@ class DioProvider {
         options: options,
         cancelToken: cancelToken,
       );
-      return ApiResponse<T>.fromJson(response.data);
+      return response.data;
     } on DioException catch (e) {
       throw ApiException.fromDioError(e);
     }
   }
 
   /// PATCH 请求
-  Future<ApiResponse<T>> patch<T>(
+  Future<dynamic> patch(
     String path, {
     dynamic data,
     Map<String, dynamic>? queryParameters,
@@ -238,7 +237,7 @@ class DioProvider {
         options: options,
         cancelToken: cancelToken,
       );
-      return ApiResponse<T>.fromJson(response.data);
+      return response.data;
     } on DioException catch (e) {
       throw ApiException.fromDioError(e);
     }

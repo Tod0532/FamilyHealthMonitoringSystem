@@ -67,34 +67,36 @@ class HomeTabPage extends GetView {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Obx(() {
-                    final nickname = storage.nickname ?? '健康用户';
-                    final hour = DateTime.now().hour;
-                    String greeting;
-                    if (hour < 6) {
-                      greeting = '凌晨好';
-                    } else if (hour < 9) {
-                      greeting = '早上好';
-                    } else if (hour < 12) {
-                      greeting = '上午好';
-                    } else if (hour < 14) {
-                      greeting = '中午好';
-                    } else if (hour < 18) {
-                      greeting = '下午好';
-                    } else if (hour < 22) {
-                      greeting = '晚上好';
-                    } else {
-                      greeting = '夜深了';
-                    }
-                    return Text(
-                      '$greeting，$nickname',
-                      style: TextStyle(
-                        fontSize: 24.sp,
-                        fontWeight: FontWeight.bold,
-                        color: const Color(0xFF1A1A1A),
-                      ),
-                    );
-                  }),
+                  Builder(
+                    builder: (context) {
+                      final nickname = storage.nickname ?? '健康用户';
+                      final hour = DateTime.now().hour;
+                      String greeting;
+                      if (hour < 6) {
+                        greeting = '凌晨好';
+                      } else if (hour < 9) {
+                        greeting = '早上好';
+                      } else if (hour < 12) {
+                        greeting = '上午好';
+                      } else if (hour < 14) {
+                        greeting = '中午好';
+                      } else if (hour < 18) {
+                        greeting = '下午好';
+                      } else if (hour < 22) {
+                        greeting = '晚上好';
+                      } else {
+                        greeting = '夜深了';
+                      }
+                      return Text(
+                        '$greeting，$nickname',
+                        style: TextStyle(
+                          fontSize: 24.sp,
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFF1A1A1A),
+                        ),
+                      );
+                    },
+                  ),
                   SizedBox(height: 4.h),
                   Text(
                     '守护全家健康，从今天开始',
@@ -107,37 +109,40 @@ class HomeTabPage extends GetView {
               ),
             ),
             // 头像
-            Obx(() {
-              final avatar = storage.avatar;
-              return Container(
-                width: 48.w,
-                height: 48.w,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF4CAF50),
-                  borderRadius: BorderRadius.circular(24.r),
-                ),
-                child: avatar != null && avatar!.isNotEmpty
-                    ? ClipRRect(
-                        borderRadius: BorderRadius.circular(24.r),
-                        child: Image.network(
-                          avatar,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return const Icon(
-                              Icons.person,
-                              size: 24,
-                              color: Colors.white,
-                            );
-                          },
+            Builder(
+              builder: (context) {
+                final avatar = storage.avatar;
+                final avatarUrl = avatar?.isNotEmpty == true ? avatar : null;
+                return Container(
+                  width: 48.w,
+                  height: 48.w,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF4CAF50),
+                    borderRadius: BorderRadius.circular(24.r),
+                  ),
+                  child: avatarUrl != null
+                      ? ClipRRect(
+                          borderRadius: BorderRadius.circular(24.r),
+                          child: Image.network(
+                            avatarUrl,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) {
+                              return const Icon(
+                                Icons.person,
+                                size: 24,
+                                color: Colors.white,
+                              );
+                            },
+                          ),
+                        )
+                      : const Icon(
+                          Icons.person,
+                          size: 24,
+                          color: Colors.white,
                         ),
-                      )
-                    : const Icon(
-                        Icons.person,
-                        size: 24,
-                        color: Colors.white,
-                      ),
-              );
-            }),
+                );
+              },
+            ),
           ],
         ),
       ),

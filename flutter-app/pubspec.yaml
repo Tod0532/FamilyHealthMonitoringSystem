@@ -18,6 +18,7 @@ dependencies:
 
   # 本地存储
   shared_preferences: ^2.2.2
+  get_storage: ^2.1.1
   sqflite: ^2.3.0
   path_provider: ^2.1.1
 
@@ -81,11 +82,12 @@ flutter:
     - assets/icons/
     - assets/fonts/
 
-  fonts:
-    - family: PingFang SC
-      fonts:
-        - asset: assets/fonts/PingFangSC-Regular.ttf
-        - asset: assets/fonts/PingFangSC-Medium.ttf
-          weight: 500
-        - asset: assets/fonts/PingFangSC-Semibold.ttf
-          weight: 600
+  # 字体文件暂时注释，使用系统默认字体
+  # fonts:
+  #   - family: PingFang SC
+  #     fonts:
+  #       - asset: assets/fonts/PingFangSC-Regular.ttf
+  #       - asset: assets/fonts/PingFangSC-Medium.ttf
+  #         weight: 500
+  #       - asset: assets/fonts/PingFangSC-Semibold.ttf
+  #         weight: 600

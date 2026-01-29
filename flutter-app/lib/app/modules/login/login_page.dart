@@ -72,6 +72,10 @@ class LoginPage extends GetView<LoginController> {
 
                 // 注册链接
                 _buildRegisterLink(),
+                SizedBox(height: 32.h),
+
+                // 体验模式按钮
+                _buildDemoModeButton(),
               ],
             ),
           ),
@@ -233,6 +237,35 @@ class LoginPage extends GetView<LoginController> {
           ),
         ),
       ],
+    );
+  }
+
+  /// 体验模式按钮
+  Widget _buildDemoModeButton() {
+    return Container(
+      width: double.infinity,
+      height: 50.h,
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.orange.shade300),
+        borderRadius: BorderRadius.circular(12.r),
+      ),
+      child: TextButton.icon(
+        onPressed: controller.onEnterDemoMode,
+        icon: Icon(Icons.play_circle_outline, color: Colors.orange.shade700),
+        label: Text(
+          '体验模式',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: Colors.orange.shade700,
+          ),
+        ),
+        style: TextButton.styleFrom(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12.r),
+          ),
+        ),
+      ),
     );
   }
 }

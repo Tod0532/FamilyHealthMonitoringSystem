@@ -18,7 +18,7 @@ class StorageService extends GetxService {
   Future<StorageService> init() async {
     _prefs = await SharedPreferences.getInstance();
     _storage = GetStorage(_storageName);
-    await _storage.init();
+    // GetStorage 会在首次访问时自动初始化
     return this;
   }
 

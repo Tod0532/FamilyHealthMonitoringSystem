@@ -15,7 +15,7 @@ class AppLogger {
         lineLength: 120,
         colors: true,
         printEmojis: true,
-        printTime: true,
+        dateTimeFormat: DateTimeFormat.onlyTimeAndSinceStart,
         noBoxingByDefault: false,
       ),
       level: Level.debug,
@@ -39,8 +39,10 @@ class AppLogger {
 
   /// 错误日志
   static void e(String message, [dynamic error, StackTrace? stackTrace]) {
-    if (error != null) {
-      _logger.e(message, error, stackTrace);
+    if (error != null && stackTrace != null) {
+      _logger.e(message, error: error, stackTrace: stackTrace);
+    } else if (error != null) {
+      _logger.e(message, error: error);
     } else {
       _logger.e(message);
     }
