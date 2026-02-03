@@ -199,9 +199,11 @@ class StorageService extends GetxService {
   /// 获取访问令牌（同步版本，用于兼容旧代码）
   String? get accessToken => getString(AppConstants.keyToken);
 
-  /// 设置访问令牌（加密存储）
+  /// 设置访问令牌（加密存储 + 普通存储用于同步读取）
   Future<void> setAccessToken(String token) async {
     await _secureStorage.write(key: AppConstants.keyToken, value: token);
+    // 同时写入普通存储，用于同步读取（isLoggedIn等）
+    await setString(AppConstants.keyToken, token);
   }
 
   /// 保存访问令牌（别名）
@@ -218,9 +220,11 @@ class StorageService extends GetxService {
   /// 获取刷新令牌（同步版本，用于兼容旧代码）
   String? get refreshToken => getString(AppConstants.keyRefreshToken);
 
-  /// 设置刷新令牌（加密存储）
+  /// 设置刷新令牌（加密存储 + 普通存储用于同步读取）
   Future<void> setRefreshToken(String token) async {
     await _secureStorage.write(key: AppConstants.keyRefreshToken, value: token);
+    // 同时写入普通存储，用于同步读取
+    await setString(AppConstants.keyRefreshToken, token);
   }
 
   /// 保存刷新令牌（别名）
@@ -292,9 +296,11 @@ class StorageService extends GetxService {
   /// 获取密码（同步版本，用于兼容旧代码）
   String? get password => getString('user_password');
 
-  /// 设置密码（用于记住密码功能，加密存储）
+  /// 设置密码（用于记住密码功能，加密存储 + 普通存储用于同步读取）
   Future<void> setPassword(String password) async {
     await _secureStorage.write(key: 'user_password', value: password);
+    // 同时写入普通存储，用于同步读取
+    await setString('user_password', password);
   }
 
   /// 保存密码（别名）
