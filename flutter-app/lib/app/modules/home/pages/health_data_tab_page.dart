@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
+import 'package:health_center_app/app/modules/members/members_controller.dart';
+import 'package:health_center_app/core/models/family_member.dart';
 import 'package:health_center_app/core/models/health_data.dart';
 
 /// 健康数据项（UI展示用）
@@ -62,15 +64,73 @@ class _HealthDataTabPageState extends State<HealthDataTabPage> {
   // 当前选中的筛选类型（null表示全部）
   HealthDataType? selectedType;
 
+  // 当前选中的成员（null表示全部）
+  String? selectedMemberId;
+
+  // 成员列表
+  List<FamilyMember> members = [];
+
   // 模拟健康数据
   final List<HealthDataItem> allData = _generateMockData();
 
+  @override
+  void initState() {
+    super.initState();
+    _loadMembers();
+  }
+
+  /// 加载成员列表
+  void _loadMembers() {
+    // 尝试从MembersController获取成员
+    if (Get.isRegistered<MembersController>()) {
+      final controller = Get.find<MembersController>();
+      members = controller.members.toList();
+    } else {
+      // 使用模拟成员
+      members = [
+        FamilyMember(
+          id: '1',
+          name: '张三',
+          relation: MemberRelation.father,
+          role: MemberRole.admin,
+          gender: 1,
+          createTime: DateTime.now(),
+        ),
+        FamilyMember(
+          id: '2',
+          name: '李四',
+          relation: MemberRelation.mother,
+          role: MemberRole.admin,
+          gender: 2,
+          createTime: DateTime.now(),
+        ),
+        FamilyMember(
+          id: '3',
+          name: '小明',
+          relation: MemberRelation.son,
+          role: MemberRole.member,
+          gender: 1,
+          createTime: DateTime.now(),
+        ),
+      ];
+    }
+  }
+
   // 获取筛选后的数据
   List<HealthDataItem> get filteredData {
-    if (selectedType == null) {
-      return allData;
+    var result = allData;
+
+    // 按成员筛选
+    if (selectedMemberId != null) {
+      result = result.where((d) => d.memberId == selectedMemberId).toList();
     }
-    return allData.where((d) => d.type == selectedType).toList();
+
+    // 按类型筛选
+    if (selectedType != null) {
+      result = result.where((d) => d.type == selectedType).toList();
+    }
+
+    return result;
   }
 
   // 获取各类型的数据数量
@@ -90,6 +150,9 @@ class _HealthDataTabPageState extends State<HealthDataTabPage> {
         children: [
           // 顶部统计卡片
           _buildStatsHeader(),
+
+          // 成员筛选
+          _buildMemberFilter(),
 
           // 数据类型筛选
           _buildTypeFilter(),
@@ -148,7 +211,7 @@ class _HealthDataTabPageState extends State<HealthDataTabPage> {
                 borderRadius: BorderRadius.circular(12.r),
               ),
               child: Text(
-                '共 ${filteredData.length} 条',
+                _buildStatsText(),
                 style: TextStyle(
                   fontSize: 12.sp,
                   color: Colors.white,
@@ -199,6 +262,140 @@ class _HealthDataTabPageState extends State<HealthDataTabPage> {
         ),
       ),
     );
+  }
+
+  /// 成员筛选器
+  Widget _buildMemberFilter() {
+    final isSelectedAll = selectedMemberId == null;
+
+    return Container(
+      padding: EdgeInsets.symmetric(vertical: 12.h, horizontal: 16.w),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.people_outline, size: 18.sp, color: Colors.grey[600]),
+              SizedBox(width: 6.w),
+              Text(
+                '按成员查看',
+                style: TextStyle(
+                  fontSize: 13.sp,
+                  color: Colors.grey[600],
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 12.h),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                // 全部选项
+                _buildMemberFilterChip(
+                  '全部',
+                  isSelectedAll,
+                  onTap: () {
+                    setState(() {
+                      selectedMemberId = null;
+                    });
+                  },
+                ),
+                SizedBox(width: 8.w),
+                // 各成员选项
+                ...members.map((member) {
+                  final isSelected = selectedMemberId == member.id;
+                  return Padding(
+                    padding: EdgeInsets.only(right: 8.w),
+                    child: _buildMemberFilterChip(
+                      member.name,
+                      isSelected,
+                      relation: member.relation.label,
+                      gender: member.gender,
+                      onTap: () {
+                        setState(() {
+                          selectedMemberId = isSelected ? null : member.id;
+                        });
+                      },
+                    ),
+                  );
+                }),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 成员筛选芯片
+  Widget _buildMemberFilterChip(
+    String label,
+    bool isSelected, {
+    String? relation,
+    int? gender,
+    VoidCallback? onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFF4CAF50).withOpacity(0.15) : Colors.grey[100],
+          borderRadius: BorderRadius.circular(20.r),
+          border: Border.all(
+            color: isSelected ? const Color(0xFF4CAF50) : Colors.transparent,
+            width: 1.5,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (relation != null) ...[
+              Text(
+                relation,
+                style: TextStyle(
+                  fontSize: 11.sp,
+                  color: isSelected ? const Color(0xFF4CAF50) : Colors.grey[500],
+                ),
+              ),
+              Text(
+                ' · ',
+                style: TextStyle(fontSize: 11.sp, color: Colors.grey[400]),
+              ),
+            ],
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 13.sp,
+                color: isSelected ? const Color(0xFF4CAF50) : Colors.grey[700],
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 统计信息文本
+  String _buildStatsText() {
+    final memberText = selectedMemberId != null
+        ? '${members.firstWhereOrNull((m) => m.id == selectedMemberId)?.name ?? ''} · '
+        : '';
+    final typeText = selectedType != null ? '${selectedType!.label} · ' : '';
+    return '$memberText$typeText${filteredData.length} 条';
   }
 
   /// 类型筛选器 - 优化版
