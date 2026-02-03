@@ -23,9 +23,9 @@ class BluetoothUtils {
 
   /// 判断扫描结果是否为健康设备
   static bool isHealthDevice(fbp.ScanResult result) {
-    final name = result.device.name.toLowerCase();
-    final localName = result.advertisementData.localName.toLowerCase();
-    final serviceName = result.advertisementData.advName.toLowerCase();
+    final name = result.device.platformName.toLowerCase();
+    final advName = result.advertisementData.advName.toLowerCase();
+    final serviceName = advName;
 
     // 检查服务UUID
     final hasHealthService = result.advertisementData.serviceUuids.any((uuid) {
@@ -36,8 +36,7 @@ class BluetoothUtils {
     // 检查设备名称关键词
     final hasHealthKeyword = healthKeywords.any((keyword) =>
         name.contains(keyword) ||
-        localName.contains(keyword) ||
-        serviceName.contains(keyword));
+        advName.contains(keyword));
 
     return hasHealthService || hasHealthKeyword;
   }
