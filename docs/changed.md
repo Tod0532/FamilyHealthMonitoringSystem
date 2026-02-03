@@ -4,6 +4,46 @@
 
 ---
 
+## 2026-02-03 下午（主题和多语言功能）
+
+### 📝 修改文件
+
+| 文件路径 | 说明 | 作者 |
+|----------|------|------|
+| flutter-app/.../theme/theme_controller.dart | 新增主题控制器 | Claude |
+| flutter-app/.../i18n/app_translations.dart | 新增多语言翻译 | Claude |
+| flutter-app/lib/main.dart | 支持动态主题和多语言 | Claude |
+| flutter-app/.../profile/profile_controller.dart | 主题和语言切换逻辑 | Claude |
+| flutter-app/.../profile/settings_page.dart | 移除"即将推出"提示 | Claude |
+
+### 📋 变更内容
+
+#### 类型：feat（新功能）
+#### 范围：UI界面、用户体验
+#### 描述：实现主题切换和多语言切换功能
+
+**主题切换功能**：
+1. 创建 `ThemeController` 管理主题状态
+2. 支持三种模式：亮色/暗色/跟随系统
+3. 修改 `main.dart` 使用 `Obx` 监听主题变化
+4. 设置页面深色模式开关立即生效
+5. 主题设置持久化到本地存储
+
+**多语言切换功能**：
+1. 创建 `AppTranslations` 翻译类
+2. 支持简体中文（zh_CN）和英文（en_US）
+3. 包含100+常用翻译条目
+4. `main.dart` 配置 `translations` 和 `locale`
+5. `ProfileController.changeLanguage` 调用 `Get.updateLocale`
+6. 语言设置持久化，重启APP保持选择
+
+**使用方式**：
+- 进入"设置"页面
+- 点击"深色模式"开关切换主题
+- 点击"语言"选择中文/English
+
+---
+
 ## 2026-02-03 下午（密码修改功能）
 
 ### 📝 修改文件
