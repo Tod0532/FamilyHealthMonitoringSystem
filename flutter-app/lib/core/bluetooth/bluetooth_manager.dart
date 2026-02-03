@@ -7,6 +7,7 @@ import 'package:health_center_app/core/utils/logger.dart';
 
 /// 蓝牙状态枚举
 enum BluetoothState {
+  initializing, // 初始化中
   unavailable, // 蓝牙不可用
   unauthorized, // 未授权
   on, // 蓝牙开启
@@ -63,6 +64,7 @@ class BluetoothManager extends GetxController {
   /// 初始化蓝牙
   Future<void> initialize() async {
     AppLogger.d('BluetoothManager: 开始初始化');
+    bluetoothState.value = BluetoothState.initializing;
 
     try {
       final isAvailable = await fbp.FlutterBluePlus.isAvailable;
@@ -260,6 +262,8 @@ class BluetoothManager extends GetxController {
   /// 获取蓝牙状态描述
   String getBluetoothStateDescription() {
     switch (bluetoothState.value) {
+      case BluetoothState.initializing:
+        return '正在初始化...';
       case BluetoothState.unavailable:
         return '蓝牙不可用';
       case BluetoothState.unauthorized:

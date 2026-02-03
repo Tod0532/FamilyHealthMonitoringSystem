@@ -70,6 +70,9 @@ class DeviceController extends GetxController with GetTickerProviderStateMixin {
     // 加载选中的家庭成员
     _loadSelectedMember();
 
+    // 自动初始化蓝牙
+    initializeBluetooth();
+
     // 监听蓝牙状态变化
     ever(bluetoothManager.bluetoothState, (state) {
       // 蓝牙关闭时断开设备

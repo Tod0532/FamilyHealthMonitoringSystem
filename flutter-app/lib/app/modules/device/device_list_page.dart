@@ -12,11 +12,6 @@ class DeviceListPage extends GetView<DeviceController> {
 
   @override
   Widget build(BuildContext context) {
-    // 页面进入时初始化蓝牙
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      controller.initializeBluetooth();
-    });
-
     return Scaffold(
       backgroundColor: const Color(0xFF0A0E27),
       body: CustomScrollView(
@@ -846,6 +841,8 @@ class DeviceListPage extends GetView<DeviceController> {
         return Colors.grey;
       case BluetoothState.unauthorized:
         return Colors.orange;
+      case BluetoothState.initializing:
+        return Colors.blue;
       default:
         return Colors.red;
     }
@@ -860,6 +857,8 @@ class DeviceListPage extends GetView<DeviceController> {
         return Icons.bluetooth_disabled;
       case BluetoothState.unauthorized:
         return Icons.bluetooth_disabled;
+      case BluetoothState.initializing:
+        return Icons.bluetooth_searching;
       default:
         return Icons.error;
     }
