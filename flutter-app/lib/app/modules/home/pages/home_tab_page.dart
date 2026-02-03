@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
+import 'package:health_center_app/app/modules/members/members_controller.dart';
 import 'package:health_center_app/core/storage/storage_service.dart';
 
 /// 首页Tab - 主页内容
@@ -401,7 +402,7 @@ class HomeTabPage extends GetView {
 
   Widget _buildActionItem(IconData icon, String label, Color color) {
     return GestureDetector(
-      onTap: () {},
+      onTap: () => _handleActionTap(label),
       child: Column(
         children: [
           Container(
@@ -422,6 +423,83 @@ class HomeTabPage extends GetView {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  /// 处理快捷功能点击
+  void _handleActionTap(String label) {
+    switch (label) {
+      case '录入数据':
+        Get.toNamed('/health/data-entry');
+        break;
+      case '添加成员':
+        Get.toNamed('/members');
+        // 延迟弹出添加对话框，等待页面加载完成
+        Future.delayed(const Duration(milliseconds: 300), () {
+          if (Get.isRegistered<MembersController>()) {
+            final controller = Get.find<MembersController>();
+            controller.showAddMemberDialog(Get.context!);
+          }
+        });
+        break;
+      case '连接设备':
+        Get.toNamed('/device/list');
+        break;
+      case '更多':
+        _showMoreActions();
+        break;
+    }
+  }
+
+  /// 显示更多功能
+  void _showMoreActions() {
+    Get.bottomSheet(
+      Container(
+        padding: EdgeInsets.all(20.w),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
+        ),
+        child: SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.show_chart, color: Color(0xFF4CAF50)),
+                title: const Text('健康统计'),
+                onTap: () {
+                  Get.back();
+                  Get.toNamed('/health/stats');
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.warning, color: Color(0xFFFF9800)),
+                title: const Text('预警规则'),
+                onTap: () {
+                  Get.back();
+                  Get.toNamed('/alerts/rules');
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.download, color: Color(0xFF2196F3)),
+                title: const Text('数据导出'),
+                onTap: () {
+                  Get.back();
+                  Get.toNamed('/export');
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.bookmarks, color: Color(0xFF673AB7)),
+                title: const Text('我的收藏'),
+                onTap: () {
+                  Get.back();
+                  Get.toNamed('/content/bookmarks');
+                },
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
