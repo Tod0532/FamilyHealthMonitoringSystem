@@ -15,12 +15,17 @@ class DiaryPage extends StatefulWidget {
 class _DiaryPageState extends State<DiaryPage> with SingleTickerProviderStateMixin {
   late final TabController tabController;
   late final DiaryController controller;
+  final currentTabIndex = 0.obs;
 
   @override
   void initState() {
     super.initState();
     tabController = TabController(length: 2, vsync: this);
     controller = Get.find<DiaryController>();
+    // 监听 tab 切换
+    tabController.addListener(() {
+      currentTabIndex.value = tabController.index;
+    });
   }
 
   @override
@@ -51,7 +56,7 @@ class _DiaryPageState extends State<DiaryPage> with SingleTickerProviderStateMix
         ),
       ),
       floatingActionButton: Obx(() {
-        return tabController.index == 1
+        return currentTabIndex.value == 1
             ? FloatingActionButton(
                 onPressed: () => _showAddDiaryDialog(),
                 backgroundColor: const Color(0xFF4CAF50),
