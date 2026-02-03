@@ -26,9 +26,9 @@ class BleDevice {
   /// 从扫描结果创建
   factory BleDevice.fromScanResult(fbp.ScanResult result) {
     final deviceId = result.device.remoteId.toString();
-    String displayName = result.device.name.isNotEmpty
-        ? result.device.name
-        : result.advertisementData.localName;
+    String displayName = result.device.platformName.isNotEmpty
+        ? result.device.platformName
+        : result.advertisementData.advName;
 
     // 如果名称为空，显示设备ID的后4位
     if (displayName.isEmpty) {

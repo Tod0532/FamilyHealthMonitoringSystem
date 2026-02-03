@@ -109,10 +109,10 @@ class DeviceScanner {
 
     // 调试：打印所有设备
     for (var result in results) {
-      final localName = result.advertisementData.localName;
-      final name = result.device.name.isNotEmpty
-          ? result.device.name
-          : (localName.isNotEmpty ? localName : '未知');
+      final advName = result.advertisementData.advName;
+      final name = result.device.platformName.isNotEmpty
+          ? result.device.platformName
+          : (advName.isNotEmpty ? advName : '未知');
       final uuids = result.advertisementData.serviceUuids
           .map((u) => u.toString())
           .join(', ');
