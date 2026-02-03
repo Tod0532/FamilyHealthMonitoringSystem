@@ -4,6 +4,63 @@
 
 ---
 
+## 2026-02-03 下午（密码修改功能）
+
+### 📝 修改文件
+
+| 文件路径 | 说明 | 作者 |
+|----------|------|------|
+| spring-boot-backend/.../dto/ChangePasswordRequest.java | 新增修改密码DTO | Claude |
+| spring-boot-backend/.../service/UserService.java | 添加changePassword接口 | Claude |
+| spring-boot-backend/.../service/impl/UserServiceImpl.java | 实现密码修改逻辑 | Claude |
+| spring-boot-backend/.../controller/AuthController.java | 添加修改密码API端点 | Claude |
+| flutter-app/.../profile/profile_controller.dart | 调用后端修改密码API | Claude |
+
+### 📋 变更内容
+
+#### 类型：feat（新功能）
+#### 范围：API接口、前端控制器
+#### 描述：实现密码修改功能
+
+**后端实现**：
+1. 创建 `ChangePasswordRequest` DTO，包含原密码和新密码字段
+2. `UserService` 添加 `changePassword(userId, oldPassword, newPassword)` 方法
+3. 验证原密码正确性
+4. 验证新密码不能与原密码相同
+5. 使用BCrypt加密新密码并更新
+6. `AuthController` 添加 `POST /auth/change-password` API端点
+7. 从JWT Token或请求头中获取当前用户ID
+
+**前端实现**：
+1. `ProfileController.changePassword` 调用后端API
+2. 添加完整错误处理：
+   - 网络错误提示
+   - 原密码错误提示
+   - 密码长度验证
+   - 新旧密码相同验证
+
+**API端点**：
+```
+POST /auth/change-password
+Authorization: Bearer {token}
+Content-Type: application/json
+
+Request:
+{
+  "oldPassword": "123456",
+  "newPassword": "654321"
+}
+
+Response:
+{
+  "code": 200,
+  "message": "success",
+  "data": null
+}
+```
+
+---
+
 ## 2026-02-03 深夜（最终整理与Git问题）
 
 ### 📝 修改文件
