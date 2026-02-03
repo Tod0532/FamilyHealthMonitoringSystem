@@ -109,10 +109,10 @@ class DeviceListPage extends GetView<DeviceController> {
         ],
       ),
       child: Obx(() {
-        final state = BluetoothManager.instance.state;
+        final state = BluetoothManager.instance.bluetoothState.value;
         final statusColor = _getStatusColor(state);
         final statusIcon = _getStatusIcon(state);
-        final statusText = BluetoothManager.instance.getBluetoothStateDescription();
+        final statusText = _getStatusText(state);
 
         return Row(
           children: [
@@ -373,7 +373,7 @@ class DeviceListPage extends GetView<DeviceController> {
   /// 过滤器开关
   Widget _buildFilterToggle() {
     return Obx(() {
-      final filterOnly = controller.scanner.filterHealthDevicesOnly;
+      final filterOnly = controller.scanner.filterHealthDevicesOnly.value;
 
       return Container(
         margin: EdgeInsets.symmetric(horizontal: 16.w),
@@ -406,7 +406,7 @@ class DeviceListPage extends GetView<DeviceController> {
             Switch(
               value: filterOnly,
               onChanged: (value) {
-                controller.scanner.filterHealthDevicesOnly = value;
+                controller.scanner.filterHealthDevicesOnly.value = value;
                 controller.scanner.clearResults();
               },
               activeColor: const Color(0xFF08D9D6),
@@ -829,6 +829,22 @@ class DeviceListPage extends GetView<DeviceController> {
 
       // 跳转到数据页面
       Get.to(() => DeviceDataPage(device: device));
+    }
+  }
+
+  /// 获取状态文字
+  String _getStatusText(BluetoothState state) {
+    switch (state) {
+      case BluetoothState.initializing:
+        return '正在初始化...';
+      case BluetoothState.unavailable:
+        return '蓝牙不可用';
+      case BluetoothState.unauthorized:
+        return '未授权蓝牙权限';
+      case BluetoothState.on:
+        return '蓝牙已开启';
+      case BluetoothState.off:
+        return '蓝牙已关闭';
     }
   }
 

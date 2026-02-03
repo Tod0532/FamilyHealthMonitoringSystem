@@ -19,7 +19,7 @@ class DeviceScanner {
   final scanProgress = 0.0.obs;
 
   // 健康设备过滤开关
-  bool filterHealthDevicesOnly = true;
+  final filterHealthDevicesOnly = true.obs;
 
   // 最小信号强度过滤
   int minRssi = -100;
@@ -122,7 +122,7 @@ class DeviceScanner {
     // 过滤设备
     var filteredResults = results;
 
-    if (filterHealthDevicesOnly) {
+    if (filterHealthDevicesOnly.value) {
       filteredResults = filteredResults
           .where(BluetoothUtils.isHealthDevice)
           .toList();
