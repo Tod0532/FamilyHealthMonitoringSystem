@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:health_center_app/app/routes/app_pages.dart';
+import 'package:health_center_app/core/bluetooth/bluetooth_manager.dart';
 import 'package:health_center_app/core/utils/logger.dart';
 import 'package:health_center_app/core/storage/storage_service.dart';
 import 'package:health_center_app/core/network/dio_provider.dart';
@@ -21,6 +22,9 @@ void main() async {
 
   // 注册网络服务
   Get.put(DioProvider());
+
+  // 注册蓝牙管理器（单例）
+  Get.put(BluetoothManager.instance, permanent: true);
 
   runApp(const HealthCenterApp());
 }

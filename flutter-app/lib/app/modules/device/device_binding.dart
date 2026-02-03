@@ -6,10 +6,8 @@ import 'package:health_center_app/core/bluetooth/bluetooth_manager.dart';
 class DeviceBinding extends Bindings {
   @override
   void dependencies() {
-    // 注册蓝牙管理器（单例）
-    if (!Get.isRegistered<BluetoothManager>()) {
-      Get.put(BluetoothManager.instance, permanent: true);
-    }
+    // 蓝牙管理器已在 main.dart 中注册（permanent）
+    // 这里只注册设备控制器
     Get.lazyPut<DeviceController>(() => DeviceController());
   }
 }
