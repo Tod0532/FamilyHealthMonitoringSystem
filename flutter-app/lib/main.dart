@@ -4,6 +4,8 @@ import 'package:get/get.dart';
 import 'package:get_storage/get_storage.dart';
 import 'package:health_center_app/app/routes/app_pages.dart';
 import 'package:health_center_app/core/bluetooth/bluetooth_manager.dart';
+import 'package:health_center_app/core/i18n/app_translations.dart';
+import 'package:health_center_app/core/theme/theme_controller.dart';
 import 'package:health_center_app/core/utils/logger.dart';
 import 'package:health_center_app/core/storage/storage_service.dart';
 import 'package:health_center_app/core/network/dio_provider.dart';
@@ -26,6 +28,9 @@ void main() async {
   // 注册蓝牙管理器（单例）
   Get.put(BluetoothManager.instance, permanent: true);
 
+  // 注册主题控制器
+  Get.put(ThemeController());
+
   runApp(const HealthCenterApp());
 }
 
@@ -35,17 +40,22 @@ class HealthCenterApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final themeController = Get.find<ThemeController>();
+
     return ScreenUtilInit(
       designSize: const Size(375, 812), // iPhone X 设计尺寸
       minTextAdapt: true,
       splitScreenMode: true,
       builder: (context, child) {
-        return GetMaterialApp(
+        return Obx(() => GetMaterialApp(
           title: '家庭健康中心',
           debugShowCheckedModeBanner: false,
           theme: AppTheme.light,
           darkTheme: AppTheme.dark,
-          themeMode: ThemeMode.light,
+          themeMode: themeController.themeMode.value,
+          translations: AppTranslations(),
+          locale: _getLocale(),
+          fallbackLocale: const Locale('zh', 'CN'),
           initialRoute: AppPages.initial,
           getPages: AppPages.routes,
           defaultTransition: Transition.cupertino,
@@ -57,9 +67,19 @@ class HealthCenterApp extends StatelessWidget {
               child: widget!,
             );
           },
-        );
+        ));
       },
     );
+  }
+
+  /// 获取当前语言
+  Locale _getLocale() {
+    final storage = Get.find<StorageService>();
+    final lang = storage.getString('language') ?? 'zh_CN';
+    if (lang == 'en_US') {
+      return const Locale('en', 'US');
+    }
+    return const Locale('zh', 'CN');
   }
 }
 

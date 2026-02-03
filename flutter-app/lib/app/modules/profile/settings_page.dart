@@ -32,7 +32,7 @@ class SettingsPage extends GetView<ProfileController> {
           _buildSwitchTile(
             icon: Icons.dark_mode,
             title: '深色模式',
-            subtitle: '护眼模式（即将推出）',
+            subtitle: '护眼模式',
             value: controller.darkModeEnabled,
             onChanged: (value) => controller.toggleDarkMode(value),
           ),

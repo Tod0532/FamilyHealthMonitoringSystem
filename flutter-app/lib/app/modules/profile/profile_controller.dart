@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:health_center_app/core/network/dio_provider.dart';
 import 'package:health_center_app/core/storage/storage_service.dart';
+import 'package:health_center_app/core/theme/theme_controller.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 /// 个人中心控制器
 class ProfileController extends GetxController {
   final StorageService _storage = Get.find<StorageService>();
   final DioProvider _dioProvider = Get.find<DioProvider>();
+  final ThemeController _themeController = Get.find<ThemeController>();
   PackageInfo _packageInfo = PackageInfo(
     appName: '家庭健康中心',
     packageName: 'com.healthcenter.health_center_app',
@@ -55,7 +57,8 @@ class ProfileController extends GetxController {
   /// 加载应用设置
   void _loadSettings() {
     notificationEnabled.value = _storage.getBool('notification_enabled') ?? true;
-    darkModeEnabled.value = _storage.getBool('dark_mode_enabled') ?? false;
+    // 从主题控制器获取当前主题模式
+    darkModeEnabled.value = _themeController.themeMode.value == ThemeMode.dark;
     language.value = _storage.getString('language') ?? 'zh_CN';
     fontSize.value = _storage.getString('font_size') ?? 'medium';
   }
@@ -178,19 +181,26 @@ class ProfileController extends GetxController {
   /// 切换深色模式
   void toggleDarkMode(bool value) {
     darkModeEnabled.value = value;
-    _storage.setBool('dark_mode_enabled', value);
-    // TODO: 实现主题切换
-    if (value) {
-      Get.snackbar('提示', '深色模式即将推出', snackPosition: SnackPosition.BOTTOM);
-    }
+    _themeController.toggleDarkMode(value);
   }
 
   /// 切换语言
   void changeLanguage(String lang) {
     language.value = lang;
     _storage.setString('language', lang);
-    Get.snackbar('提示', '语言已切换', snackPosition: SnackPosition.BOTTOM);
-    // TODO: 实现多语言切换
+
+    // 更新GetX语言环境
+    final locale = lang == 'en_US'
+        ? const Locale('en', 'US')
+        : const Locale('zh', 'CN');
+    Get.updateLocale(locale);
+
+    Get.snackbar(
+      '成功',
+      lang == 'en_US' ? 'Language changed to English' : '语言已切换为中文',
+      snackPosition: SnackPosition.BOTTOM,
+      backgroundColor: Colors.green.shade100,
+    );
   }
 
   /// 切换字体大小
