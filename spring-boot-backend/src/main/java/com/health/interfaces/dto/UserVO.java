@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Builder;
 import lombok.Data;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
@@ -26,11 +27,11 @@ public class UserVO {
     @Schema(description = "头像")
     private String avatar;
 
-    @Schema(description = "性别：0-未知，1-男，2-女")
-    private Integer gender;
+    @Schema(description = "性别：male-男，female-女")
+    private String gender;
 
     @Schema(description = "出生日期")
-    private LocalDateTime birthday;
+    private LocalDate birthday;
 
     @Schema(description = "账号状态：0-正常，1-禁用")
     private Integer status;

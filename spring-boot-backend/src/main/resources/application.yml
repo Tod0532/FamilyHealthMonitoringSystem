@@ -68,7 +68,7 @@ spring:
 server:
   port: ${SERVER_PORT:8080}
   servlet:
-    context-path: /api/v1
+    context-path: /
   compression:
     enabled: true
   tomcat:
@@ -85,7 +85,7 @@ mybatis-plus:
   global-config:
     db-config:
       id-type: ASSIGN_ID
-      logic-delete-field: isDeleted
+      logic-delete-field: deleted  # 与实体类字段名保持一致
       logic-delete-value: 1
       logic-not-delete-value: 0
 
@@ -118,6 +118,10 @@ knife4j:
 
 # 应用自定义配置
 app:
+  # CORS跨域配置（开发环境允许本地地址，生产环境需修改）
+  cors:
+    allowed-origins: ${CORS_ORIGINS:http://localhost:3000,http://localhost:8080,http://127.0.0.1:3000,http://127.0.0.1:8080}
+
   # 文件存储配置
   file:
     upload-path: ${FILE_UPLOAD_PATH:./uploads}

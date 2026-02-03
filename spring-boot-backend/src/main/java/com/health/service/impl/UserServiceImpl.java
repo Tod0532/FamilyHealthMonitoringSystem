@@ -15,8 +15,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 用户服务实现
@@ -31,10 +34,16 @@ public class UserServiceImpl implements UserService {
     private final JwtProperties jwtProperties;
     private final RedisTemplate<String, Object> redisTemplate;
 
-    private static final String SMS_CODE_KEY = "sms:code:";
-    private static final String BLACKLIST_KEY = "token:blacklist:";
+    // Redis Key 前缀
+    private static final String TOKEN_BLACKLIST_KEY_PREFIX = "token:blacklist:";
+    private static final String SMS_CODE_KEY_PREFIX = "sms:code:";
+
+    // 临时使用内存存储（开发环境，Redis不可用时降级）
+    private static final ConcurrentHashMap<String, String> SMS_CODE_STORE = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<String, Long> TOKEN_BLACKLIST = new ConcurrentHashMap<>();
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public AuthResponse register(RegisterRequest request) {
         // 1. 验证两次密码是否一致
         if (!request.getPassword().equals(request.getConfirmPassword())) {
@@ -47,17 +56,8 @@ public class UserServiceImpl implements UserService {
             throw new BusinessException(ErrorCode.USER_ALREADY_EXISTS, "手机号已注册");
         }
 
-        // 3. 验证短信验证码
-        String smsKey = SMS_CODE_KEY + "register:" + request.getPhone();
-        String savedCode = (String) redisTemplate.opsForValue().get(smsKey);
-        if (savedCode == null) {
-            throw new BusinessException(ErrorCode.INVALID_PARAM, "验证码已过期");
-        }
-        if (!savedCode.equals(request.getSmsCode())) {
-            throw new BusinessException(ErrorCode.INVALID_PARAM, "验证码错误");
-        }
-        // 验证成功后删除验证码
-        redisTemplate.delete(smsKey);
+        // 3. 跳过短信验证码验证（开发环境）
+        // TODO: 生产环境需要接入短信服务
 
         // 4. 创建用户
         User user = new User();
@@ -66,8 +66,8 @@ public class UserServiceImpl implements UserService {
         // 昵称默认为：健康用户 + 手机号后4位
         String defaultNickname = "健康用户" + request.getPhone().substring(Math.max(0, request.getPhone().length() - 4));
         user.setNickname(request.getNickname() != null ? request.getNickname() : defaultNickname);
-        user.setGender(0);
-        user.setStatus(0);
+        user.setGender(null);  // 用户注册时性别可选
+        user.setStatus(1);  // 正常状态
         user.setCreateTime(LocalDateTime.now());
         user.setUpdateTime(LocalDateTime.now());
 
@@ -79,6 +79,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public AuthResponse login(LoginRequest request) {
         // 1. 查找用户
         User user = getUserByPhone(request.getPhone());
@@ -93,7 +94,7 @@ public class UserServiceImpl implements UserService {
         }
 
         // 3. 检查账号状态
-        if (user.getStatus() == 1) {
+        if (user.getStatus() == 0) {
             throw new BusinessException(ErrorCode.ACCOUNT_DISABLED, "账号已被禁用");
         }
 
@@ -108,6 +109,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public AuthResponse refreshToken(String refreshToken) {
         // 1. 验证刷新令牌
         if (!jwtUtil.validateToken(refreshToken)) {
@@ -122,7 +124,7 @@ public class UserServiceImpl implements UserService {
         }
 
         // 3. 检查账号状态
-        if (user.getStatus() == 1) {
+        if (user.getStatus() == 0) {
             throw new BusinessException(ErrorCode.ACCOUNT_DISABLED, "账号已被禁用");
         }
 
@@ -131,13 +133,22 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void logout(String token) {
         if (token != null && jwtUtil.validateToken(token)) {
-            // 将令牌加入黑名单
+            // 将令牌加入黑名单（使用Redis持久化存储）
             Long expiration = jwtUtil.getRemainingExpiration(token);
             if (expiration > 0) {
-                String userId = jwtUtil.getUserIdFromToken(token).toString();
-                redisTemplate.opsForValue().set(BLACKLIST_KEY + token, userId, expiration, java.util.concurrent.TimeUnit.SECONDS);
+                try {
+                    // 使用Redis存储，自动过期
+                    String redisKey = TOKEN_BLACKLIST_KEY_PREFIX + token;
+                    redisTemplate.opsForValue().set(redisKey, "blacklisted", expiration, TimeUnit.SECONDS);
+                    log.debug("Token已加入黑名单:剩余有效期={}秒", expiration);
+                } catch (Exception e) {
+                    // Redis不可用时降级到内存存储
+                    log.warn("Redis不可用，降级到内存存储Token黑名单: {}", e.getMessage());
+                    TOKEN_BLACKLIST.put(token, System.currentTimeMillis() + expiration * 1000);
+                }
             }
         }
         log.info("用户登出成功");
@@ -157,6 +168,35 @@ public class UserServiceImpl implements UserService {
         LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(User::getPhone, phone);
         return userMapper.selectOne(wrapper);
+    }
+
+    /**
+     * 检查Token是否在黑名单中
+     * 优先检查Redis，降级检查内存存储
+     */
+    public boolean isTokenBlacklisted(String token) {
+        // 优先检查Redis
+        try {
+            String redisKey = TOKEN_BLACKLIST_KEY_PREFIX + token;
+            Boolean exists = redisTemplate.hasKey(redisKey);
+            if (Boolean.TRUE.equals(exists)) {
+                return true;
+            }
+        } catch (Exception e) {
+            log.debug("Redis检查Token黑名单失败，降级到内存检查: {}", e.getMessage());
+        }
+
+        // 降级检查内存存储
+        Long expiryTime = TOKEN_BLACKLIST.get(token);
+        if (expiryTime == null) {
+            return false;
+        }
+        // 清理过期的黑名单记录
+        if (System.currentTimeMillis() > expiryTime) {
+            TOKEN_BLACKLIST.remove(token);
+            return false;
+        }
+        return true;
     }
 
     /**

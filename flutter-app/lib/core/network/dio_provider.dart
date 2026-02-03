@@ -3,6 +3,7 @@ import 'package:get/get.dart' as getx;
 import 'package:health_center_app/main.dart';
 import 'package:health_center_app/core/storage/storage_service.dart';
 import 'package:health_center_app/core/network/api_exception.dart';
+import 'package:health_center_app/core/utils/logger.dart';
 
 /// Dio 网络请求提供者
 ///
@@ -103,34 +104,34 @@ class DioProvider {
 
   /// 打印请求日志
   void _printRequestLog(RequestOptions options) {
-    print('======== Request ========');
-    print('Method: ${options.method}');
-    print('URL: ${options.uri}');
-    print('Headers: ${options.headers}');
+    AppLogger.d('======== Request ========');
+    AppLogger.d('Method: ${options.method}');
+    AppLogger.d('URL: ${options.uri}');
+    AppLogger.d('Headers: ${options.headers}');
     if (options.data != null) {
-      print('Data: ${options.data}');
+      AppLogger.d('Data: ${options.data}');
     }
-    print('========================');
+    AppLogger.d('========================');
   }
 
   /// 打印响应日志
   void _printResponseLog(Response response) {
-    print('======== Response ========');
-    print('Status: ${response.statusCode}');
-    print('Data: ${response.data}');
-    print('=========================');
+    AppLogger.d('======== Response ========');
+    AppLogger.d('Status: ${response.statusCode}');
+    AppLogger.d('Data: ${response.data}');
+    AppLogger.d('=========================');
   }
 
   /// 打印错误日志
   void _printErrorLog(DioException error) {
-    print('======== Error ===========');
-    print('Type: ${error.type}');
-    print('Message: ${error.message}');
+    AppLogger.e('======== Error ===========');
+    AppLogger.e('Type: ${error.type}');
+    AppLogger.e('Message: ${error.message}');
     if (error.response != null) {
-      print('Status: ${error.response?.statusCode}');
-      print('Data: ${error.response?.data}');
+      AppLogger.e('Status: ${error.response?.statusCode}');
+      AppLogger.e('Data: ${error.response?.data}');
     }
-    print('=========================');
+    AppLogger.e('=========================');
   }
 
   // ==================== 便捷请求方法 ====================

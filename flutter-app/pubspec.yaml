@@ -44,6 +44,8 @@ dependencies:
   logger: ^2.0.2
   package_info_plus: ^5.0.1
   device_info_plus: ^9.1.0
+  share_plus: ^7.2.1
+  url_launcher: ^6.2.2
 
   # 权限管理
   permission_handler: ^11.1.0

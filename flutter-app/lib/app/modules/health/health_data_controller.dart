@@ -4,6 +4,7 @@ import 'package:health_center_app/core/models/health_data.dart';
 import 'package:health_center_app/core/models/family_member.dart';
 import 'package:health_center_app/core/network/dio_provider.dart';
 import 'package:health_center_app/app/modules/members/members_controller.dart';
+import 'package:health_center_app/app/modules/alerts/health_alert_controller.dart';
 
 /// 健康数据控制器
 class HealthDataController extends GetxController {
@@ -37,72 +38,256 @@ class HealthDataController extends GetxController {
   void _loadMockHealthData() {
     final now = DateTime.now();
     healthDataList.value = [
-      // 血压数据
+      // ============ 血压数据（跨7天）============
+      // 今天
       HealthData.createBloodPressure(
-        id: '1',
+        id: 'bp1',
         memberId: '1',
         systolic: 125,
         diastolic: 82,
-        recordTime: now.subtract(const Duration(days: 0, hours: 2)),
+        recordTime: now.subtract(const Duration(days: 0, hours: 8)),
         notes: '早晨测量',
       ),
       HealthData.createBloodPressure(
-        id: '2',
+        id: 'bp2',
+        memberId: '1',
+        systolic: 128,
+        diastolic: 85,
+        recordTime: now.subtract(const Duration(days: 0, hours: 20)),
+        notes: '晚间测量',
+      ),
+      // 昨天
+      HealthData.createBloodPressure(
+        id: 'bp3',
         memberId: '1',
         systolic: 118,
         diastolic: 78,
         recordTime: now.subtract(const Duration(days: 1, hours: 8)),
       ),
       HealthData.createBloodPressure(
-        id: '3',
-        memberId: '2',
+        id: 'bp4',
+        memberId: '1',
+        systolic: 122,
+        diastolic: 80,
+        recordTime: now.subtract(const Duration(days: 1, hours: 20)),
+      ),
+      // 2天前
+      HealthData.createBloodPressure(
+        id: 'bp5',
+        memberId: '1',
+        systolic: 130,
+        diastolic: 84,
+        recordTime: now.subtract(const Duration(days: 2, hours: 9)),
+      ),
+      // 3天前
+      HealthData.createBloodPressure(
+        id: 'bp6',
+        memberId: '1',
+        systolic: 120,
+        diastolic: 79,
+        recordTime: now.subtract(const Duration(days: 3, hours: 8)),
+      ),
+      // 4天前
+      HealthData.createBloodPressure(
+        id: 'bp7',
+        memberId: '1',
         systolic: 135,
         diastolic: 88,
-        recordTime: now.subtract(const Duration(days: 1, hours: 3)),
+        recordTime: now.subtract(const Duration(days: 4, hours: 9)),
         notes: '稍偏高',
       ),
+      // 5天前
+      HealthData.createBloodPressure(
+        id: 'bp8',
+        memberId: '1',
+        systolic: 115,
+        diastolic: 75,
+        recordTime: now.subtract(const Duration(days: 5, hours: 8)),
+      ),
+      // 6天前
+      HealthData.createBloodPressure(
+        id: 'bp9',
+        memberId: '1',
+        systolic: 122,
+        diastolic: 81,
+        recordTime: now.subtract(const Duration(days: 6, hours: 9)),
+      ),
 
-      // 心率数据
+      // ============ 心率数据（跨7天）============
       HealthData.createHeartRate(
-        id: '4',
+        id: 'hr1',
         memberId: '1',
         rate: 72,
-        recordTime: now.subtract(const Duration(days: 0, hours: 2)),
+        recordTime: now.subtract(const Duration(days: 0, hours: 9)),
       ),
       HealthData.createHeartRate(
-        id: '5',
-        memberId: '2',
+        id: 'hr2',
+        memberId: '1',
+        rate: 68,
+        recordTime: now.subtract(const Duration(days: 1, hours: 9)),
+      ),
+      HealthData.createHeartRate(
+        id: 'hr3',
+        memberId: '1',
+        rate: 75,
+        recordTime: now.subtract(const Duration(days: 2, hours: 9)),
+      ),
+      HealthData.createHeartRate(
+        id: 'hr4',
+        memberId: '1',
+        rate: 70,
+        recordTime: now.subtract(const Duration(days: 3, hours: 10)),
+      ),
+      HealthData.createHeartRate(
+        id: 'hr5',
+        memberId: '1',
         rate: 78,
-        recordTime: now.subtract(const Duration(days: 0, hours: 3)),
+        recordTime: now.subtract(const Duration(days: 4, hours: 8)),
+      ),
+      HealthData.createHeartRate(
+        id: 'hr6',
+        memberId: '1',
+        rate: 73,
+        recordTime: now.subtract(const Duration(days: 5, hours: 9)),
+      ),
+      HealthData.createHeartRate(
+        id: 'hr7',
+        memberId: '1',
+        rate: 71,
+        recordTime: now.subtract(const Duration(days: 6, hours: 9)),
       ),
 
-      // 血糖数据
+      // ============ 血糖数据 ============
       HealthData.createBloodSugar(
-        id: '6',
+        id: 'bs1',
         memberId: '1',
         sugar: 6.2,
-        recordTime: now.subtract(const Duration(days: 0, hours: 1)),
+        recordTime: now.subtract(const Duration(days: 0, hours: 7)),
         notes: '空腹血糖',
       ),
+      HealthData.createBloodSugar(
+        id: 'bs2',
+        memberId: '1',
+        sugar: 7.8,
+        recordTime: now.subtract(const Duration(days: 0, hours: 13)),
+        notes: '餐后2小时',
+      ),
+      HealthData.createBloodSugar(
+        id: 'bs3',
+        memberId: '1',
+        sugar: 5.8,
+        recordTime: now.subtract(const Duration(days: 1, hours: 7)),
+        notes: '空腹血糖',
+      ),
+      HealthData.createBloodSugar(
+        id: 'bs4',
+        memberId: '1',
+        sugar: 8.2,
+        recordTime: now.subtract(const Duration(days: 1, hours: 13)),
+        notes: '餐后2小时，偏高',
+      ),
+      HealthData.createBloodSugar(
+        id: 'bs5',
+        memberId: '1',
+        sugar: 6.0,
+        recordTime: now.subtract(const Duration(days: 2, hours: 7)),
+      ),
 
-      // 体温数据
+      // ============ 体温数据 ============
       HealthData.createTemperature(
-        id: '7',
+        id: 'tmp1',
         memberId: '3',
         temp: 37.8,
-        recordTime: now.subtract(const Duration(days: 0, hours: 4)),
+        recordTime: now.subtract(const Duration(days: 0, hours: 10)),
         notes: '稍有发热',
       ),
       HealthData.createTemperature(
-        id: '8',
+        id: 'tmp2',
         memberId: '1',
         temp: 36.6,
-        recordTime: now.subtract(const Duration(days: 1, hours: 12)),
+        recordTime: now.subtract(const Duration(days: 0, hours: 8)),
+      ),
+      HealthData.createTemperature(
+        id: 'tmp3',
+        memberId: '1',
+        temp: 36.8,
+        recordTime: now.subtract(const Duration(days: 1, hours: 8)),
+      ),
+      HealthData.createTemperature(
+        id: 'tmp4',
+        memberId: '1',
+        temp: 36.5,
+        recordTime: now.subtract(const Duration(days: 2, hours: 8)),
       ),
 
-      // 步数数据
+      // ============ 体重数据（跨7天）============
       HealthData(
-        id: '9',
+        id: 'wt1',
+        memberId: '1',
+        type: HealthDataType.weight,
+        value1: 68.5,
+        level: HealthDataLevel.normal,
+        recordTime: now.subtract(const Duration(days: 0, hours: 8)),
+        createTime: now,
+      ),
+      HealthData(
+        id: 'wt2',
+        memberId: '1',
+        type: HealthDataType.weight,
+        value1: 68.8,
+        level: HealthDataLevel.normal,
+        recordTime: now.subtract(const Duration(days: 1, hours: 8)),
+        createTime: now,
+      ),
+      HealthData(
+        id: 'wt3',
+        memberId: '1',
+        type: HealthDataType.weight,
+        value1: 69.0,
+        level: HealthDataLevel.normal,
+        recordTime: now.subtract(const Duration(days: 2, hours: 8)),
+        createTime: now,
+      ),
+      HealthData(
+        id: 'wt4',
+        memberId: '1',
+        type: HealthDataType.weight,
+        value1: 68.7,
+        level: HealthDataLevel.normal,
+        recordTime: now.subtract(const Duration(days: 3, hours: 8)),
+        createTime: now,
+      ),
+      HealthData(
+        id: 'wt5',
+        memberId: '1',
+        type: HealthDataType.weight,
+        value1: 69.2,
+        level: HealthDataLevel.normal,
+        recordTime: now.subtract(const Duration(days: 4, hours: 8)),
+        createTime: now,
+      ),
+      HealthData(
+        id: 'wt6',
+        memberId: '1',
+        type: HealthDataType.weight,
+        value1: 68.9,
+        level: HealthDataLevel.normal,
+        recordTime: now.subtract(const Duration(days: 5, hours: 8)),
+        createTime: now,
+      ),
+      HealthData(
+        id: 'wt7',
+        memberId: '1',
+        type: HealthDataType.weight,
+        value1: 68.3,
+        level: HealthDataLevel.normal,
+        recordTime: now.subtract(const Duration(days: 6, hours: 8)),
+        createTime: now,
+      ),
+
+      // ============ 步数数据 ============
+      HealthData(
+        id: 'steps1',
         memberId: '1',
         type: HealthDataType.steps,
         value1: 8532,
@@ -110,16 +295,68 @@ class HealthDataController extends GetxController {
         recordTime: now.subtract(const Duration(days: 0)),
         createTime: now,
       ),
-
-      // 睡眠数据
       HealthData(
-        id: '10',
+        id: 'steps2',
+        memberId: '1',
+        type: HealthDataType.steps,
+        value1: 10245,
+        level: HealthDataLevel.normal,
+        recordTime: now.subtract(const Duration(days: 1)),
+        createTime: now,
+      ),
+      HealthData(
+        id: 'steps3',
+        memberId: '1',
+        type: HealthDataType.steps,
+        value1: 6789,
+        level: HealthDataLevel.normal,
+        recordTime: now.subtract(const Duration(days: 2)),
+        createTime: now,
+      ),
+
+      // ============ 睡眠数据 ============
+      HealthData(
+        id: 'sleep1',
         memberId: '2',
         type: HealthDataType.sleep,
         value1: 7.5,
         level: HealthDataLevel.normal,
+        recordTime: now.subtract(const Duration(days: 0)),
+        createTime: now,
+      ),
+      HealthData(
+        id: 'sleep2',
+        memberId: '2',
+        type: HealthDataType.sleep,
+        value1: 6.8,
+        level: HealthDataLevel.normal,
         recordTime: now.subtract(const Duration(days: 1)),
         createTime: now,
+      ),
+      HealthData(
+        id: 'sleep3',
+        memberId: '2',
+        type: HealthDataType.sleep,
+        value1: 8.0,
+        level: HealthDataLevel.normal,
+        recordTime: now.subtract(const Duration(days: 2)),
+        createTime: now,
+      ),
+
+      // ============ 其他成员的数据 ============
+      HealthData.createBloodPressure(
+        id: 'bp_other1',
+        memberId: '2',
+        systolic: 135,
+        diastolic: 88,
+        recordTime: now.subtract(const Duration(days: 1, hours: 3)),
+        notes: '稍偏高',
+      ),
+      HealthData.createHeartRate(
+        id: 'hr_other1',
+        memberId: '2',
+        rate: 78,
+        recordTime: now.subtract(const Duration(days: 0, hours: 15)),
       ),
     ];
     _applyFilter();
@@ -159,6 +396,12 @@ class HealthDataController extends GetxController {
 
       healthDataList.add(newData);
       _applyFilter();
+
+      // 检查是否触发预警
+      if (Get.isRegistered<HealthAlertController>()) {
+        final alertController = Get.find<HealthAlertController>();
+        alertController.checkHealthDataAlert(newData);
+      }
 
       Get.snackbar(
         '成功',

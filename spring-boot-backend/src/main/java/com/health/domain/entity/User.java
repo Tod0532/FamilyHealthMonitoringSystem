@@ -2,13 +2,14 @@ package com.health.domain.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
 import lombok.Data;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 /**
  * 用户实体
  */
 @Data
-@TableName("user")
+@TableName("sys_user")
 public class User {
 
     /**
@@ -38,14 +39,14 @@ public class User {
     private String avatar;
 
     /**
-     * 性别：0-未知，1-男，2-女
+     * 性别：male-男，female-女
      */
-    private Integer gender;
+    private String gender;
 
     /**
      * 出生日期
      */
-    private LocalDateTime birthday;
+    private LocalDate birthday;
 
     /**
      * 账号状态：0-正常，1-禁用

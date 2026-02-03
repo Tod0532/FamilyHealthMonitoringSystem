@@ -1,8 +1,10 @@
 # 家庭健康中心APP - 编译构建问题记录
 
-> 最后更新时间：2026-01-29
+> 最后更新时间：2026-01-30 深夜
 > 维护人：开发团队
 > 用途：记录项目编译/构建过程中的正确方法与问题解决方案
+
+> **重要更新**：添加 v5 版本编译记录，新增健康知识入口功能编译
 
 ---
 
@@ -1088,7 +1090,81 @@ spring:
 
 ---
 
-### 问题3：Java 21 jlink 兼容性问题 ⚠️ 关键问题
+### 问题3：健康预警模块编译错误
+
+**发生时间**：2026-01-29 深夜
+
+**环境信息**
+- 操作系统：Windows 11
+- Flutter：3.24.5
+- Dart：3.5.4
+
+**错误信息**
+```
+error - Expected to find ']' - lib\app\modules\alerts\alert_rules_page.dart:223:9
+error - Expected to find ';' - lib\app\modules\alerts\alert_rules_page.dart:224:7
+error - The function 'Color' isn't defined - lib\core\models\health_alert.dart:41:17
+error - Arguments of a constant creation must be constant expressions - lib\core\models\health_alert.dart:41:17
+error - The named parameter 'role' is required - lib\app\modules\alerts\health_alert_controller.dart:422:21
+error - The argument type 'RxInt' can't be assigned to the parameter type 'int' - lib\app\modules\alerts\health_alerts_page.dart:103:39
+```
+
+**问题原因**
+1. `alert_rules_page.dart` - boxShadow 列表使用了错误的闭合符 `),` 而非 `],`
+2. `health_alert.dart` - Color 类在枚举 const 构造函数中无法使用
+3. `health_alert_controller.dart` - FamilyMember 构造缺少 `role` 参数
+4. `health_alerts_page.dart` - RxInt 需要通过 `.value` 获取 int 值
+
+**解决方案**
+```dart
+// 1. alert_rules_page.dart:223
+// 修改前：),
+// 修改后：],
+
+// 2. health_alert.dart - 枚举改用 int 存储颜色值
+enum AlertLevel {
+  info('信息', 1, 0xFF2196F3),
+  warning('警告', 2, 0xFFFF9800),
+  danger('危险', 3, 0xFFF44336);
+
+  final String label;
+  final int severity;
+  final int colorValue;
+
+  const AlertLevel(this.label, this.severity, this.colorValue);
+  Color get color => Color(colorValue);
+}
+
+// 3. health_alert_controller.dart - 添加 role 参数
+FamilyMember(
+  id: '',
+  name: '未知',
+  gender: 1,
+  relation: MemberRelation.other,
+  role: MemberRole.member,  // 添加此行
+  createTime: DateTime.now(),
+)
+
+// 4. health_alerts_page.dart - 使用 .value 获取值
+final unreadCount = controller.unreadCount.value;
+```
+
+**验证结果**
+```
+flutter analyze: 30 issues found. (仅 warning/info，无 error)
+flutter build apk --debug: √ Built build\app\outputs\flutter-apk\app-debug.apk
+APK 大小：117.8 MB
+编译耗时：15.8秒
+```
+
+**预防措施**
+1. 枚举类中使用基本类型存储值，通过 getter 转换为复杂类型
+2. 使用 `flutter analyze` 提前检查代码问题
+3. GetX 响应式变量使用 `.value` 获取实际值
+
+---
+
+### 问题4：Java 21 jlink 兼容性问题 ⚠️ 关键问题
 
 **发生时间**：2026-01-29
 
@@ -1147,6 +1223,165 @@ flutter build apk --debug
 
 ---
 
+### 问题5：健康知识入口缺失
+
+**发生时间**：2026-01-30 深夜
+
+**环境信息**
+- 操作系统：Windows 11
+- Flutter：3.24.5
+- Dart：3.5.4
+- 设备：Android (SM02G4061983569)
+- APK版本：v4 → v5
+
+**问题描述**
+用户反馈无法在首页找到健康知识入口。经检查发现 `home_tab_page.dart` 中缺少入口卡片组件。
+
+**问题原因**
+健康知识推荐功能已实现（文章列表、详情、收藏页面），但未在首页添加导航入口卡片。
+
+**解决方案**
+```dart
+// 文件：lib/app/modules/home/pages/home_tab_page.dart
+
+// 1. 在 SliverChildListDelegate 中添加调用（第48行）：
+SizedBox(height: 16.h),
+
+// 健康知识入口
+_buildHealthKnowledgeCard(),
+
+// 2. 添加新方法（第534-622行）：
+Widget _buildHealthKnowledgeCard() {
+  return GestureDetector(
+    onTap: () => Get.toNamed('/content/articles'),
+    child: Container(
+      padding: EdgeInsets.all(16.w),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF4CAF50), Color(0xFF66BB6A)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16.r),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF4CAF50).withOpacity(0.3),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 56.w,
+            height: 56.w,
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(12.r),
+            ),
+            child: const Icon(
+              Icons.article_outlined,
+              color: Colors.white,
+              size: 28,
+            ),
+          ),
+          SizedBox(width: 16.w),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '健康知识',
+                  style: TextStyle(
+                    fontSize: 18.sp,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+                SizedBox(height: 4.h),
+                Text(
+                  '推荐健康知识，守护全家健康',
+                  style: TextStyle(
+                    fontSize: 13.sp,
+                    color: Colors.white70,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(20.r),
+            ),
+            child: Row(
+              children: [
+                Text(
+                  '查看全部',
+                  style: TextStyle(
+                    fontSize: 12.sp,
+                    color: Colors.white,
+                  ),
+                ),
+                SizedBox(width: 4.w),
+                const Icon(
+                  Icons.arrow_forward_ios,
+                  color: Colors.white,
+                  size: 14,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+```
+
+**编译过程**
+```powershell
+# 1. 代码修改后重新编译
+Set-Location 'D:\ReadHealthInfo\flutter-app'
+& 'C:\flutter\bin\flutter.bat' build apk --debug
+
+# 结果：Built build\app\outputs\flutter-apk\app-debug.apk
+# 耗时：15.2秒
+# 大小：约 118 MB
+
+# 2. 安装到手机
+& 'C:\Users\m\AppData\Local\Android\Sdk\platform-tools\adb.exe' install -r build\app\outputs\flutter-apk\app-debug.apk
+
+# 结果：Success
+
+# 3. 启动应用验证
+& 'C:\Users\m\AppData\Local\Android\Sdk\platform-tools\adb.exe' shell monkey -p com.healthcenter.health_center_app -c android.intent.category.LAUNCHER 1
+
+# 结果：功能正常
+```
+
+**真机测试验证**
+| 测试项 | 状态 | 说明 |
+|--------|------|------|
+| 体验模式入口 | ✅ 正常 | 可跳过登录进入应用 |
+| 首页向下滚动 | ✅ 正常 | 可滚动到页面底部 |
+| 健康知识卡片显示 | ✅ 正常 | 绿色渐变卡片显示在底部 |
+| 点击跳转正常 | ✅ 正常 | 跳转到健康知识列表 |
+| 健康知识页面显示 | ✅ 正常 | 文章列表、分类筛选正常 |
+| 推荐文章显示 | ✅ 正常 | 根据健康数据标签推荐 |
+| 分类筛选正常 | ✅ 正常 | 6种内容分类切换 |
+| 文章详情显示 | ✅ 正常 | Markdown内容渲染正常 |
+
+**预防措施**
+1. 新功能页面开发后，及时添加导航入口
+2. 进行完整的UI流程测试
+3. 使用真机截图验证功能可见性
+4. 记录入口位置在功能文档中
+
+---
+
 ## 📖 参考资源
 
 | 资源 | 链接 |
@@ -1170,6 +1405,8 @@ flutter build apk --debug
 | 2026-01-29 | **记录 Java 21 jlink 兼容性问题及解决方案** | 开发团队 |
 | 2026-01-29 | **添加实际编译配置和输出信息** | 开发团队 |
 | 2026-01-29 | **更新环境配置，添加 Java 17 要求** | 开发团队 |
+| 2026-01-29 深夜 | **记录健康预警模块编译错误及修复过程** | Claude |
+| 2026-01-30 深夜 | **记录 v5 版本编译，健康知识入口添加及真机测试** | Claude |
 
 ---
 

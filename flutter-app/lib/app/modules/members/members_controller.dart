@@ -3,10 +3,18 @@ import 'package:get/get.dart';
 import 'package:health_center_app/app/modules/members/widgets/member_dialog.dart';
 import 'package:health_center_app/core/models/family_member.dart';
 import 'package:health_center_app/core/network/dio_provider.dart';
+import 'package:health_center_app/core/utils/logger.dart';
 
 /// 成员管理控制器
 class MembersController extends GetxController {
-  final DioProvider _dioProvider = Get.find<DioProvider>();
+  // 网络服务（延迟加载）
+  DioProvider? _dioProvider;
+
+  // 获取网络服务
+  DioProvider get dioProvider {
+    _dioProvider ??= Get.find<DioProvider>();
+    return _dioProvider!;
+  }
 
   // 成员列表
   final members = <FamilyMember>[].obs;
@@ -16,7 +24,9 @@ class MembersController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    AppLogger.d('MembersController: 初始化开始');
     _loadMockMembers(); // 暂时使用模拟数据
+    AppLogger.d('MembersController: 成员列表长度 = ${members.length}');
     // fetchMembers(); // 后端API就绪后启用
   }
 
@@ -59,7 +69,7 @@ class MembersController extends GetxController {
     errorMessage.value = '';
 
     try {
-      final response = await _dioProvider.get('/family/members');
+      final response = await dioProvider.get('/family/members');
 
       final List dataList = response['data'] as List? ?? [];
       members.value = dataList

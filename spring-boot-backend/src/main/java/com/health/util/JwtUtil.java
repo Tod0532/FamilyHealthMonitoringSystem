@@ -3,7 +3,6 @@ package com.health.util;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
-import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
@@ -14,12 +13,11 @@ import java.util.Map;
 /**
  * JWT 工具类
  */
-@Component
 public class JwtUtil {
 
     private final SecretKey secretKey;
 
-    public JwtUtil(jakarta.annotation.Nonnull String secret) {
+    public JwtUtil(String secret) {
         // 确保密钥长度足够（HS256 需要至少 256 位）
         if (secret.length() < 32) {
             throw new IllegalArgumentException("JWT 密钥长度必须至少 32 个字符");
@@ -66,7 +64,18 @@ public class JwtUtil {
      */
     public Long getUserIdFromToken(String token) {
         Claims claims = getClaimsFromToken(token);
-        return claims != null ? Long.valueOf(claims.get("userId", String.class)) : null;
+        if (claims == null) {
+            return null;
+        }
+        Object userId = claims.get("userId");
+        if (userId instanceof Long) {
+            return (Long) userId;
+        } else if (userId instanceof Integer) {
+            return ((Integer) userId).longValue();
+        } else if (userId instanceof String) {
+            return Long.valueOf((String) userId);
+        }
+        return null;
     }
 
     /**

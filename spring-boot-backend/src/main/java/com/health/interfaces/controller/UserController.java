@@ -1,7 +1,7 @@
 package com.health.interfaces.controller;
 
 import com.health.interfaces.dto.UserVO;
-import com.health.response.ApiResponse;
+import com.health.interfaces.response.ApiResponse;
 import com.health.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;

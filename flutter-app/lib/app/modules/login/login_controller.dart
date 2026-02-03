@@ -141,14 +141,7 @@ class LoginController extends GetxController {
       // 跳转到首页
       Get.offAllNamed('/home');
     } catch (e) {
-      String errorMsg = '登录失败';
-      if (e.toString().contains('账号或密码错误')) {
-        errorMsg = '账号或密码错误';
-      } else if (e.toString().contains('账号已被禁用')) {
-        errorMsg = '账号已被禁用';
-      } else if (e.toString().contains('用户不存在')) {
-        errorMsg = '用户不存在';
-      }
+      String errorMsg = _parseErrorMessage(e);
 
       Get.snackbar(
         '登录失败',
@@ -159,6 +152,36 @@ class LoginController extends GetxController {
     } finally {
       isLoading.value = false;
     }
+  }
+
+  /// 解析错误信息
+  String _parseErrorMessage(dynamic error) {
+    final errorStr = error.toString();
+
+    // 网络错误
+    if (errorStr.contains('SocketException') || errorStr.contains('Connection refused')) {
+      return '网络连接失败，请检查网络';
+    }
+    if (errorStr.contains('TimeoutException')) {
+      return '请求超时，请稍后重试';
+    }
+
+    // 业务错误
+    if (errorStr.contains('账号或密码错误') || errorStr.contains('密码错误')) {
+      return '账号或密码错误';
+    }
+    if (errorStr.contains('账号已被禁用')) {
+      return '账号已被禁用';
+    }
+    if (errorStr.contains('用户不存在')) {
+      return '用户不存在';
+    }
+    if (errorStr.contains('手机号已注册')) {
+      return '该手机号已注册';
+    }
+
+    // 默认错误
+    return '登录失败，请稍后重试';
   }
 
   /// 忘记密码

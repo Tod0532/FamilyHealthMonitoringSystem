@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
+import 'package:get_storage/get_storage.dart';
 import 'package:health_center_app/app/routes/app_pages.dart';
 import 'package:health_center_app/core/utils/logger.dart';
 import 'package:health_center_app/core/storage/storage_service.dart';
@@ -11,6 +12,9 @@ void main() async {
 
   // 初始化日志
   AppLogger.init();
+
+  // 初始化 GetStorage（必须在使用前初始化）
+  await GetStorage.init();
 
   // 初始化存储服务
   await Get.putAsync(() => StorageService().init());

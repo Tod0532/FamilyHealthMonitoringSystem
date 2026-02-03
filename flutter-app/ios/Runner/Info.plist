@@ -45,5 +45,9 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>需要使用蓝牙连接健康设备</string>
+	<key>NSBluetoothPeripheralUsageDescription</key>
+	<string>需要使用蓝牙连接健康设备</string>
 </dict>
 </plist>

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:health_center_app/core/models/auth_request.dart';
@@ -32,11 +33,13 @@ class RegisterController extends GetxController {
   final canSendSms = true.obs;
   final smsButtonText = '获取验证码'.obs;
 
-  // 倒计时
+  // 倒计时定时器
+  Timer? _countdownTimer;
   int _countdown = 60;
 
   @override
   void onClose() {
+    _countdownTimer?.cancel();
     phoneController.dispose();
     smsCodeController.dispose();
     passwordController.dispose();
@@ -138,18 +141,24 @@ class RegisterController extends GetxController {
   }
 
   /// 开始倒计时
-  void _startCountdown() async {
+  void _startCountdown() {
+    // 取消之前的定时器
+    _countdownTimer?.cancel();
+
     canSendSms.value = false;
     _countdown = 60;
+    smsButtonText.value = '$_countdown秒后重试';
 
-    while (_countdown > 0) {
-      await Future.delayed(const Duration(seconds: 1));
+    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       _countdown--;
-      smsButtonText.value = '$_countdown秒后重试';
-    }
-
-    canSendSms.value = true;
-    smsButtonText.value = '获取验证码';
+      if (_countdown <= 0) {
+        timer.cancel();
+        canSendSms.value = true;
+        smsButtonText.value = '获取验证码';
+      } else {
+        smsButtonText.value = '$_countdown秒后重试';
+      }
+    });
   }
 
   /// 验证输入

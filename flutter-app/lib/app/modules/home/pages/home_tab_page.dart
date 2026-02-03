@@ -41,6 +41,16 @@ class HomeTabPage extends GetView {
 
                   // 最近健康数据
                   _buildRecentHealthCard(),
+
+                  SizedBox(height: 16.h),
+
+                  // 健康知识入口
+                  _buildHealthKnowledgeCard(),
+
+                  SizedBox(height: 16.h),
+
+                  // 健康日记/打卡入口
+                  _buildDiaryCard(),
                 ]),
               ),
             ),
@@ -49,6 +59,8 @@ class HomeTabPage extends GetView {
       ),
     );
   }
+
+  /// 健康日记/打卡入口卡片
 
   /// 顶部问候区域
   Widget _buildHeader(StorageService storage) {
@@ -524,5 +536,185 @@ class HomeTabPage extends GetView {
       default:
         return Icons.health_and_safety;
     }
+  }
+
+  /// 健康知识入口卡片
+  Widget _buildHealthKnowledgeCard() {
+    return GestureDetector(
+      onTap: () => Get.toNamed('/content/articles'),
+      child: Container(
+        padding: EdgeInsets.all(16.w),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFF4CAF50), Color(0xFF66BB6A)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(16.r),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF4CAF50).withOpacity(0.3),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 56.w,
+              height: 56.w,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(12.r),
+              ),
+              child: const Icon(
+                Icons.article_outlined,
+                color: Colors.white,
+                size: 28,
+              ),
+            ),
+            SizedBox(width: 16.w),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '健康知识',
+                    style: TextStyle(
+                      fontSize: 18.sp,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  SizedBox(height: 4.h),
+                  Text(
+                    '推荐健康知识，守护全家健康',
+                    style: TextStyle(
+                      fontSize: 13.sp,
+                      color: Colors.white70,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(20.r),
+              ),
+              child: Row(
+                children: [
+                  Text(
+                    '查看全部',
+                    style: TextStyle(
+                      fontSize: 12.sp,
+                      color: Colors.white,
+                    ),
+                  ),
+                  SizedBox(width: 4.w),
+                  const Icon(
+                    Icons.arrow_forward_ios,
+                    color: Colors.white,
+                    size: 14,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 健康日记/打卡入口卡片
+  Widget _buildDiaryCard() {
+    return GestureDetector(
+      onTap: () => Get.toNamed('/diary'),
+      child: Container(
+        padding: EdgeInsets.all(16.w),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFF673AB7), Color(0xFF9C27B0)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(16.r),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF673AB7).withOpacity(0.3),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 56.w,
+              height: 56.w,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(12.r),
+              ),
+              child: const Icon(
+                Icons.menu_book,
+                color: Colors.white,
+                size: 28,
+              ),
+            ),
+            SizedBox(width: 16.w),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '健康日记',
+                    style: TextStyle(
+                      fontSize: 18.sp,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  SizedBox(height: 4.h),
+                  Text(
+                    '记录每日健康，养成打卡习惯',
+                    style: TextStyle(
+                      fontSize: 13.sp,
+                      color: Colors.white70,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(20.r),
+              ),
+              child: Row(
+                children: [
+                  Text(
+                    '去打卡',
+                    style: TextStyle(
+                      fontSize: 12.sp,
+                      color: Colors.white,
+                    ),
+                  ),
+                  SizedBox(width: 4.w),
+                  const Icon(
+                    Icons.arrow_forward_ios,
+                    color: Colors.white,
+                    size: 14,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
