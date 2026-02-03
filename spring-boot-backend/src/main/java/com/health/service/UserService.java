@@ -40,4 +40,9 @@ public interface UserService {
      * 根据手机号获取用户
      */
     User getUserByPhone(String phone);
+
+    /**
+     * 修改密码
+     */
+    void changePassword(Long userId, String oldPassword, String newPassword);
 }

@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:health_center_app/core/network/dio_provider.dart';
 import 'package:health_center_app/core/storage/storage_service.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 /// 个人中心控制器
 class ProfileController extends GetxController {
   final StorageService _storage = Get.find<StorageService>();
+  final DioProvider _dioProvider = Get.find<DioProvider>();
   PackageInfo _packageInfo = PackageInfo(
     appName: '家庭健康中心',
     packageName: 'com.healthcenter.health_center_app',
@@ -94,26 +96,77 @@ class ProfileController extends GetxController {
 
   /// 修改密码
   Future<bool> changePassword(String oldPassword, String newPassword) async {
-    // TODO: 调用后端API修改密码
-    // 这里是模拟验证
+    // 基本验证
     if (oldPassword.isEmpty || newPassword.isEmpty) {
-      Get.snackbar('提示', '密码不能为空');
+      Get.snackbar('提示', '密码不能为空', snackPosition: SnackPosition.BOTTOM);
       return false;
     }
     if (newPassword.length < 6) {
-      Get.snackbar('提示', '新密码至少6位');
+      Get.snackbar('提示', '新密码至少6位', snackPosition: SnackPosition.BOTTOM);
       return false;
     }
     if (oldPassword == newPassword) {
-      Get.snackbar('提示', '新密码不能与旧密码相同');
+      Get.snackbar('提示', '新密码不能与旧密码相同', snackPosition: SnackPosition.BOTTOM);
       return false;
     }
 
-    // 模拟API调用
-    await Future.delayed(const Duration(seconds: 1));
+    try {
+      // 调用后端API
+      await _dioProvider.post(
+        '/auth/change-password',
+        data: {
+          'oldPassword': oldPassword,
+          'newPassword': newPassword,
+        },
+      );
 
-    Get.snackbar('成功', '密码修改成功', snackPosition: SnackPosition.BOTTOM);
-    return true;
+      Get.snackbar(
+        '成功',
+        '密码修改成功',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.green.shade100,
+      );
+      return true;
+    } catch (e) {
+      String errorMsg = _parseErrorMessage(e);
+      Get.snackbar(
+        '修改失败',
+        errorMsg,
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red.shade100,
+      );
+      return false;
+    }
+  }
+
+  /// 解析错误信息
+  String _parseErrorMessage(dynamic error) {
+    final errorStr = error.toString();
+
+    // 网络错误
+    if (errorStr.contains('SocketException') || errorStr.contains('Connection refused')) {
+      return '网络连接失败，请检查网络';
+    }
+    if (errorStr.contains('TimeoutException')) {
+      return '请求超时，请稍后重试';
+    }
+
+    // 业务错误
+    if (errorStr.contains('原密码错误')) {
+      return '原密码错误';
+    }
+    if (errorStr.contains('新密码不能与原密码相同')) {
+      return '新密码不能与原密码相同';
+    }
+    if (errorStr.contains('用户不存在')) {
+      return '用户不存在';
+    }
+    if (errorStr.contains('用户未登录')) {
+      return '登录已过期，请重新登录';
+    }
+
+    // 默认错误
+    return '密码修改失败，请稍后重试';
   }
 
   /// 切换通知开关

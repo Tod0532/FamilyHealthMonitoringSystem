@@ -7,7 +7,11 @@ import com.health.domain.entity.User;
 import com.health.domain.mapper.UserMapper;
 import com.health.exception.BusinessException;
 import com.health.exception.ErrorCode;
-import com.health.interfaces.dto.*;
+import com.health.interfaces.dto.AuthResponse;
+import com.health.interfaces.dto.ChangePasswordRequest;
+import com.health.interfaces.dto.LoginRequest;
+import com.health.interfaces.dto.RegisterRequest;
+import com.health.interfaces.dto.UserVO;
 import com.health.service.UserService;
 import com.health.util.JwtUtil;
 import lombok.RequiredArgsConstructor;
@@ -237,5 +241,35 @@ public class UserServiceImpl implements UserService {
                 .lastLoginTime(user.getLastLoginTime())
                 .createTime(user.getCreateTime())
                 .build();
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void changePassword(Long userId, String oldPassword, String newPassword) {
+        // 1. 获取用户
+        User user = userMapper.selectById(userId);
+        if (user == null) {
+            throw new BusinessException(ErrorCode.USER_NOT_FOUND, "用户不存在");
+        }
+
+        // 2. 验证原密码
+        boolean passwordMatch = BCrypt.verifyer().verify(oldPassword.toCharArray(), user.getPassword()).verified;
+        if (!passwordMatch) {
+            throw new BusinessException(ErrorCode.INVALID_CREDENTIALS, "原密码错误");
+        }
+
+        // 3. 新密码不能与原密码相同
+        boolean samePassword = BCrypt.verifyer().verify(newPassword.toCharArray(), user.getPassword()).verified;
+        if (samePassword) {
+            throw new BusinessException(ErrorCode.INVALID_PARAM, "新密码不能与原密码相同");
+        }
+
+        // 4. 加密新密码并更新
+        String hashedPassword = BCrypt.withDefaults().hashToString(12, newPassword.toCharArray());
+        user.setPassword(hashedPassword);
+        user.setUpdateTime(LocalDateTime.now());
+        userMapper.updateById(user);
+
+        log.info("用户修改密码成功: userId={}", userId);
     }
 }

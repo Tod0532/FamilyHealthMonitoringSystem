@@ -1,10 +1,12 @@
 package com.health.interfaces.controller;
 
 import com.health.interfaces.dto.AuthResponse;
+import com.health.interfaces.dto.ChangePasswordRequest;
 import com.health.interfaces.dto.LoginRequest;
 import com.health.interfaces.dto.RegisterRequest;
 import com.health.interfaces.response.ApiResponse;
 import com.health.service.UserService;
+import com.health.util.JwtUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import javax.servlet.http.HttpServletRequest;
@@ -23,6 +25,7 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
 
     private final UserService userService;
+    private final JwtUtil jwtUtil;
 
     /**
      * 用户注册
@@ -65,6 +68,39 @@ public class AuthController {
     public ApiResponse<Void> logout(HttpServletRequest request) {
         String token = extractToken(request);
         userService.logout(token);
+        return ApiResponse.success();
+    }
+
+    /**
+     * 修改密码
+     */
+    @PostMapping("/auth/change-password")
+    @Operation(summary = "修改密码", description = "用户修改登录密码")
+    public ApiResponse<Void> changePassword(
+            @Valid @RequestBody ChangePasswordRequest request,
+            HttpServletRequest httpRequest) {
+        // 从请求头中获取用户ID
+        String userIdHeader = httpRequest.getAttribute("X-User-Id") != null
+                ? httpRequest.getAttribute("X-User-Id").toString()
+                : null;
+
+        if (userIdHeader == null) {
+            // 如果请求头中没有，尝试从Token中获取
+            String token = extractToken(httpRequest);
+            if (token != null) {
+                Long userId = jwtUtil.getUserIdFromToken(token);
+                if (userId != null) {
+                    userIdHeader = userId.toString();
+                }
+            }
+        }
+
+        if (userIdHeader == null) {
+            return ApiResponse.error(401, "用户未登录");
+        }
+
+        Long userId = Long.valueOf(userIdHeader);
+        userService.changePassword(userId, request.getOldPassword(), request.getNewPassword());
         return ApiResponse.success();
     }
 
