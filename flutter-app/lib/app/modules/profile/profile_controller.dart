@@ -116,7 +116,7 @@ class ProfileController extends GetxController {
     try {
       // 调用后端API
       await _dioProvider.post(
-        '/auth/change-password',
+        '/api/auth/change-password',
         data: {
           'oldPassword': oldPassword,
           'newPassword': newPassword,

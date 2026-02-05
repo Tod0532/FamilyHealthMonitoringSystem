@@ -76,10 +76,25 @@ class LoginPage extends GetView<LoginController> {
 
                 // 体验模式按钮
                 _buildDemoModeButton(),
+                SizedBox(height: 32.h),
+
+                // 版本号
+                _buildVersionInfo(),
               ],
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  /// 版本信息
+  Widget _buildVersionInfo() {
+    return Text(
+      '版本 1.0.0',
+      style: TextStyle(
+        fontSize: 12,
+        color: Colors.grey[400],
       ),
     );
   }

@@ -370,12 +370,17 @@ class HealthDataController extends GetxController {
     errorMessage.value = '';
 
     try {
-      final response = await _dioProvider.get('/health/data');
+      final response = await _dioProvider.get('/api/health-data');
 
       final List dataList = response['data'] as List? ?? [];
       healthDataList.value = dataList
           .map((item) => HealthData.fromJson(item as Map<String, dynamic>))
           .toList();
+
+      // 调试日志
+      AppLogger.d('解析后数据类型: ${healthDataList.map((d) => d.type.name).toList()}');
+      AppLogger.d('解析后数据数量: ${healthDataList.length}');
+
       _applyFilter();
     } catch (e) {
       errorMessage.value = '获取健康数据失败';
@@ -691,6 +696,12 @@ class HealthDataController extends GetxController {
             createTime: _parseDateTime(item['createTime']),
           );
         }).toList();
+
+        // 调试日志
+        AppLogger.d('API返回数据数量: ${dataList.length}');
+        AppLogger.d('解析后数据类型: ${healthDataList.map((d) => d.type.name).toList()}');
+        AppLogger.d('解析后数据数量: ${healthDataList.length}');
+
         _applyFilter();
       } else {
         // API调用失败，使用模拟数据
@@ -755,16 +766,20 @@ class HealthDataController extends GetxController {
     if (dataTypeStr == null || dataTypeStr.isEmpty) {
       return HealthDataType.bloodPressure;
     }
-    // 统一格式：替换中划线为驼峰
-    final normalized = dataTypeStr.replaceAll('-', '_');
-    try {
-      return HealthDataType.values.firstWhere(
-        (e) => e.name == normalized,
-        orElse: () => HealthDataType.bloodPressure,
-      );
-    } catch (e) {
-      return HealthDataType.bloodPressure;
-    }
+
+    // 后端使用 snake_case，前端枚举使用 camelCase，需要映射
+    final mapping = {
+      'blood_pressure': HealthDataType.bloodPressure,
+      'heart_rate': HealthDataType.heartRate,
+      'blood_sugar': HealthDataType.bloodSugar,
+      'temperature': HealthDataType.temperature,
+      'weight': HealthDataType.weight,
+      'height': HealthDataType.height,
+      'steps': HealthDataType.steps,
+      'sleep': HealthDataType.sleep,
+    };
+
+    return mapping[dataTypeStr] ?? HealthDataType.bloodPressure;
   }
 
   /// 解析健康级别

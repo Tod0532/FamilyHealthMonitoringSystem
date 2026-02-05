@@ -71,20 +71,60 @@ class HealthData {
   });
 
   factory HealthData.fromJson(Map<String, dynamic> json) {
+    // 兼容后端API返回的字段名
+    final String typeStr = json['type'] ?? json['dataType'] ?? 'bloodPressure';
+    final String timeStr = json['recordTime'] ?? json['measureTime'] ?? json['createTime'] ?? DateTime.now().toIso8601String();
+
+    // 调试日志
+    print('HealthData.fromJson: typeStr = $typeStr');
+
+    // 转换后端dataType格式到前端枚举
+    HealthDataType parsedType;
+    switch (typeStr) {
+      case 'blood_pressure':
+        parsedType = HealthDataType.bloodPressure;
+        break;
+      case 'heart_rate':
+        parsedType = HealthDataType.heartRate;
+        break;
+      case 'blood_sugar':
+        parsedType = HealthDataType.bloodSugar;
+        break;
+      case 'temperature':
+        parsedType = HealthDataType.temperature;
+        break;
+      case 'weight':
+        parsedType = HealthDataType.weight;
+        break;
+      case 'height':
+        parsedType = HealthDataType.height;
+        break;
+      case 'steps':
+        parsedType = HealthDataType.steps;
+        break;
+      case 'sleep':
+        parsedType = HealthDataType.sleep;
+        break;
+      default:
+        parsedType = HealthDataType.fromString(typeStr);
+    }
+
+    print('HealthData.fromJson: parsedType = ${parsedType.name}');
+
     return HealthData(
       id: json['id']?.toString() ?? '',
-      memberId: json['memberId']?.toString() ?? '',
-      type: HealthDataType.fromString(json['type'] ?? 'bloodPressure'),
+      memberId: json['memberId']?.toString() ?? json['member_id']?.toString() ?? '',
+      type: parsedType,
       value1: (json['value1'] ?? 0).toDouble(),
       value2: json['value2']?.toDouble(),
       level: HealthDataLevel.fromString(json['level'] ?? 'normal'),
-      recordTime: json['recordTime'] != null
-          ? DateTime.parse(json['recordTime'])
-          : DateTime.now(),
+      recordTime: DateTime.parse(timeStr),
       notes: json['notes'],
       createTime: json['createTime'] != null
           ? DateTime.parse(json['createTime'])
-          : DateTime.now(),
+          : json['created_at'] != null
+              ? DateTime.parse(json['created_at'])
+              : DateTime.now(),
     );
   }
 

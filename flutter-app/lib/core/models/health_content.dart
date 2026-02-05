@@ -220,24 +220,6 @@ class HealthArticle {
     }
     return DateTime.now();
   }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'title': title,
-      'summary': summary,
-      'content': content,
-      'coverImage': coverImage,
-      'category': category.name,
-      'tags': tags.map((e) => e.name).toList(),
-      'author': author,
-      'readTime': readTime,
-      'publishTime': publishTime.toIso8601String(),
-      'viewCount': viewCount,
-      'isRecommended': isRecommended,
-      'sourceUrl': sourceUrl,
-    };
-  }
 }
 
 /// 文章收藏记录
@@ -279,13 +261,5 @@ class ArticleBookmark {
       }
     }
     return DateTime.now();
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'articleId': articleId,
-      'createTime': createTime.toIso8601String(),
-    };
   }
 }

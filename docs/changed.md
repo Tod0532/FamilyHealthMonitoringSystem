@@ -4,6 +4,99 @@
 
 ---
 
+## 2026-02-05 晚（权限控制方案设计）
+
+### 📝 修改文件
+
+| 文件路径 | 说明 | 作者 |
+|----------|------|------|
+| .claude/plans/harmonic-growing-riddle.md | 权限控制实施计划 | Claude |
+
+### 📋 变更内容
+
+#### 类型：design（设计）
+#### 范围：权限系统设计
+#### 描述：角色权限控制功能方案设计
+
+**设计方案**：
+- 三种角色：管理员（admin）、普通成员（member）、访客（guest）
+- 权限矩阵：定义各角色的访问权限
+- 后端实施：数据库添加role字段、JWT包含角色、API权限注解
+- 前端实施：User模型扩展、PermissionUtils工具类、PermissionBuilder组件
+
+**实施计划**：
+- 后端修改：5个文件（User实体、JWT、DTO、Controller）
+- 前端修改：8个文件（模型、存储、工具类、控制器）
+- 新建文件：2个（permission_utils.dart、permission_builder.dart）
+
+**状态**：方案已制定，待老大确认后实施
+
+---
+
+## 2026-02-05 晚（编写用户使用手册）
+
+### 📝 修改文件
+
+| 文件路径 | 说明 | 作者 |
+|----------|------|------|
+| docs/user-manual.md | 新增用户使用手册 | Claude |
+
+### 📋 变更内容
+
+#### 类型：docs（文档）
+#### 范围：用户文档
+#### 描述：编写详细的用户使用手册
+
+**手册内容**：
+- 应用简介和核心功能介绍
+- 注册与登录指南
+- 首页导航说明
+- 家庭成员管理
+- 8种健康数据录入指南（血压、心率、血糖、体温、体重、身高、步数、睡眠）
+- 健康数据查看和筛选
+- 健康统计分析
+- 健康预警设置
+- 健康知识阅读
+- 健康设备连接
+- 健康日记打卡
+- 数据导出功能
+- 个人中心设置
+- 常见问题解答（15个FAQ）
+
+**文档规模**：约15000字，14个主要章节
+
+---
+
+## 2026-02-05 晚（修复数据类型解析问题）
+
+### 📝 修改文件
+
+| 文件路径 | 说明 | 作者 |
+|----------|------|------|
+| flutter-app/lib/core/models/health_data.dart | 修复fromJson的timeStr变量缺失 | Claude |
+| flutter-app/lib/app/modules/health/health_data_controller.dart | 修复_parseDataType数据类型映射 | Claude |
+
+### 📋 变更内容
+
+#### 类型：fix（修复Bug）
+#### 范围：数据模型、数据解析
+#### 描述：修复心率和血糖数据不显示问题
+
+**问题原因**：
+- 后端返回 `dataType: "heart_rate"`（snake_case）
+- 前端枚举使用 `HealthDataType.heartRate`（camelCase）
+- `_parseDataType` 方法直接比较字符串导致匹配失败
+
+**解决方案**：
+- 添加 snake_case 到 camelCase 的映射表
+- 支持所有8种健康数据类型：blood_pressure, heart_rate, blood_sugar, temperature, weight, height, steps, sleep
+
+**验证结果**：
+- API返回34条数据全部正确解析
+- 包含心率（heartRate）和血糖（bloodSugar）数据
+
+---
+
 ## 2026-02-05 晚（阿里云后端API调试完成）
 
 ### 📝 修改文件

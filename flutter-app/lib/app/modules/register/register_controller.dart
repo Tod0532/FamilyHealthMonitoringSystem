@@ -229,7 +229,7 @@ class RegisterController extends GetxController {
       );
 
       final response = await _dioProvider.post(
-        '/auth/register',
+        '/api/auth/register',
         data: request.toJson(),
       );
 

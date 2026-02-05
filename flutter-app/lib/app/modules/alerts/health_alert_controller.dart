@@ -164,7 +164,7 @@ class HealthAlertController extends GetxController {
     errorMessage.value = '';
 
     try {
-      final response = await _dioProvider.get('/health/alert-rules');
+      final response = await _dioProvider.get('/api/alert-rules');
 
       final List dataList = response['data'] as List? ?? [];
       alertRules.value = dataList
@@ -184,7 +184,7 @@ class HealthAlertController extends GetxController {
     errorMessage.value = '';
 
     try {
-      final response = await _dioProvider.get('/health/alerts');
+      final response = await _dioProvider.get('/api/alerts');
 
       final List dataList = response['data'] as List? ?? [];
       alertRecords.value = dataList

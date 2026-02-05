@@ -108,7 +108,7 @@ class LoginController extends GetxController {
       );
 
       final response = await _dioProvider.post(
-        '/auth/login',
+        '/api/auth/login',
         data: request.toJson(),
       );
 
