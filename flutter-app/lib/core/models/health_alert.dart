@@ -110,23 +110,66 @@ class HealthAlertRule {
   /// 从JSON创建
   factory HealthAlertRule.fromJson(Map<String, dynamic> json) {
     return HealthAlertRule(
-      id: json['id'] as String,
-      memberId: json['memberId'] as String?,
-      alertType: AlertType.fromString(json['alertType'] as String? ?? 'blood_pressure'),
-      name: json['name'] as String,
-      minThreshold: (json['minThreshold'] as num?)?.toDouble(),
-      maxThreshold: (json['maxThreshold'] as num?)?.toDouble(),
-      alertLevel: _parseAlertLevel(json['alertLevel'] as int? ?? 2),
+      id: json['id']?.toString() ?? '',
+      memberId: json['memberId']?.toString(),
+      alertType: AlertType.fromString(json['alertType']?.toString() ?? 'blood_pressure'),
+      name: json['name']?.toString() ?? '',
+      minThreshold: _parseDouble(json['minThreshold']),
+      maxThreshold: _parseDouble(json['maxThreshold']),
+      alertLevel: _parseAlertLevel(_parseInt(json['alertLevel']) ?? 2),
       isEnabled: json['isEnabled'] as bool? ?? true,
       notificationMethods: (json['notificationMethods'] as List<dynamic>?)
               ?.map((e) => e.toString())
               .toList() ??
           ['push'],
-      createTime: DateTime.parse(json['createTime'] as String),
-      updateTime: json['updateTime'] != null
-          ? DateTime.parse(json['updateTime'] as String)
-          : null,
+      createTime: _parseDateTime(json['createTime']),
+      updateTime: _parseDateTimeNullable(json['updateTime']),
     );
+  }
+
+  /// 安全解析double
+  static double? _parseDouble(dynamic value) {
+    if (value == null) return null;
+    if (value is double) return value;
+    if (value is int) return value.toDouble();
+    if (value is String) return double.tryParse(value);
+    return null;
+  }
+
+  /// 安全解析int
+  static int? _parseInt(dynamic value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    if (value is double) return value.toInt();
+    if (value is String) return int.tryParse(value);
+    return null;
+  }
+
+  /// 安全解析DateTime
+  static DateTime _parseDateTime(dynamic value) {
+    if (value is DateTime) return value;
+    if (value is String) {
+      try {
+        return DateTime.parse(value);
+      } catch (_) {
+        return DateTime.now();
+      }
+    }
+    return DateTime.now();
+  }
+
+  /// 安全解析可空DateTime
+  static DateTime? _parseDateTimeNullable(dynamic value) {
+    if (value == null) return null;
+    if (value is DateTime) return value;
+    if (value is String) {
+      try {
+        return DateTime.parse(value);
+      } catch (_) {
+        return null;
+      }
+    }
+    return null;
   }
 
   /// 转换为JSON
@@ -391,21 +434,64 @@ class HealthAlert {
   /// 从JSON创建
   factory HealthAlert.fromJson(Map<String, dynamic> json) {
     return HealthAlert(
-      id: json['id'] as String,
-      healthDataId: json['healthDataId'] as String,
-      ruleId: json['ruleId'] as String,
-      memberId: json['memberId'] as String,
-      alertType: AlertType.fromString(json['alertType'] as String),
-      alertLevel: HealthAlertRule._parseAlertLevel(json['alertLevel'] as int? ?? 2),
-      triggerValue: (json['triggerValue'] as num).toDouble(),
-      message: json['message'] as String,
+      id: json['id']?.toString() ?? '',
+      healthDataId: json['healthDataId']?.toString() ?? '',
+      ruleId: json['ruleId']?.toString() ?? '',
+      memberId: json['memberId']?.toString() ?? '',
+      alertType: AlertType.fromString(json['alertType']?.toString() ?? 'blood_pressure'),
+      alertLevel: HealthAlertRule._parseAlertLevel(_parseInt(json['alertLevel']) ?? 2),
+      triggerValue: _parseDouble(json['triggerValue']) ?? 0.0,
+      message: json['message']?.toString() ?? '',
       isRead: json['isRead'] as bool? ?? false,
       isHandled: json['isHandled'] as bool? ?? false,
-      createTime: DateTime.parse(json['createTime'] as String),
-      handleTime: json['handleTime'] != null
-          ? DateTime.parse(json['handleTime'] as String)
-          : null,
+      createTime: _parseDateTime(json['createTime']),
+      handleTime: _parseDateTimeNullable(json['handleTime']),
     );
+  }
+
+  /// 安全解析double
+  static double? _parseDouble(dynamic value) {
+    if (value == null) return null;
+    if (value is double) return value;
+    if (value is int) return value.toDouble();
+    if (value is String) return double.tryParse(value);
+    return null;
+  }
+
+  /// 安全解析int
+  static int? _parseInt(dynamic value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    if (value is double) return value.toInt();
+    if (value is String) return int.tryParse(value);
+    return null;
+  }
+
+  /// 安全解析DateTime
+  static DateTime _parseDateTime(dynamic value) {
+    if (value is DateTime) return value;
+    if (value is String) {
+      try {
+        return DateTime.parse(value);
+      } catch (_) {
+        return DateTime.now();
+      }
+    }
+    return DateTime.now();
+  }
+
+  /// 安全解析可空DateTime
+  static DateTime? _parseDateTimeNullable(dynamic value) {
+    if (value == null) return null;
+    if (value is DateTime) return value;
+    if (value is String) {
+      try {
+        return DateTime.parse(value);
+      } catch (_) {
+        return null;
+      }
+    }
+    return null;
   }
 
   /// 转换为JSON

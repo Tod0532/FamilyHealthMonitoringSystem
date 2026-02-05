@@ -24,21 +24,15 @@ class User {
 
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
-      id: json['id'].toString(),
-      phone: json['phone'] ?? '',
-      nickname: json['nickname'] ?? '',
-      avatar: json['avatar'],
-      gender: json['gender'] ?? 0,
-      birthday: json['birthday'] != null
-          ? DateTime.parse(json['birthday'])
-          : null,
-      status: json['status'] ?? 0,
-      lastLoginTime: json['lastLoginTime'] != null
-          ? DateTime.parse(json['lastLoginTime'])
-          : null,
-      createTime: json['createTime'] != null
-          ? DateTime.parse(json['createTime'])
-          : DateTime.now(),
+      id: json['id']?.toString() ?? '',
+      phone: json['phone']?.toString() ?? '',
+      nickname: json['nickname']?.toString() ?? '',
+      avatar: json['avatar']?.toString(),
+      gender: _parseInt(json['gender']) ?? 0,
+      birthday: _parseDateTimeNullable(json['birthday']),
+      status: _parseInt(json['status']) ?? 0,
+      lastLoginTime: _parseDateTimeNullable(json['lastLoginTime']),
+      createTime: _parseDateTime(json['createTime']),
     );
   }
 
@@ -54,6 +48,42 @@ class User {
       'lastLoginTime': lastLoginTime?.toIso8601String(),
       'createTime': createTime.toIso8601String(),
     };
+  }
+
+  /// 安全解析int
+  static int? _parseInt(dynamic value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    if (value is double) return value.toInt();
+    if (value is String) return int.tryParse(value);
+    return null;
+  }
+
+  /// 安全解析DateTime
+  static DateTime _parseDateTime(dynamic value) {
+    if (value is DateTime) return value;
+    if (value is String) {
+      try {
+        return DateTime.parse(value);
+      } catch (_) {
+        return DateTime.now();
+      }
+    }
+    return DateTime.now();
+  }
+
+  /// 安全解析可空DateTime
+  static DateTime? _parseDateTimeNullable(dynamic value) {
+    if (value == null) return null;
+    if (value is DateTime) return value;
+    if (value is String) {
+      try {
+        return DateTime.parse(value);
+      } catch (_) {
+        return null;
+      }
+    }
+    return null;
   }
 
   /// 性别文本

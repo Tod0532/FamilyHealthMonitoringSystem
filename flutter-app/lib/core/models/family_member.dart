@@ -72,16 +72,14 @@ class FamilyMember {
   factory FamilyMember.fromJson(Map<String, dynamic> json) {
     return FamilyMember(
       id: json['id']?.toString() ?? '',
-      name: json['name'] ?? '',
-      avatar: json['avatar'],
-      relation: MemberRelation.fromString(json['relation'] ?? 'other'),
-      role: MemberRole.fromString(json['role'] ?? 'member'),
-      gender: json['gender'] ?? 0,
-      birthday: json['birthday'] != null ? DateTime.parse(json['birthday']) : null,
-      phone: json['phone'],
-      createTime: json['createTime'] != null
-          ? DateTime.parse(json['createTime'])
-          : DateTime.now(),
+      name: json['name']?.toString() ?? '',
+      avatar: json['avatar']?.toString(),
+      relation: MemberRelation.fromString(json['relation']?.toString() ?? 'other'),
+      role: MemberRole.fromString(json['role']?.toString() ?? 'member'),
+      gender: _parseInt(json['gender']) ?? 0,
+      birthday: _parseDateTimeNullable(json['birthday']),
+      phone: json['phone']?.toString(),
+      createTime: _parseDateTime(json['createTime']),
     );
   }
 
@@ -97,6 +95,42 @@ class FamilyMember {
       'phone': phone,
       'createTime': createTime.toIso8601String(),
     };
+  }
+
+  /// 安全解析int
+  static int? _parseInt(dynamic value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    if (value is double) return value.toInt();
+    if (value is String) return int.tryParse(value);
+    return null;
+  }
+
+  /// 安全解析DateTime
+  static DateTime _parseDateTime(dynamic value) {
+    if (value is DateTime) return value;
+    if (value is String) {
+      try {
+        return DateTime.parse(value);
+      } catch (_) {
+        return DateTime.now();
+      }
+    }
+    return DateTime.now();
+  }
+
+  /// 安全解析可空DateTime
+  static DateTime? _parseDateTimeNullable(dynamic value) {
+    if (value == null) return null;
+    if (value is DateTime) return value;
+    if (value is String) {
+      try {
+        return DateTime.parse(value);
+      } catch (_) {
+        return null;
+      }
+    }
+    return null;
   }
 
   /// 性别文本

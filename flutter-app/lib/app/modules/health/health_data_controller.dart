@@ -678,17 +678,17 @@ class HealthDataController extends GetxController {
       if (response != null && response['code'] == 200) {
         final List dataList = response['data'] as List? ?? [];
         healthDataList.value = dataList.map((item) {
-          // 解析后端返回的数据
+          // 安全解析后端返回的数据
           return HealthData(
             id: item['id']?.toString() ?? '',
             memberId: item['memberId']?.toString() ?? '',
-            type: _parseDataType(item['dataType']),
-            value1: (item['value1'] ?? 0).toDouble(),
-            value2: item['value2']?.toDouble(),
-            level: _parseLevel(item['level']),
-            recordTime: DateTime.parse(item['measureTime'] ?? DateTime.now().toIso8601String()),
-            notes: item['notes'],
-            createTime: DateTime.parse(item['createTime'] ?? DateTime.now().toIso8601String()),
+            type: _parseDataType(item['dataType']?.toString()),
+            value1: _parseDouble(item['value1']),
+            value2: _parseDouble(item['value2']),
+            level: _parseLevel(item['level']?.toString()),
+            recordTime: _parseDateTime(item['measureTime']),
+            notes: item['notes']?.toString(),
+            createTime: _parseDateTime(item['createTime']),
           );
         }).toList();
         _applyFilter();
@@ -703,6 +703,29 @@ class HealthDataController extends GetxController {
     } finally {
       isLoading.value = false;
     }
+  }
+
+  /// 安全解析double值
+  double _parseDouble(dynamic value) {
+    if (value == null) return 0.0;
+    if (value is double) return value;
+    if (value is int) return value.toDouble();
+    if (value is String) return double.tryParse(value) ?? 0.0;
+    return 0.0;
+  }
+
+  /// 安全解析DateTime
+  DateTime _parseDateTime(dynamic value) {
+    if (value == null) return DateTime.now();
+    if (value is DateTime) return value;
+    if (value is String) {
+      try {
+        return DateTime.parse(value);
+      } catch (e) {
+        return DateTime.now();
+      }
+    }
+    return DateTime.now();
   }
 
   /// 获取数据类型字符串
@@ -729,38 +752,33 @@ class HealthDataController extends GetxController {
 
   /// 解析数据类型
   HealthDataType _parseDataType(String? dataTypeStr) {
-    if (dataTypeStr == null) return HealthDataType.bloodPressure;
-    switch (dataTypeStr) {
-      case 'blood_pressure':
-        return HealthDataType.bloodPressure;
-      case 'heart_rate':
-        return HealthDataType.heartRate;
-      case 'blood_sugar':
-        return HealthDataType.bloodSugar;
-      case 'temperature':
-        return HealthDataType.temperature;
-      case 'weight':
-        return HealthDataType.weight;
-      case 'height':
-        return HealthDataType.height;
-      case 'steps':
-        return HealthDataType.steps;
-      case 'sleep':
-        return HealthDataType.sleep;
-      default:
-        return HealthDataType.bloodPressure;
+    if (dataTypeStr == null || dataTypeStr.isEmpty) {
+      return HealthDataType.bloodPressure;
+    }
+    // 统一格式：替换中划线为驼峰
+    final normalized = dataTypeStr.replaceAll('-', '_');
+    try {
+      return HealthDataType.values.firstWhere(
+        (e) => e.name == normalized,
+        orElse: () => HealthDataType.bloodPressure,
+      );
+    } catch (e) {
+      return HealthDataType.bloodPressure;
     }
   }
 
   /// 解析健康级别
-  HealthDataLevel _parseLevel(dynamic levelData) {
-    if (levelData == null) return HealthDataLevel.normal;
-    switch (levelData.toString()) {
+  HealthDataLevel _parseLevel(String? levelStr) {
+    if (levelStr == null || levelStr.isEmpty) {
+      return HealthDataLevel.normal;
+    }
+    switch (levelStr.toLowerCase()) {
       case 'normal':
         return HealthDataLevel.normal;
       case 'warning':
         return HealthDataLevel.warning;
       case 'high':
+      case 'danger':
         return HealthDataLevel.high;
       case 'low':
         return HealthDataLevel.low;

@@ -162,25 +162,63 @@ class HealthArticle {
   factory HealthArticle.fromJson(Map<String, dynamic> json) {
     return HealthArticle(
       id: json['id']?.toString() ?? '',
-      title: json['title'] ?? '',
-      summary: json['summary'] ?? '',
-      content: json['content'] ?? '',
-      coverImage: json['coverImage'] ?? '',
-      category: ContentCategory.fromString(json['category'] ?? 'knowledge'),
+      title: json['title']?.toString() ?? '',
+      summary: json['summary']?.toString() ?? '',
+      content: json['content']?.toString() ?? '',
+      coverImage: json['coverImage']?.toString() ?? '',
+      category: ContentCategory.fromString(json['category']?.toString() ?? 'knowledge'),
       tags: (json['tags'] as List?)
               ?.map((e) => ContentTag.fromString(e.toString()))
               .whereType<ContentTag>()
               .toList() ??
           [],
-      author: json['author'] ?? '健康中心',
-      readTime: json['readTime'] ?? 5,
-      publishTime: json['publishTime'] != null
-          ? DateTime.parse(json['publishTime'])
-          : DateTime.now(),
-      viewCount: json['viewCount'] ?? 0,
-      isRecommended: json['isRecommended'] ?? false,
-      sourceUrl: json['sourceUrl'],
+      author: json['author']?.toString() ?? '健康中心',
+      readTime: _parseInt(json['readTime']) ?? 5,
+      publishTime: _parseDateTime(json['publishTime']),
+      viewCount: _parseInt(json['viewCount']) ?? 0,
+      isRecommended: json['isRecommended'] as bool? ?? false,
+      sourceUrl: json['sourceUrl']?.toString(),
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'title': title,
+      'summary': summary,
+      'content': content,
+      'coverImage': coverImage,
+      'category': category.name,
+      'tags': tags.map((e) => e.name).toList(),
+      'author': author,
+      'readTime': readTime,
+      'publishTime': publishTime.toIso8601String(),
+      'viewCount': viewCount,
+      'isRecommended': isRecommended,
+      'sourceUrl': sourceUrl,
+    };
+  }
+
+  /// 安全解析int
+  static int? _parseInt(dynamic value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    if (value is double) return value.toInt();
+    if (value is String) return int.tryParse(value);
+    return null;
+  }
+
+  /// 安全解析DateTime
+  static DateTime _parseDateTime(dynamic value) {
+    if (value is DateTime) return value;
+    if (value is String) {
+      try {
+        return DateTime.parse(value);
+      } catch (_) {
+        return DateTime.now();
+      }
+    }
+    return DateTime.now();
   }
 
   Map<String, dynamic> toJson() {
@@ -218,10 +256,29 @@ class ArticleBookmark {
     return ArticleBookmark(
       id: json['id']?.toString() ?? '',
       articleId: json['articleId']?.toString() ?? '',
-      createTime: json['createTime'] != null
-          ? DateTime.parse(json['createTime'])
-          : DateTime.now(),
+      createTime: _parseDateTime(json['createTime']),
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'articleId': articleId,
+      'createTime': createTime.toIso8601String(),
+    };
+  }
+
+  /// 安全解析DateTime
+  static DateTime _parseDateTime(dynamic value) {
+    if (value is DateTime) return value;
+    if (value is String) {
+      try {
+        return DateTime.parse(value);
+      } catch (_) {
+        return DateTime.now();
+      }
+    }
+    return DateTime.now();
   }
 
   Map<String, dynamic> toJson() {
