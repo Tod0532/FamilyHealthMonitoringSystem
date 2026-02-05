@@ -2,57 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:health_center_app/app/modules/members/members_controller.dart';
+import 'package:health_center_app/app/modules/health/health_data_controller.dart';
 import 'package:health_center_app/core/models/family_member.dart';
 import 'package:health_center_app/core/models/health_data.dart';
 
-/// 健康数据项（UI展示用）
-class HealthDataItem {
-  final String id;
-  final String memberId;
-  final String memberName;
-  final String memberRelation;
-  final int memberGender;
-  final HealthDataType type;
-  final double value1;
-  final double? value2;
-  final HealthDataLevel level;
-  final DateTime recordTime;
-  final String? notes;
-
-  HealthDataItem({
-    required this.id,
-    required this.memberId,
-    required this.memberName,
-    required this.memberRelation,
-    required this.memberGender,
-    required this.type,
-    required this.value1,
-    this.value2,
-    required this.level,
-    required this.recordTime,
-    this.notes,
-  });
-
-  /// 格式化显示数值
-  String get displayValue {
-    switch (type) {
-      case HealthDataType.bloodPressure:
-        return value2 != null
-            ? '${value1.toInt()}/${value2!.toInt()}'
-            : '${value1.toInt()}';
-      case HealthDataType.temperature:
-        return '${value1.toStringAsFixed(1)}';
-      case HealthDataType.weight:
-        return '${value1.toStringAsFixed(1)}';
-      case HealthDataType.sleep:
-        return '${value1.toStringAsFixed(1)}';
-      default:
-        return '${value1.toInt()}';
-    }
-  }
-}
-
-/// 健康数据Tab页 - 优化版
+/// 健康数据Tab页 - 使用真实API数据
 class HealthDataTabPage extends StatefulWidget {
   const HealthDataTabPage({super.key});
 
@@ -70,12 +24,17 @@ class _HealthDataTabPageState extends State<HealthDataTabPage> {
   // 成员列表
   List<FamilyMember> members = [];
 
-  // 模拟健康数据
-  final List<HealthDataItem> allData = _generateMockData();
+  late HealthDataController _healthDataController;
 
   @override
   void initState() {
     super.initState();
+    // 获取或创建HealthDataController
+    if (Get.isRegistered<HealthDataController>()) {
+      _healthDataController = Get.find<HealthDataController>();
+    } else {
+      _healthDataController = Get.put(HealthDataController());
+    }
     _loadMembers();
   }
 
@@ -117,8 +76,8 @@ class _HealthDataTabPageState extends State<HealthDataTabPage> {
   }
 
   // 获取筛选后的数据
-  List<HealthDataItem> get filteredData {
-    var result = allData;
+  List<HealthData> getFilteredData() {
+    var result = List<HealthData>.from(_healthDataController.healthDataList);
 
     // 按成员筛选
     if (selectedMemberId != null) {
@@ -130,6 +89,9 @@ class _HealthDataTabPageState extends State<HealthDataTabPage> {
       result = result.where((d) => d.type == selectedType).toList();
     }
 
+    // 按时间倒序排序
+    result.sort((a, b) => b.recordTime.compareTo(a.recordTime));
+
     return result;
   }
 
@@ -137,7 +99,9 @@ class _HealthDataTabPageState extends State<HealthDataTabPage> {
   Map<HealthDataType, int> get typeCounts {
     final counts = <HealthDataType, int>{};
     for (var type in HealthDataType.values) {
-      counts[type] = allData.where((d) => d.type == type).length;
+      counts[type] = _healthDataController.healthDataList
+          .where((d) => d.type == type)
+          .length;
     }
     return counts;
   }
@@ -159,22 +123,36 @@ class _HealthDataTabPageState extends State<HealthDataTabPage> {
 
           // 数据列表
           Expanded(
-            child: filteredData.isEmpty
-                ? _buildEmptyState()
-                : ListView.separated(
-                    padding: EdgeInsets.all(16.w),
-                    itemCount: filteredData.length,
-                    separatorBuilder: (_, __) => SizedBox(height: 12.h),
-                    itemBuilder: (context, index) {
-                      final data = filteredData[index];
-                      return _buildDataCard(context, data);
-                    },
-                  ),
+            child: Obx(() {
+              final isLoading = _healthDataController.isLoading.value;
+              final data = getFilteredData();
+
+              if (isLoading) {
+                return const Center(
+                  child: CircularProgressIndicator(color: Color(0xFF4CAF50)),
+                );
+              }
+
+              if (data.isEmpty) {
+                return _buildEmptyState();
+              }
+
+              return ListView.separated(
+                padding: EdgeInsets.all(16.w),
+                itemCount: data.length,
+                separatorBuilder: (_, __) => SizedBox(height: 12.h),
+                itemBuilder: (context, index) {
+                  final healthData = data[index];
+                  final member = _healthDataController.getMemberById(healthData.memberId);
+                  return _buildDataCard(context, healthData, member);
+                },
+              );
+            }),
           ),
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => _showAddDataDialog(context),
+        onPressed: () => _healthDataController.showAddDataDialog(context),
         backgroundColor: const Color(0xFF4CAF50),
         child: const Icon(Icons.add, color: Colors.white),
       ),
@@ -204,7 +182,7 @@ class _HealthDataTabPageState extends State<HealthDataTabPage> {
             ),
             const Spacer(),
             // 统计信息
-            Container(
+            Obx(() => Container(
               padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 4.h),
               decoration: BoxDecoration(
                 color: Colors.white.withOpacity(0.2),
@@ -217,8 +195,54 @@ class _HealthDataTabPageState extends State<HealthDataTabPage> {
                   color: Colors.white,
                 ),
               ),
-            ),
+            )),
             SizedBox(width: 8.w),
+            // 刷新按钮
+            Container(
+              margin: EdgeInsets.only(right: 4.w),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () => _healthDataController.fetchHealthDataFromApi(),
+                  borderRadius: BorderRadius.circular(20.r),
+                  child: Container(
+                    padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(20.r),
+                    ),
+                    child: Obx(() {
+                      final isLoading = _healthDataController.isLoading.value;
+                      return Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          isLoading
+                              ? SizedBox(
+                                  width: 16.sp,
+                                  height: 16.sp,
+                                  child: const CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                  ),
+                                )
+                              : Icon(Icons.refresh, size: 16.sp, color: Colors.white),
+                          if (!isLoading) SizedBox(width: 4.w),
+                          if (!isLoading)
+                            Text(
+                              '刷新',
+                              style: TextStyle(
+                                fontSize: 12.sp,
+                                color: Colors.white,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                        ],
+                      );
+                    }),
+                  ),
+                ),
+              ),
+            ),
             // 设备同步按钮
             Container(
               margin: EdgeInsets.only(right: 4.w),
@@ -327,6 +351,8 @@ class _HealthDataTabPageState extends State<HealthDataTabPage> {
                         setState(() {
                           selectedMemberId = isSelected ? null : member.id;
                         });
+                        // 同步到controller
+                        _healthDataController.filterByMember(selectedMemberId ?? 'all');
                       },
                     ),
                   );
@@ -395,10 +421,10 @@ class _HealthDataTabPageState extends State<HealthDataTabPage> {
         ? '${members.firstWhereOrNull((m) => m.id == selectedMemberId)?.name ?? ''} · '
         : '';
     final typeText = selectedType != null ? '${selectedType!.label} · ' : '';
-    return '$memberText$typeText${filteredData.length} 条';
+    return '$memberText$typeText${getFilteredData().length} 条';
   }
 
-  /// 类型筛选器 - 优化版
+  /// 类型筛选器
   Widget _buildTypeFilter() {
     final counts = typeCounts;
     final isSelectedAll = selectedType == null;
@@ -424,7 +450,7 @@ class _HealthDataTabPageState extends State<HealthDataTabPage> {
             _buildFilterChip(
               '全部',
               isSelectedAll,
-              count: allData.length,
+              count: _healthDataController.healthDataList.length,
               onTap: () {
                 setState(() {
                   selectedType = null;
@@ -447,6 +473,8 @@ class _HealthDataTabPageState extends State<HealthDataTabPage> {
                     setState(() {
                       selectedType = isSelected ? null : type;
                     });
+                    // 同步到controller
+                    _healthDataController.filterByType(selectedType);
                   },
                 ),
               );
@@ -457,7 +485,7 @@ class _HealthDataTabPageState extends State<HealthDataTabPage> {
     );
   }
 
-  /// 筛选芯片 - 优化版
+  /// 筛选芯片
   Widget _buildFilterChip(
     String label,
     bool isSelected, {
@@ -555,7 +583,11 @@ class _HealthDataTabPageState extends State<HealthDataTabPage> {
   }
 
   /// 数据卡片
-  Widget _buildDataCard(BuildContext context, HealthDataItem data) {
+  Widget _buildDataCard(BuildContext context, HealthData data, FamilyMember? member) {
+    final memberName = member?.name ?? '未知成员';
+    final memberRelation = member?.relation.label ?? '未知关系';
+    final memberGender = member?.gender ?? 0;
+
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -570,7 +602,7 @@ class _HealthDataTabPageState extends State<HealthDataTabPage> {
       ),
       child: InkWell(
         borderRadius: BorderRadius.circular(12.r),
-        onTap: () => _showDataDetail(context, data),
+        onTap: () => _showDataDetail(context, data, member),
         child: Padding(
           padding: EdgeInsets.all(16.w),
           child: Column(
@@ -616,7 +648,7 @@ class _HealthDataTabPageState extends State<HealthDataTabPage> {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   Text(
-                    data.displayValue,
+                    _formatDisplayValue(data),
                     style: TextStyle(
                       fontSize: 28.sp,
                       fontWeight: FontWeight.bold,
@@ -640,10 +672,10 @@ class _HealthDataTabPageState extends State<HealthDataTabPage> {
                     onSelected: (value) {
                       switch (value) {
                         case 'edit':
-                          _showEditDialog(context, data);
+                          _healthDataController.showEditDataDialog(context, data);
                           break;
                         case 'delete':
-                          _confirmDelete(context, data);
+                          _healthDataController.confirmDeleteData(context, data);
                           break;
                       }
                     },
@@ -678,10 +710,10 @@ class _HealthDataTabPageState extends State<HealthDataTabPage> {
               // 底部：成员和时间
               Row(
                 children: [
-                  _buildMemberAvatar(data),
+                  _buildMemberAvatar(memberName, memberGender),
                   SizedBox(width: 8.w),
                   Text(
-                    data.memberName,
+                    memberName,
                     style: TextStyle(
                       fontSize: 14.sp,
                       color: Colors.grey[700],
@@ -689,7 +721,7 @@ class _HealthDataTabPageState extends State<HealthDataTabPage> {
                   ),
                   SizedBox(width: 4.w),
                   Text(
-                    '(${data.memberRelation})',
+                    '($memberRelation)',
                     style: TextStyle(
                       fontSize: 12.sp,
                       color: Colors.grey[500],
@@ -751,6 +783,24 @@ class _HealthDataTabPageState extends State<HealthDataTabPage> {
     );
   }
 
+  /// 格式化显示数值
+  String _formatDisplayValue(HealthData data) {
+    switch (data.type) {
+      case HealthDataType.bloodPressure:
+        return data.value2 != null
+            ? '${data.value1.toInt()}/${data.value2!.toInt()}'
+            : '${data.value1.toInt()}';
+      case HealthDataType.temperature:
+        return '${data.value1.toStringAsFixed(1)}';
+      case HealthDataType.weight:
+        return '${data.value1.toStringAsFixed(1)}';
+      case HealthDataType.sleep:
+        return '${data.value1.toStringAsFixed(1)}';
+      default:
+        return '${data.value1.toInt()}';
+    }
+  }
+
   /// 等级标签
   Widget _buildLevelBadge(HealthDataLevel level) {
     return Container(
@@ -772,9 +822,9 @@ class _HealthDataTabPageState extends State<HealthDataTabPage> {
   }
 
   /// 成员头像
-  Widget _buildMemberAvatar(HealthDataItem data) {
+  Widget _buildMemberAvatar(String memberName, int gender) {
     Color avatarColor;
-    switch (data.memberGender) {
+    switch (gender) {
       case 1:
         avatarColor = const Color(0xFF64B5F6);
         break;
@@ -794,7 +844,7 @@ class _HealthDataTabPageState extends State<HealthDataTabPage> {
       ),
       child: Center(
         child: Text(
-          data.memberName.isNotEmpty ? data.memberName[0] : '?',
+          memberName.isNotEmpty ? memberName[0] : '?',
           style: TextStyle(
             fontSize: 12.sp,
             fontWeight: FontWeight.bold,
@@ -848,7 +898,10 @@ class _HealthDataTabPageState extends State<HealthDataTabPage> {
   }
 
   /// 显示数据详情
-  void _showDataDetail(BuildContext context, HealthDataItem data) {
+  void _showDataDetail(BuildContext context, HealthData data, FamilyMember? member) {
+    final memberName = member?.name ?? '未知成员';
+    final memberRelation = member?.relation.label ?? '未知关系';
+
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -907,7 +960,7 @@ class _HealthDataTabPageState extends State<HealthDataTabPage> {
                                 ),
                               ),
                               Text(
-                                data.memberName,
+                                memberName,
                                 style: TextStyle(
                                   fontSize: 13.sp,
                                   color: Colors.grey[600],
@@ -926,7 +979,7 @@ class _HealthDataTabPageState extends State<HealthDataTabPage> {
                       crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
                         Text(
-                          data.displayValue,
+                          _formatDisplayValue(data),
                           style: TextStyle(
                             fontSize: 36.sp,
                             fontWeight: FontWeight.bold,
@@ -949,7 +1002,7 @@ class _HealthDataTabPageState extends State<HealthDataTabPage> {
                     SizedBox(height: 16.h),
 
                     // 详情列表
-                    _buildDetailRow('成员', '${data.memberName}（${data.memberRelation}）'),
+                    _buildDetailRow('成员', '$memberName（$memberRelation）'),
                     _buildDetailRow('记录时间', _formatFullTime(data.recordTime)),
                     _buildDetailRow('状态', data.level.label, color: data.level.color),
                     if (data.notes != null && data.notes!.isNotEmpty)
@@ -964,7 +1017,7 @@ class _HealthDataTabPageState extends State<HealthDataTabPage> {
                           child: OutlinedButton.icon(
                             onPressed: () {
                               Get.back();
-                              _showEditDialog(context, data);
+                              _healthDataController.showEditDataDialog(context, data);
                             },
                             icon: const Icon(Icons.edit),
                             label: const Text('编辑'),
@@ -975,7 +1028,7 @@ class _HealthDataTabPageState extends State<HealthDataTabPage> {
                           child: ElevatedButton.icon(
                             onPressed: () {
                               Get.back();
-                              _confirmDelete(context, data);
+                              _healthDataController.confirmDeleteData(context, data);
                             },
                             icon: const Icon(Icons.delete),
                             label: const Text('删除'),
@@ -1035,93 +1088,44 @@ class _HealthDataTabPageState extends State<HealthDataTabPage> {
         '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
   }
 
-  /// 显示添加数据对话框
-  void _showAddDataDialog(BuildContext context) {
-    Get.snackbar(
-      '提示',
-      '数据录入功能开发中',
-      snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: Colors.grey[100],
-    );
-  }
-
-  /// 显示编辑对话框
-  void _showEditDialog(BuildContext context, HealthDataItem data) {
-    Get.snackbar(
-      '提示',
-      '编辑功能开发中',
-      snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: Colors.grey[100],
-    );
-  }
-
-  /// 确认删除
-  void _confirmDelete(BuildContext context, HealthDataItem data) {
-    Get.dialog(
-      AlertDialog(
-        title: const Text('确认删除'),
-        content: Text('确定要删除这条${data.type.label}记录吗？'),
-        actions: [
-          TextButton(
-            onPressed: () => Get.back(),
-            child: const Text('取消'),
-          ),
-          TextButton(
-            onPressed: () {
-              setState(() {
-                allData.removeWhere((d) => d.id == data.id);
-              });
-              Get.back();
-              Get.snackbar(
-                '成功',
-                '已删除记录',
-                snackPosition: SnackPosition.BOTTOM,
-                backgroundColor: Colors.green.shade100,
-              );
-            },
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('删除'),
-          ),
-        ],
-      ),
-    );
-  }
-
   /// 显示统计对话框
   void _showStatsDialog() {
     Get.dialog(
       AlertDialog(
         title: const Text('数据统计'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '总计 ${allData.length} 条记录',
-              style: TextStyle(
-                fontSize: 16.sp,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            SizedBox(height: 16.h),
-            ...HealthDataType.values.map((type) {
-              final count = allData.where((d) => d.type == type).length;
-              return Padding(
-                padding: EdgeInsets.only(bottom: 8.h),
-                child: Row(
-                  children: [
-                    Icon(type.icon, size: 18.sp, color: _getTypeColor(type)),
-                    SizedBox(width: 8.w),
-                    Text(
-                      '${type.label}: $count 条',
-                      style: TextStyle(fontSize: 14.sp),
-                    ),
-                  ],
+        content: Obx(() {
+          final dataList = _healthDataController.healthDataList;
+          return Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '总计 ${dataList.length} 条记录',
+                style: TextStyle(
+                  fontSize: 16.sp,
+                  fontWeight: FontWeight.bold,
                 ),
-              );
-            }),
-          ],
-        ),
+              ),
+              SizedBox(height: 16.h),
+              ...HealthDataType.values.map((type) {
+                final count = dataList.where((d) => d.type == type).length;
+                return Padding(
+                  padding: EdgeInsets.only(bottom: 8.h),
+                  child: Row(
+                    children: [
+                      Icon(type.icon, size: 18.sp, color: _getTypeColor(type)),
+                      SizedBox(width: 8.w),
+                      Text(
+                        '${type.label}: $count 条',
+                        style: TextStyle(fontSize: 14.sp),
+                      ),
+                    ],
+                  ),
+                );
+              }),
+            ],
+          );
+        }),
         actions: [
           TextButton(
             onPressed: () => Get.back(),
@@ -1130,154 +1134,5 @@ class _HealthDataTabPageState extends State<HealthDataTabPage> {
         ],
       ),
     );
-  }
-
-  /// 生成模拟数据
-  static List<HealthDataItem> _generateMockData() {
-    final now = DateTime.now();
-    return [
-      // 血压数据
-      HealthDataItem(
-        id: 'bp1',
-        memberId: '1',
-        memberName: '张三',
-        memberRelation: '父亲',
-        memberGender: 1,
-        type: HealthDataType.bloodPressure,
-        value1: 125,
-        value2: 82,
-        level: HealthDataLevel.normal,
-        recordTime: now.subtract(const Duration(hours: 8)),
-        notes: '早晨测量',
-      ),
-      HealthDataItem(
-        id: 'bp2',
-        memberId: '1',
-        memberName: '张三',
-        memberRelation: '父亲',
-        memberGender: 1,
-        type: HealthDataType.bloodPressure,
-        value1: 135,
-        value2: 88,
-        level: HealthDataLevel.warning,
-        recordTime: now.subtract(const Duration(days: 1, hours: 20)),
-        notes: '稍偏高',
-      ),
-      HealthDataItem(
-        id: 'bp3',
-        memberId: '2',
-        memberName: '李四',
-        memberRelation: '母亲',
-        memberGender: 2,
-        type: HealthDataType.bloodPressure,
-        value1: 118,
-        value2: 75,
-        level: HealthDataLevel.normal,
-        recordTime: now.subtract(const Duration(days: 0, hours: 12)),
-      ),
-
-      // 心率数据
-      HealthDataItem(
-        id: 'hr1',
-        memberId: '1',
-        memberName: '张三',
-        memberRelation: '父亲',
-        memberGender: 1,
-        type: HealthDataType.heartRate,
-        value1: 72,
-        level: HealthDataLevel.normal,
-        recordTime: now.subtract(const Duration(hours: 9)),
-      ),
-      HealthDataItem(
-        id: 'hr2',
-        memberId: '2',
-        memberName: '李四',
-        memberRelation: '母亲',
-        memberGender: 2,
-        type: HealthDataType.heartRate,
-        value1: 78,
-        level: HealthDataLevel.normal,
-        recordTime: now.subtract(const Duration(hours: 3)),
-      ),
-
-      // 血糖数据
-      HealthDataItem(
-        id: 'bs1',
-        memberId: '1',
-        memberName: '张三',
-        memberRelation: '父亲',
-        memberGender: 1,
-        type: HealthDataType.bloodSugar,
-        value1: 6.2,
-        level: HealthDataLevel.normal,
-        recordTime: now.subtract(const Duration(hours: 7)),
-        notes: '空腹血糖',
-      ),
-      HealthDataItem(
-        id: 'bs2',
-        memberId: '1',
-        memberName: '张三',
-        memberRelation: '父亲',
-        memberGender: 1,
-        type: HealthDataType.bloodSugar,
-        value1: 8.2,
-        level: HealthDataLevel.warning,
-        recordTime: now.subtract(const Duration(hours: 13)),
-        notes: '餐后2小时，偏高',
-      ),
-
-      // 体温数据
-      HealthDataItem(
-        id: 'tmp1',
-        memberId: '3',
-        memberName: '小明',
-        memberRelation: '儿子',
-        memberGender: 1,
-        type: HealthDataType.temperature,
-        value1: 37.8,
-        level: HealthDataLevel.warning,
-        recordTime: now.subtract(const Duration(hours: 10)),
-        notes: '稍有发热',
-      ),
-
-      // 体重数据
-      HealthDataItem(
-        id: 'wt1',
-        memberId: '1',
-        memberName: '张三',
-        memberRelation: '父亲',
-        memberGender: 1,
-        type: HealthDataType.weight,
-        value1: 68.5,
-        level: HealthDataLevel.normal,
-        recordTime: now.subtract(const Duration(hours: 8)),
-      ),
-
-      // 步数数据
-      HealthDataItem(
-        id: 'steps1',
-        memberId: '1',
-        memberName: '张三',
-        memberRelation: '父亲',
-        memberGender: 1,
-        type: HealthDataType.steps,
-        value1: 8532,
-        level: HealthDataLevel.normal,
-        recordTime: now.subtract(const Duration(days: 0)),
-      ),
-
-      // 睡眠数据
-      HealthDataItem(
-        id: 'sleep1',
-        memberId: '2',
-        memberName: '李四',
-        memberRelation: '母亲',
-        memberGender: 2,
-        type: HealthDataType.sleep,
-        value1: 7.5,
-        level: HealthDataLevel.normal,
-        recordTime: now.subtract(const Duration(days: 0)),
-      ),
-    ];
   }
 }

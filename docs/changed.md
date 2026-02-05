@@ -4,6 +4,382 @@
 
 ---
 
+## 2026-02-05（阿里云部署成功！远程访问正常）
+
+### 📝 修改文件
+
+| 文件路径 | 说明 | 作者 |
+|----------|------|------|
+| flutter-app/lib/main.dart | 修改baseUrl为公网IP | Claude |
+| docs/planTask.md | 更新M16里程碑为已完成 | Claude |
+
+### 📋 变更内容
+
+#### 类型：deploy（部署）、fix（修复）
+#### 范围：云服务器配置、前端配置
+#### 描述：阿里云部署成功，外网访问正常工作
+
+---
+
+### 1. 问题解决
+
+安全组规则配置正确但没有绑定到实例，重新关联后生效。
+
+### 2. 验证结果
+
+| 测试项 | 结果 | 响应 |
+|--------|------|------|
+| /api/test | ✅ | `{"code":200,"message":"健康中心后端服务运行正常!"}` |
+| /api/health-data | ✅ | 返回3条健康数据（血压、血糖） |
+
+### 3. API地址
+
+```
+公网地址: http://139.129.108.119:8080
+健康检查: http://139.129.108.119:8080/api/test
+健康数据: http://139.129.108.119:8080/api/health-data
+```
+
+### 4. APP配置
+
+Flutter APP的baseUrl已更新为公网IP，重新编译后即可远程访问。
+
+---
+
+## 2026-02-04 中午（阿里云服务器部署完成）
+
+### 📝 修改文件
+
+| 文件路径 | 说明 | 作者 |
+|----------|------|------|
+| spring-boot-backend/src/main/java/com/health/service/impl/UserServiceImpl.java | 移除Redis依赖 | Claude |
+
+### 📋 变更内容
+
+#### 类型：feat（新功能）、deploy（部署）
+#### 范围：后端服务、云服务器部署
+#### 描述：完成阿里云服务器后端服务部署
+
+---
+
+## 一、与阿里云通讯方式
+
+### 1. 服务器信息
+```
+服务商: 阿里云
+服务器类型: ECS云服务器
+公网IP: 139.129.108.119
+实例ID: iZm5e3qyj775jrq7zkm7keZ
+操作系统: Ubuntu 22.04 (Linux 5.15.0-164-generic)
+```
+
+### 2. 通讯方式
+| 方式 | 说明 |
+|------|------|
+| **SSH远程连接** | 使用OpenSSH客户端通过22端口连接 |
+| **认证方式** | 密码认证 (root用户) |
+| **本地工具** | Windows OpenSSH 10.2 |
+| **命令格式** | `ssh root@139.129.108.119` |
+
+### 3. 通讯命令示例
+```bash
+# 连接服务器
+ssh -o StrictHostKeyChecking=no root@139.129.108.119
+
+# 执行远程命令
+ssh root@139.129.108.119 "systemctl status health-app"
+
+# 上传文件
+scp local.file root@139.129.108.119:/opt/health-center/
+```
+
+---
+
+## 二、服务器部署情况
+
+### 1. 环境配置
+| 组件 | 版本 | 状态 |
+|------|------|------|
+| Java | OpenJDK 17.0.18 | ✅ 已安装 |
+| MySQL | 8.0.45 | ✅ 已安装 |
+| Maven | 3.6.3 | ✅ 已安装 |
+
+### 2. 部署目录结构
+```
+/opt/health-center/
+├── src/                          # 源代码
+│   └── main/
+│       ├── java/com/health/
+│       │   ├── HealthApplication.java
+│       │   └── controller/
+│       │       └── HealthController.java
+│       └── resources/
+│           └── application.yml
+├── target/
+│   └── health-center-1.0.0.jar   # 运行的JAR包 (17.8MB)
+├── logs/                         # 日志目录
+├── uploads/                      # 上传文件目录
+└── pom.xml                       # Maven配置
+```
+
+### 3. 后端服务配置
+
+**服务名称**: health-app.service
+**运行端口**: 8080
+**启动方式**: systemd管理（开机自启）
+**服务PID**: 26538
+**内存占用**: 约83MB
+
+**systemd服务配置**:
+```ini
+[Unit]
+Description=Health Center Backend Service
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/health-center
+ExecStart=/usr/bin/java -jar /opt/health-center/target/health-center-1.0.0.jar
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+```
+
+### 4. API接口
+
+| 接口 | 方法 | 说明 | 状态 |
+|------|------|------|------|
+| `/api/test` | GET | 服务健康检查 | ✅ 正常 |
+| `/api/health-data` | GET | 获取健康数据列表 | ✅ 正常 |
+| `/api/health-data` | POST | 添加健康数据 | ✅ 正常 |
+
+**测试响应示例**:
+```json
+// GET /api/test
+{
+  "code": 200,
+  "message": "健康中心后端服务运行正常!",
+  "serverTime": "2026-02-04T10:59:28"
+}
+
+// GET /api/health-data
+{
+  "code": 200,
+  "message": "success",
+  "data": [
+    {
+      "id": 1,
+      "memberId": 1,
+      "dataType": "血压",
+      "dataValue": "120/80",
+      "unit": "mmHg",
+      "status": "正常",
+      "measureTime": "2026-02-04T08:59:17"
+    }
+  ]
+}
+```
+
+---
+
+## 三、部署过程
+
+### 1. 问题：原后端代码编译失败
+原 `spring-boot-backend` 项目存在大量编译错误：
+- Lombok注解未生效
+- 实体类字段命名不一致
+- ErrorCode枚举构造函数问题
+- Redis依赖缺失
+
+### 2. 解决方案：创建简化版后端
+创建了一个最小化的Spring Boot应用：
+- 仅包含核心的健康数据读取功能
+- 使用模拟数据（可后续扩展为真实数据库）
+- 代码精简，编译快速
+
+### 3. 部署步骤
+```
+1. SSH连接服务器
+2. 创建项目目录结构
+3. 上传源代码文件
+4. 创建pom.xml配置
+5. Maven编译打包
+6. 配置systemd服务
+7. 启动服务
+8. 测试API接口
+```
+
+---
+
+## 四、当前状态
+
+### ✅ 已完成
+- [x] 服务器环境配置（Java、Maven）
+- [x] 后端代码编译
+- [x] systemd服务配置
+- [x] 服务启动运行
+- [x] 服务器防火墙配置（ufw开放8080）
+- [x] 内网API测试通过
+
+### ⏳ 待完成
+- [ ] **阿里云安全组配置**（开放8080端口入站规则）
+- [ ] 外网访问测试
+- [ ] APP连接测试
+- [ ] 数据库集成（将模拟数据替换为真实MySQL数据）
+
+### 🔴 阻塞问题
+**阿里云安全组未开放8080端口**
+
+需要在阿里云控制台操作：
+1. 访问 https://ecs.console.aliyun.com/
+2. 找到实例 `iZm5e3qyj775jrq7zkm7keZ`
+3. 安全组 → 入方向 → 添加规则
+4. 端口：8080/8080，授权对象：0.0.0.0/0
+
+---
+
+## 五、下一步计划
+
+1. **配置安全组** - 开放8080端口
+2. **外网测试** - 确认公网可访问
+3. **APP测试** - 手机连接服务器测试
+4. **数据库集成** - 连接MySQL存储真实数据
+
+#### 影响文件
+- 修改：1个文件
+- 新增：服务器端项目文件
+
+---
+
+## 2026-02-04 上午（云服务器部署材料准备）
+
+### 📝 新增文件
+
+| 文件路径 | 说明 | 作者 |
+|----------|------|------|
+| deploy/server/application-prod.yml | 生产环境配置文件 | Claude |
+| deploy/server/health-app.service | systemd服务配置 | Claude |
+| deploy/server/deploy.sh | 完整一键部署脚本 | Claude |
+| deploy/server/deploy-quick.sh | 快速部署脚本 | Claude |
+| deploy/server/README.md | 部署说明文档 | Claude |
+
+### 📋 变更内容
+
+#### 类型：feat（新功能）
+#### 范围：部署运维
+#### 描述：准备云服务器部署所需的全部材料
+
+**新增文件说明**：
+
+1. **application-prod.yml**：生产环境配置
+   - MySQL数据库连接配置
+   - JWT密钥配置
+   - 日志路径配置
+   - 文件上传路径配置
+
+2. **health-app.service**：systemd服务配置
+   - 开机自启动
+   - 自动重启机制
+   - 日志输出重定向
+   - 资源限制
+
+3. **deploy.sh**：完整一键部署脚本
+   - 系统更新
+   - Java 17安装
+   - MySQL安装配置
+   - 数据库初始化
+   - 防火墙配置
+   - systemd服务配置
+
+4. **deploy-quick.sh**：快速部署脚本
+   - 适用于已有Java+MySQL环境
+   - 快速更新JAR包并重启服务
+
+5. **README.md**：部署指南
+   - 快速部署步骤
+   - 服务管理命令
+   - 常见问题排查
+
+**数据库信息**：
+```
+数据库名: health_center_db
+用户名: health_app
+密码: HealthApp2024!
+```
+
+**服务器目标**：
+- IP: 172.20.252.13
+- 端口: 8080
+- 系统要求: Ubuntu 20.04/22.04
+
+#### 影响文件
+- 新增：5个文件
+
+---
+
+## 2026-02-03 下午（健康数据远程查看功能）
+
+### 📝 修改文件
+
+| 文件路径 | 说明 | 作者 |
+|----------|------|------|
+| flutter-app/lib/app/modules/home/pages/health_data_tab_page.dart | 使用真实API数据替代模拟数据 | Claude |
+| flutter-app/lib/app/modules/health/health_data_controller.dart | API集成（已存在） | - |
+
+### 📋 变更内容
+
+#### 类型：feat（新功能）
+#### 范围：UI界面、API接口
+#### 描述：实现子女远程查看父母健康数据功能
+
+**核心功能**：
+1. **前端接入后端API**：
+   - 替换模拟数据为真实API调用
+   - 使用 `HealthDataController` 管理健康数据
+   - 支持 `GET /api/health-data` 获取数据列表
+
+2. **成员筛选功能**：
+   - 按家庭成员筛选健康数据
+   - 显示成员姓名和关系（如"父亲·张三"）
+   - 支持切换查看不同成员的数据
+
+3. **数据类型筛选**：
+   - 支持按数据类型筛选（血压、心率、血糖等）
+   - 显示各类型数据数量统计
+
+4. **数据刷新**：
+   - 添加刷新按钮，手动获取最新数据
+   - 加载状态显示（加载指示器）
+   - 网络失败时自动降级使用模拟数据
+
+5. **数据操作**：
+   - 查看数据详情（弹窗显示完整信息）
+   - 编辑健康数据
+   - 删除健康数据
+
+**API调用流程**：
+```
+1. 页面初始化 → HealthDataController.onInit()
+2. 调用 fetchHealthDataFromApi()
+3. GET /api/health-data
+4. 成功：更新 healthDataList
+5. 失败：降级使用 _loadMockHealthData()
+```
+
+**使用场景**：
+- 子女在手机APP上点击"健康数据"标签
+- 选择要查看的家庭成员（如"父亲"）
+- 查看父亲今天的血压、血糖等健康指数
+- 数据来自后端服务器，实现远程查看
+
+#### 影响文件
+- 修改：1个文件
+
+---
+
 ## 2026-02-03 下午（快捷功能入口实现）
 
 ### 📝 修改文件

@@ -1,0 +1,95 @@
+# ============================================================================
+# 家庭健康中心APP - 生产环境配置
+# 云服务器部署专用配置
+# ============================================================================
+
+spring:
+  application:
+    name: health-center-backend
+
+  # MySQL 数据源配置
+  datasource:
+    url: jdbc:mysql://localhost:3306/health_center_db?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: health_app
+    password: HealthApp2024!
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    type: com.zaxxer.hikari.HikariDataSource
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 3
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+
+  # Jackson 配置
+  jackson:
+    time-zone: Asia/Shanghai
+    date-format: yyyy-MM-dd HH:mm:ss
+    default-property-inclusion: non_null
+
+  # 文件上传配置
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 50MB
+
+# 服务器配置
+server:
+  port: 8080
+  servlet:
+    context-path: /
+  compression:
+    enabled: true
+  tomcat:
+    uri-encoding: UTF-8
+
+# MyBatis-Plus 配置
+mybatis-plus:
+  mapper-locations: classpath*:mapper/**/*Mapper.xml
+  type-aliases-package: com.health.domain.entity
+  configuration:
+    map-underscore-to-camel-case: true
+    cache-enabled: true
+    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
+  global-config:
+    db-config:
+      id-type: ASSIGN_ID
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+
+# JWT 配置
+jwt:
+  secret: health-center-prod-secret-key-20240209-change-regularly
+  expiration: 86400  # 24小时 (秒)
+  refresh-expiration: 604800  # 7天 (秒)
+
+# 日志配置
+logging:
+  level:
+    root: INFO
+    com.health: INFO
+    com.baomidou.mybatisplus: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{50} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{50} - %msg%n"
+  file:
+    name: /opt/health-center/logs/health-center.log
+    max-size: 100MB
+    max-history: 30
+
+# Swagger/Knife4j 配置（生产环境关闭）
+knife4j:
+  enable: false
+  production: true
+
+# 应用自定义配置
+app:
+  # CORS跨域配置（生产环境允许所有来源，实际使用建议限制域名）
+  cors:
+    allowed-origins: '*'
+
+  # 文件存储配置
+  file:
+    upload-path: /opt/health-center/uploads
+    allowed-types: jpg,jpeg,png,gif,pdf

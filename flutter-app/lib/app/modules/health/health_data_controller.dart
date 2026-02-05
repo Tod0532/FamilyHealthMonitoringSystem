@@ -5,6 +5,7 @@ import 'package:health_center_app/core/models/family_member.dart';
 import 'package:health_center_app/core/network/dio_provider.dart';
 import 'package:health_center_app/app/modules/members/members_controller.dart';
 import 'package:health_center_app/app/modules/alerts/health_alert_controller.dart';
+import 'package:health_center_app/core/utils/logger.dart';
 
 /// 健康数据控制器
 class HealthDataController extends GetxController {
@@ -31,7 +32,8 @@ class HealthDataController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    _loadMockHealthData();
+    // 尝试从后端获取数据，失败则使用模拟数据
+    fetchHealthDataFromApi();
   }
 
   /// 加载模拟健康数据（用于演示）
@@ -387,34 +389,59 @@ class HealthDataController extends GetxController {
     isSubmitting.value = true;
 
     try {
-      // 模拟添加（实际应调用API）
-      await Future.delayed(const Duration(milliseconds: 500));
-
-      final newData = data.copyWith(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
+      // 调用后端API
+      final response = await _dioProvider.post(
+        '/api/health-data',
+        data: {
+          'memberId': int.tryParse(data.memberId) ?? 0,
+          'dataType': _getDataTypeString(data.type),
+          'value1': data.value1,
+          'value2': data.value2,
+          'measureTime': _formatDateTimeApi(data.recordTime),
+          'dataSource': 'manual',
+          'notes': data.notes,
+        },
       );
 
-      healthDataList.add(newData);
-      _applyFilter();
+      // 解析响应
+      if (response != null && response['code'] == 200) {
+        final responseData = response['data'];
+        final newData = HealthData(
+          id: responseData['id']?.toString() ?? data.id,
+          memberId: data.memberId,
+          type: data.type,
+          value1: data.value1,
+          value2: data.value2,
+          level: data.level,
+          recordTime: data.recordTime,
+          notes: data.notes,
+          createTime: DateTime.now(),
+        );
 
-      // 检查是否触发预警
-      if (Get.isRegistered<HealthAlertController>()) {
-        final alertController = Get.find<HealthAlertController>();
-        alertController.checkHealthDataAlert(newData);
+        healthDataList.add(newData);
+        _applyFilter();
+
+        // 检查是否触发预警
+        if (Get.isRegistered<HealthAlertController>()) {
+          final alertController = Get.find<HealthAlertController>();
+          alertController.checkHealthDataAlert(newData);
+        }
+
+        Get.snackbar(
+          '成功',
+          '已添加${data.type.label}记录',
+          snackPosition: SnackPosition.TOP,
+          backgroundColor: Colors.green.shade100,
+        );
+
+        return true;
+      } else {
+        throw Exception(response?['message'] ?? '添加失败');
       }
-
-      Get.snackbar(
-        '成功',
-        '已添加${data.type.label}记录',
-        snackPosition: SnackPosition.TOP,
-        backgroundColor: Colors.green.shade100,
-      );
-
-      return true;
     } catch (e) {
       Get.snackbar(
         '失败',
-        '添加健康数据失败',
+        _parseErrorMessage(e),
         snackPosition: SnackPosition.TOP,
         backgroundColor: Colors.red.shade100,
       );
@@ -429,27 +456,41 @@ class HealthDataController extends GetxController {
     isSubmitting.value = true;
 
     try {
-      // 模拟更新（实际应调用API）
-      await Future.delayed(const Duration(milliseconds: 500));
-
-      final index = healthDataList.indexWhere((d) => d.id == data.id);
-      if (index >= 0) {
-        healthDataList[index] = data;
-        _applyFilter();
-      }
-
-      Get.snackbar(
-        '成功',
-        '已更新健康数据',
-        snackPosition: SnackPosition.TOP,
-        backgroundColor: Colors.green.shade100,
+      // 调用后端API
+      final response = await _dioProvider.put(
+        '/api/health-data/${data.id}',
+        data: {
+          'memberId': int.tryParse(data.memberId) ?? 0,
+          'dataType': _getDataTypeString(data.type),
+          'value1': data.value1,
+          'value2': data.value2,
+          'measureTime': _formatDateTimeApi(data.recordTime),
+          'notes': data.notes,
+        },
       );
 
-      return true;
+      if (response != null && response['code'] == 200) {
+        final index = healthDataList.indexWhere((d) => d.id == data.id);
+        if (index >= 0) {
+          healthDataList[index] = data;
+          _applyFilter();
+        }
+
+        Get.snackbar(
+          '成功',
+          '已更新健康数据',
+          snackPosition: SnackPosition.TOP,
+          backgroundColor: Colors.green.shade100,
+        );
+
+        return true;
+      } else {
+        throw Exception(response?['message'] ?? '更新失败');
+      }
     } catch (e) {
       Get.snackbar(
         '失败',
-        '更新健康数据失败',
+        _parseErrorMessage(e),
         snackPosition: SnackPosition.TOP,
         backgroundColor: Colors.red.shade100,
       );
@@ -464,24 +505,28 @@ class HealthDataController extends GetxController {
     isSubmitting.value = true;
 
     try {
-      // 模拟删除（实际应调用API）
-      await Future.delayed(const Duration(milliseconds: 500));
+      // 调用后端API
+      final response = await _dioProvider.delete('/api/health-data/$dataId');
 
-      healthDataList.removeWhere((d) => d.id == dataId);
-      _applyFilter();
+      if (response != null && response['code'] == 200) {
+        healthDataList.removeWhere((d) => d.id == dataId);
+        _applyFilter();
 
-      Get.snackbar(
-        '成功',
-        '已删除记录',
-        snackPosition: SnackPosition.TOP,
-        backgroundColor: Colors.green.shade100,
-      );
+        Get.snackbar(
+          '成功',
+          '已删除记录',
+          snackPosition: SnackPosition.TOP,
+          backgroundColor: Colors.green.shade100,
+        );
 
-      return true;
+        return true;
+      } else {
+        throw Exception(response?['message'] ?? '删除失败');
+      }
     } catch (e) {
       Get.snackbar(
         '失败',
-        '删除记录失败',
+        _parseErrorMessage(e),
         snackPosition: SnackPosition.TOP,
         backgroundColor: Colors.red.shade100,
       );
@@ -620,5 +665,130 @@ class HealthDataController extends GetxController {
   /// 切换当前数据类型
   void setCurrentDataType(HealthDataType type) {
     currentDataType.value = type;
+  }
+
+  /// 从后端获取健康数据列表
+  Future<void> fetchHealthDataFromApi() async {
+    isLoading.value = true;
+    errorMessage.value = '';
+
+    try {
+      final response = await _dioProvider.get('/api/health-data');
+
+      if (response != null && response['code'] == 200) {
+        final List dataList = response['data'] as List? ?? [];
+        healthDataList.value = dataList.map((item) {
+          // 解析后端返回的数据
+          return HealthData(
+            id: item['id']?.toString() ?? '',
+            memberId: item['memberId']?.toString() ?? '',
+            type: _parseDataType(item['dataType']),
+            value1: (item['value1'] ?? 0).toDouble(),
+            value2: item['value2']?.toDouble(),
+            level: _parseLevel(item['level']),
+            recordTime: DateTime.parse(item['measureTime'] ?? DateTime.now().toIso8601String()),
+            notes: item['notes'],
+            createTime: DateTime.parse(item['createTime'] ?? DateTime.now().toIso8601String()),
+          );
+        }).toList();
+        _applyFilter();
+      } else {
+        // API调用失败，使用模拟数据
+        _loadMockHealthData();
+      }
+    } catch (e) {
+      // 网络错误，使用模拟数据
+      AppLogger.e('获取健康数据失败: $e');
+      _loadMockHealthData();
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  /// 获取数据类型字符串
+  String _getDataTypeString(HealthDataType type) {
+    switch (type) {
+      case HealthDataType.bloodPressure:
+        return 'blood_pressure';
+      case HealthDataType.heartRate:
+        return 'heart_rate';
+      case HealthDataType.bloodSugar:
+        return 'blood_sugar';
+      case HealthDataType.temperature:
+        return 'temperature';
+      case HealthDataType.weight:
+        return 'weight';
+      case HealthDataType.height:
+        return 'height';
+      case HealthDataType.steps:
+        return 'steps';
+      case HealthDataType.sleep:
+        return 'sleep';
+    }
+  }
+
+  /// 解析数据类型
+  HealthDataType _parseDataType(String? dataTypeStr) {
+    if (dataTypeStr == null) return HealthDataType.bloodPressure;
+    switch (dataTypeStr) {
+      case 'blood_pressure':
+        return HealthDataType.bloodPressure;
+      case 'heart_rate':
+        return HealthDataType.heartRate;
+      case 'blood_sugar':
+        return HealthDataType.bloodSugar;
+      case 'temperature':
+        return HealthDataType.temperature;
+      case 'weight':
+        return HealthDataType.weight;
+      case 'height':
+        return HealthDataType.height;
+      case 'steps':
+        return HealthDataType.steps;
+      case 'sleep':
+        return HealthDataType.sleep;
+      default:
+        return HealthDataType.bloodPressure;
+    }
+  }
+
+  /// 解析健康级别
+  HealthDataLevel _parseLevel(dynamic levelData) {
+    if (levelData == null) return HealthDataLevel.normal;
+    switch (levelData.toString()) {
+      case 'normal':
+        return HealthDataLevel.normal;
+      case 'warning':
+        return HealthDataLevel.warning;
+      case 'high':
+        return HealthDataLevel.high;
+      case 'low':
+        return HealthDataLevel.low;
+      default:
+        return HealthDataLevel.normal;
+    }
+  }
+
+  /// 格式化日期时间供API使用
+  String _formatDateTimeApi(DateTime dateTime) {
+    return '${dateTime.year}-${dateTime.month.toString().padLeft(2, '0')}-${dateTime.day.toString().padLeft(2, '0')} '
+        '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}:${dateTime.second.toString().padLeft(2, '0')}';
+  }
+
+  /// 解析错误信息
+  String _parseErrorMessage(dynamic error) {
+    final errorStr = error.toString();
+
+    if (errorStr.contains('SocketException') || errorStr.contains('Connection refused')) {
+      return '网络连接失败，请检查网络';
+    }
+    if (errorStr.contains('TimeoutException')) {
+      return '请求超时，请稍后重试';
+    }
+    if (errorStr.contains('成员不存在')) {
+      return '请先选择家庭成员';
+    }
+
+    return '操作失败，请稍后重试';
   }
 }

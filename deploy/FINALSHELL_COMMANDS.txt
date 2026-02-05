@@ -1,0 +1,94 @@
+# ============================================================================
+# FinalShell 执行命令清单 - 按顺序执行
+# ============================================================================
+
+## 第一步：确认服务器连接
+uname -a
+cat /etc/os-release
+
+## 第二步：创建应用目录
+mkdir -p /opt/health-center
+mkdir -p /opt/health-center/logs
+mkdir -p /opt/health-center/uploads
+cd /opt/health-center
+ls -la
+
+## 第三步：检查是否安装Java
+java -version
+# 如果显示 "command not found"，执行下面命令安装
+apt update && apt install -y openjdk-17-jdk
+
+## 第四步：检查是否安装MySQL
+mysql --version
+# 如果显示 "command not found"，执行下面命令安装
+apt install -y mysql-server
+systemctl start mysql
+systemctl enable mysql
+
+## 第五步：创建数据库和用户（执行后输入MySQL密码，默认可能为空）
+mysql -u root -p
+# 进入MySQL后，逐行执行以下SQL：
+
+CREATE DATABASE IF NOT EXISTS health_center_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE USER IF NOT EXISTS 'health_app'@'localhost' IDENTIFIED BY 'HealthApp2024!';
+GRANT ALL PRIVILEGES ON health_center_db.* TO 'health_app'@'localhost';
+FLUSH PRIVILEGES;
+EXIT;
+
+## 第六步：上传JAR包和配置文件
+# 在FinalShell中使用文件上传功能，上传以下文件：
+# 1. D:\ReadHealthInfo\spring-boot-backend\target\backend-1.0.0.jar  -> /opt/health-center/backend.jar
+# 2. D:\ReadHealthInfo\deploy\server\application-prod.yml -> /opt/health-center/application-prod.yml
+# 3. D:\ReadHealthInfo\database\schema.sql -> /opt/health-center/schema.sql
+
+## 第七步：导入数据库表结构
+mysql -u root health_center_db < /opt/health-center/schema.sql
+
+## 第八步：验证数据库导入
+mysql -u root -e "USE health_center_db; SHOW TABLES;"
+
+## 第九步：创建systemd服务
+cat > /etc/systemd/system/health-app.service <<'EOF'
+[Unit]
+Description=Health Center Backend Service
+After=network.target mysql.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/health-center
+ExecStart=/usr/bin/java -jar /opt/health-center/backend.jar --spring.profiles.active=prod
+Restart=always
+RestartSec=10
+StandardOutput=append:/opt/health-center/logs/console.log
+StandardError=append:/opt/health-center/logs/error.log
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+## 第十步：重载并启动服务
+systemctl daemon-reload
+systemctl enable health-app
+systemctl start health-app
+
+## 第十一步：查看服务状态
+systemctl status health-app
+
+## 第十二步：查看日志（如果有问题）
+journalctl -u health-app -f
+# 或
+tail -f /opt/health-center/logs/console.log
+
+## 第十三步：测试API
+curl http://localhost:8080/api/health-data
+
+## 第十四步：检查端口监听
+netstat -tlnp | grep 8080
+
+## 第十五步：配置防火墙（如果启用了ufw）
+ufw status
+ufw allow 8080/tcp
+
+## 完成！
+# 现在可以用手机APP测试连接 http://172.20.252.13:8080

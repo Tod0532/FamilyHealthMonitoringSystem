@@ -194,9 +194,10 @@ class AppTheme {
 /// 应用常量
 class AppConstants {
   // API 配置
+  // 默认使用云服务器地址，编译时可通过参数指定: flutter build apk --dart-define=BASE_URL=http://139.129.108.119:8080
   static const String baseUrl = String.fromEnvironment(
     'BASE_URL',
-    defaultValue: 'https://api.healthcenter.com/api/v1',
+    defaultValue: 'http://139.129.108.119:8080', // 阿里云公网IP
   );
 
   static const String connectTimeout = '30000';

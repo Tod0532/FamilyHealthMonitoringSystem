@@ -14,33 +14,28 @@ import com.health.interfaces.dto.RegisterRequest;
 import com.health.interfaces.dto.UserVO;
 import com.health.service.UserService;
 import com.health.util.JwtUtil;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 
 /**
  * 用户服务实现
  */
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
 
     private final UserMapper userMapper;
     private final JwtUtil jwtUtil;
     private final JwtProperties jwtProperties;
-    private final RedisTemplate<String, Object> redisTemplate;
 
-    // Redis Key 前缀
-    private static final String TOKEN_BLACKLIST_KEY_PREFIX = "token:blacklist:";
-    private static final String SMS_CODE_KEY_PREFIX = "sms:code:";
+    // 内存存储（开发环境使用）
+    private static final ConcurrentHashMap<String, String> SMS_CODE_STORE = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<String, Long> TOKEN_BLACKLIST = new ConcurrentHashMap<>();
 
     // 临时使用内存存储（开发环境，Redis不可用时降级）
     private static final ConcurrentHashMap<String, String> SMS_CODE_STORE = new ConcurrentHashMap<>();
@@ -140,19 +135,11 @@ public class UserServiceImpl implements UserService {
     @Transactional(rollbackFor = Exception.class)
     public void logout(String token) {
         if (token != null && jwtUtil.validateToken(token)) {
-            // 将令牌加入黑名单（使用Redis持久化存储）
+            // 将令牌加入黑名单（使用内存存储）
             Long expiration = jwtUtil.getRemainingExpiration(token);
             if (expiration > 0) {
-                try {
-                    // 使用Redis存储，自动过期
-                    String redisKey = TOKEN_BLACKLIST_KEY_PREFIX + token;
-                    redisTemplate.opsForValue().set(redisKey, "blacklisted", expiration, TimeUnit.SECONDS);
-                    log.debug("Token已加入黑名单:剩余有效期={}秒", expiration);
-                } catch (Exception e) {
-                    // Redis不可用时降级到内存存储
-                    log.warn("Redis不可用，降级到内存存储Token黑名单: {}", e.getMessage());
-                    TOKEN_BLACKLIST.put(token, System.currentTimeMillis() + expiration * 1000);
-                }
+                TOKEN_BLACKLIST.put(token, System.currentTimeMillis() + expiration * 1000);
+                log.debug("Token已加入黑名单:剩余有效期={}秒", expiration);
             }
         }
         log.info("用户登出成功");
@@ -176,19 +163,9 @@ public class UserServiceImpl implements UserService {
 
     /**
      * 检查Token是否在黑名单中
-     * 优先检查Redis，降级检查内存存储
+     * 使用内存存储
      */
     public boolean isTokenBlacklisted(String token) {
-        // 优先检查Redis
-        try {
-            String redisKey = TOKEN_BLACKLIST_KEY_PREFIX + token;
-            Boolean exists = redisTemplate.hasKey(redisKey);
-            if (Boolean.TRUE.equals(exists)) {
-                return true;
-            }
-        } catch (Exception e) {
-            log.debug("Redis检查Token黑名单失败，降级到内存检查: {}", e.getMessage());
-        }
 
         // 降级检查内存存储
         Long expiryTime = TOKEN_BLACKLIST.get(token);
