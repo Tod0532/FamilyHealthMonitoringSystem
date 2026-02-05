@@ -14,6 +14,7 @@ import com.health.interfaces.dto.RegisterRequest;
 import com.health.interfaces.dto.UserVO;
 import com.health.service.UserService;
 import com.health.util.JwtUtil;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
@@ -27,18 +28,14 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
 
     private final UserMapper userMapper;
     private final JwtUtil jwtUtil;
     private final JwtProperties jwtProperties;
 
-    // 内存存储（开发环境使用）
-    private static final ConcurrentHashMap<String, String> SMS_CODE_STORE = new ConcurrentHashMap<>();
-    private static final ConcurrentHashMap<String, Long> TOKEN_BLACKLIST = new ConcurrentHashMap<>();
-
-    // 临时使用内存存储（开发环境，Redis不可用时降级）
-    private static final ConcurrentHashMap<String, String> SMS_CODE_STORE = new ConcurrentHashMap<>();
+    // 令牌黑名单（开发环境使用内存存储）
     private static final ConcurrentHashMap<String, Long> TOKEN_BLACKLIST = new ConcurrentHashMap<>();
 
     @Override
@@ -163,11 +160,10 @@ public class UserServiceImpl implements UserService {
 
     /**
      * 检查Token是否在黑名单中
-     * 使用内存存储
+     * 使用内存存储（静态方法供过滤器调用）
      */
-    public boolean isTokenBlacklisted(String token) {
-
-        // 降级检查内存存储
+    public static boolean isTokenBlacklisted(String token) {
+        // 检查内存存储
         Long expiryTime = TOKEN_BLACKLIST.get(token);
         if (expiryTime == null) {
             return false;

@@ -26,8 +26,7 @@ public class RegisterRequest {
     @Schema(description = "确认密码", example = "abc123")
     private String confirmPassword;
 
-    @NotBlank(message = "验证码不能为空")
-    @Schema(description = "短信验证码", example = "123456")
+    @Schema(description = "短信验证码（开发环境可传任意值）", example = "123456")
     private String smsCode;
 
     @Schema(description = "昵称", example = "健康达人")

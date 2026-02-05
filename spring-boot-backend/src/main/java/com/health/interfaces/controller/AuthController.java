@@ -30,7 +30,7 @@ public class AuthController {
     /**
      * 用户注册
      */
-    @PostMapping("/auth/register")
+    @PostMapping("/api/auth/register")
     @Operation(summary = "用户注册", description = "通过手机号和密码注册新用户")
     public ApiResponse<AuthResponse> register(@Valid @RequestBody RegisterRequest request) {
         log.info("用户注册请求: phone={}", request.getPhone());
@@ -41,7 +41,7 @@ public class AuthController {
     /**
      * 用户登录
      */
-    @PostMapping("/auth/login")
+    @PostMapping("/api/auth/login")
     @Operation(summary = "用户登录", description = "通过手机号和密码登录")
     public ApiResponse<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
         log.info("用户登录请求: phone={}", request.getPhone());
@@ -52,7 +52,7 @@ public class AuthController {
     /**
      * 刷新令牌
      */
-    @PostMapping("/auth/refresh")
+    @PostMapping("/api/auth/refresh")
     @Operation(summary = "刷新令牌", description = "使用刷新令牌获取新的访问令牌")
     public ApiResponse<AuthResponse> refresh(@RequestParam String refreshToken) {
         log.info("刷新令牌请求");
@@ -63,7 +63,7 @@ public class AuthController {
     /**
      * 用户登出
      */
-    @PostMapping("/auth/logout")
+    @PostMapping("/api/auth/logout")
     @Operation(summary = "用户登出", description = "退出登录，使当前令牌失效")
     public ApiResponse<Void> logout(HttpServletRequest request) {
         String token = extractToken(request);
@@ -74,7 +74,7 @@ public class AuthController {
     /**
      * 修改密码
      */
-    @PostMapping("/auth/change-password")
+    @PostMapping("/api/auth/change-password")
     @Operation(summary = "修改密码", description = "用户修改登录密码")
     public ApiResponse<Void> changePassword(
             @Valid @RequestBody ChangePasswordRequest request,
@@ -96,7 +96,7 @@ public class AuthController {
         }
 
         if (userIdHeader == null) {
-            return ApiResponse.error(401, "用户未登录");
+            return ApiResponse.fail(401, "用户未登录");
         }
 
         Long userId = Long.valueOf(userIdHeader);

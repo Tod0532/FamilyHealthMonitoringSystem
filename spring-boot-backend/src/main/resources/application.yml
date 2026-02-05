@@ -91,8 +91,8 @@ mybatis-plus:
 
 # JWT 配置
 jwt:
-  secret: ${JWT_SECRET:health-center-secret-key-20240129-change-in-production}
-  expiration: ${JWT_EXPIRATION:86400}  # 24小时 (秒)
+  secret: ${JWT_SECRET:health-center-secret-key-2024}
+  expiration: ${JWT_EXPIRATION:604800}  # 7天 (秒)
   refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800}  # 7天 (秒)
 
 # 日志配置

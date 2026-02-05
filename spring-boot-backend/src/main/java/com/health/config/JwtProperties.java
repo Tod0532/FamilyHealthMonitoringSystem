@@ -15,12 +15,12 @@ public class JwtProperties {
     /**
      * 密钥（生产环境应从环境变量读取）
      */
-    private String secret = "health-center-secret-key-change-in-production";
+    private String secret = "health-center-secret-key-2024";
 
     /**
-     * 访问令牌有效期（秒），默认 24 小时
+     * 访问令牌有效期（秒），默认 7 天
      */
-    private Long expiration = 86400L;
+    private Long expiration = 604800L;
 
     /**
      * 刷新令牌有效期（秒），默认 7 天

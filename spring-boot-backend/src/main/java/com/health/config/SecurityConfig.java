@@ -53,7 +53,9 @@ public class SecurityConfig {
                 .authorizeRequests()
                         // 公开访问的端点
                         .antMatchers(
-                                "/auth/**",
+                                "/api/auth/**",
+                                "/api/test",
+                                "/api/health-data",
                                 "/knife4j/**",
                                 "/doc.html",
                                 "/swagger-ui/**",

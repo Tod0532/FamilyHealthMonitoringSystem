@@ -1,0 +1,19 @@
+# ============================================================================
+# 家庭健康中心APP - 生产环境配置
+# ============================================================================
+
+spring:
+  # 数据源配置 - 阿里云MySQL
+  datasource:
+    url: jdbc:mysql://localhost:3306/health_center_db?useSSL=false&serverTimezone=Asia/Shanghai
+    username: health_app
+    password: HealthApp2024!
+
+# 日志配置
+logging:
+  level:
+    root: INFO
+    com.health: INFO
+    com.baomidou.mybatisplus: INFO
+  file:
+    name: /opt/health-center/logs/health-center.log
