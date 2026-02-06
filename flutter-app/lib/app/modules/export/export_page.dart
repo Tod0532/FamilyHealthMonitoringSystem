@@ -3,8 +3,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:health_center_app/app/modules/export/export_controller.dart';
-import 'package:health_center_app/core/services/export_service.dart';
 import 'package:health_center_app/core/models/health_data.dart';
+import 'package:health_center_app/core/utils/permission_utils.dart';
+import 'package:health_center_app/core/widgets/permission_builder.dart';
+import 'package:health_center_app/core/services/export_service.dart';
 
 /// 数据类型颜色扩展
 extension HealthDataTypeColor on HealthDataType {
@@ -393,44 +395,43 @@ class ExportPage extends GetView<ExportController> {
     return Obx(() {
       final isExporting = controller.isExporting.value;
       final hasData = (controller.stats.value?.totalRecords ?? 0) > 0;
+      final canExport = hasData && !isExporting;
 
-      return SizedBox(
-        width: double.infinity,
-        child: ElevatedButton(
-          onPressed: hasData && !isExporting ? () => controller.export() : null,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF4CAF50),
-            foregroundColor: Colors.white,
-            disabledBackgroundColor: Colors.grey[300],
-            padding: EdgeInsets.symmetric(vertical: 16.h),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8.r),
-            ),
+      return PermissionButton(
+        permissionCheck: PermissionUtils.canExportAllData,
+        onPressed: canExport ? () => controller.export() : () {},
+        style: ElevatedButton.styleFrom(
+          backgroundColor: const Color(0xFF4CAF50),
+          foregroundColor: Colors.white,
+          disabledBackgroundColor: Colors.grey[300],
+          padding: EdgeInsets.symmetric(vertical: 16.h),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8.r),
           ),
-          child: isExporting
-              ? SizedBox(
-                  height: 20.h,
-                  width: 20.h,
-                  child: const CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                  ),
-                )
-              : Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.file_download),
-                    SizedBox(width: 8.w),
-                    Text(
-                      '导出数据',
-                      style: TextStyle(
-                        fontSize: 16.sp,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
         ),
+        child: isExporting
+            ? SizedBox(
+                height: 20.h,
+                width: 20.h,
+                child: const CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              )
+            : Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.file_download),
+                  SizedBox(width: 8.w),
+                  Text(
+                    '导出数据',
+                    style: TextStyle(
+                      fontSize: 16.sp,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
       );
     });
   }

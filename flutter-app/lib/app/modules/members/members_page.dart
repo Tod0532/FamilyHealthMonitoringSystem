@@ -3,6 +3,8 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:health_center_app/app/modules/members/members_controller.dart';
 import 'package:health_center_app/core/models/family_member.dart';
+import 'package:health_center_app/core/utils/permission_utils.dart';
+import 'package:health_center_app/core/widgets/permission_builder.dart';
 
 /// 成员管理页面
 class MembersPage extends GetView<MembersController> {
@@ -31,9 +33,9 @@ class MembersPage extends GetView<MembersController> {
           },
         );
       }),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: PermissionFab(
+        permissionCheck: PermissionUtils.canManageMembers,
         onPressed: () => controller.showAddMemberDialog(context),
-        backgroundColor: const Color(0xFF4CAF50),
         child: const Icon(Icons.add, color: Colors.white),
       ),
     );
@@ -161,40 +163,43 @@ class MembersPage extends GetView<MembersController> {
               ),
 
               // 操作按钮
-              PopupMenuButton<String>(
-                onSelected: (value) {
-                  switch (value) {
-                    case 'edit':
-                      controller.showEditMemberDialog(context, member);
-                      break;
-                    case 'delete':
-                      controller.confirmDeleteMember(context, member);
-                      break;
-                  }
-                },
-                icon: Icon(Icons.more_vert, color: Colors.grey[600]),
-                itemBuilder: (context) => [
-                  const PopupMenuItem(
-                    value: 'edit',
-                    child: Row(
-                      children: [
-                        Icon(Icons.edit, size: 18, color: Color(0xFF4CAF50)),
-                        SizedBox(width: 8),
-                        Text('编辑'),
-                      ],
+              PermissionBuilder(
+                permissionCheck: PermissionUtils.canManageMembers,
+                child: PopupMenuButton<String>(
+                  onSelected: (value) {
+                    switch (value) {
+                      case 'edit':
+                        controller.showEditMemberDialog(context, member);
+                        break;
+                      case 'delete':
+                        controller.confirmDeleteMember(context, member);
+                        break;
+                    }
+                  },
+                  icon: Icon(Icons.more_vert, color: Colors.grey[600]),
+                  itemBuilder: (context) => [
+                    const PopupMenuItem(
+                      value: 'edit',
+                      child: Row(
+                        children: [
+                          Icon(Icons.edit, size: 18, color: Color(0xFF4CAF50)),
+                          SizedBox(width: 8),
+                          Text('编辑'),
+                        ],
+                      ),
                     ),
-                  ),
-                  const PopupMenuItem(
-                    value: 'delete',
-                    child: Row(
-                      children: [
-                        Icon(Icons.delete, size: 18, color: Colors.red),
-                        SizedBox(width: 8),
-                        Text('删除'),
-                      ],
+                    const PopupMenuItem(
+                      value: 'delete',
+                      child: Row(
+                        children: [
+                          Icon(Icons.delete, size: 18, color: Colors.red),
+                          SizedBox(width: 8),
+                          Text('删除'),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ],
           ),

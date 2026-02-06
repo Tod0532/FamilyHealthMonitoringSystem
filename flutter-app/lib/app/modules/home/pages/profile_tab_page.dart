@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
+import 'package:health_center_app/core/models/user.dart';
 import 'package:health_center_app/core/storage/storage_service.dart';
+import 'package:health_center_app/core/utils/permission_utils.dart';
+import 'package:health_center_app/core/widgets/permission_builder.dart';
 
 /// 我的Tab页（个人中心）
 class ProfileTabPage extends StatelessWidget {
@@ -89,18 +92,25 @@ class ProfileTabPage extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Builder(
-                          builder: (context) {
-                            final nickname = storage.nickname ?? '健康用户';
-                            return Text(
-                              nickname,
-                              style: TextStyle(
-                                fontSize: 20.sp,
-                                fontWeight: FontWeight.bold,
-                                color: const Color(0xFF1A1A1A),
-                              ),
-                            );
-                          },
+                        Row(
+                          children: [
+                            Builder(
+                              builder: (context) {
+                                final nickname = storage.nickname ?? '健康用户';
+                                return Text(
+                                  nickname,
+                                  style: TextStyle(
+                                    fontSize: 20.sp,
+                                    fontWeight: FontWeight.bold,
+                                    color: const Color(0xFF1A1A1A),
+                                  ),
+                                );
+                              },
+                            ),
+                            SizedBox(width: 8.w),
+                            // 角色标签
+                            _buildRoleBadge(),
+                          ],
                         ),
                         SizedBox(height: 4.h),
                         Builder(
@@ -139,7 +149,19 @@ class ProfileTabPage extends StatelessWidget {
             _buildMenuItem(Icons.settings, '设置', '', onTap: () => Get.toNamed('/profile/settings')),
             _buildMenuItem(Icons.cleaning_services, '清除缓存', '', onTap: () => _showClearCacheDialog()),
 
-            // 功能组3：支持与反馈
+            // 功能组3：数据管理 - 仅管理员可见
+            PermissionBuilder(
+              permissionCheck: PermissionUtils.isAdmin,
+              child: Column(
+                children: [
+                  _buildSectionHeader('数据管理'),
+                  _buildMenuItem(Icons.download, '数据导出', '', onTap: () => Get.toNamed('/export')),
+                  _buildMenuItem(Icons.rule, '预警规则', '', onTap: () => Get.toNamed('/alerts/rules')),
+                ],
+              ),
+            ),
+
+            // 功能组4：支持与反馈
             _buildSectionHeader('支持与反馈'),
             _buildMenuItem(Icons.help_outline, '帮助与反馈', '', onTap: () {
               Get.snackbar('提示', '帮助与反馈页面开发中', snackPosition: SnackPosition.BOTTOM);
@@ -174,6 +196,59 @@ class ProfileTabPage extends StatelessWidget {
             SizedBox(height: 16.h),
           ],
         ),
+      ),
+    );
+  }
+
+  /// 构建角色标签
+  Widget _buildRoleBadge() {
+    final role = PermissionUtils.currentRole;
+    if (role == null) {
+      return const SizedBox.shrink();
+    }
+
+    Color bgColor;
+    Color textColor;
+    IconData icon;
+
+    switch (role) {
+      case UserRole.admin:
+        bgColor = const Color(0xFFFFF3E0);
+        textColor = const Color(0xFFFF9800);
+        icon = Icons.admin_panel_settings;
+        break;
+      case UserRole.member:
+        bgColor = const Color(0xFFE8F5E9);
+        textColor = const Color(0xFF4CAF50);
+        icon = Icons.person;
+        break;
+      case UserRole.guest:
+        bgColor = const Color(0xFFF5F5F5);
+        textColor = const Color(0xFF9E9E9E);
+        icon = Icons.visibility_off;
+        break;
+    }
+
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 2.h),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(10.r),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12.sp, color: textColor),
+          SizedBox(width: 4.w),
+          Text(
+            role.label,
+            style: TextStyle(
+              fontSize: 12.sp,
+              color: textColor,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
       ),
     );
   }

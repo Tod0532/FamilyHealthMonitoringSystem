@@ -64,6 +64,7 @@ public class UserServiceImpl implements UserService {
         user.setNickname(request.getNickname() != null ? request.getNickname() : defaultNickname);
         user.setGender(null);  // 用户注册时性别可选
         user.setStatus(1);  // 正常状态
+        user.setRole("USER");  // 默认角色为普通用户
         user.setCreateTime(LocalDateTime.now());
         user.setUpdateTime(LocalDateTime.now());
 
@@ -180,14 +181,16 @@ public class UserServiceImpl implements UserService {
      * 生成认证响应
      */
     private AuthResponse generateAuthResponse(User user) {
-        String accessToken = jwtUtil.generateAccessToken(user.getId(), user.getPhone());
-        String refreshToken = jwtUtil.generateRefreshToken(user.getId(), user.getPhone());
+        String userRole = user.getRole() != null ? user.getRole() : "USER";
+        String accessToken = jwtUtil.generateAccessToken(user.getId(), user.getPhone(), userRole);
+        String refreshToken = jwtUtil.generateRefreshToken(user.getId(), user.getPhone(), userRole);
 
         AuthResponse.UserInfo userInfo = AuthResponse.UserInfo.builder()
                 .id(user.getId())
                 .phone(user.getPhone())
                 .nickname(user.getNickname())
                 .avatar(user.getAvatar())
+                .role(userRole)
                 .build();
 
         return AuthResponse.builder()

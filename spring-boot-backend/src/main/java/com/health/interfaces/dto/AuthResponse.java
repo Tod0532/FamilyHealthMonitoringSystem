@@ -52,5 +52,8 @@ public class AuthResponse {
 
         @Schema(description = "头像")
         private String avatar;
+
+        @Schema(description = "用户角色：ADMIN-管理员，USER-普通用户，GUEST-访客")
+        private String role;
     }
 }

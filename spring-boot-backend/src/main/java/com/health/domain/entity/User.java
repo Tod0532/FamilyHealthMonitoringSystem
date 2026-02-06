@@ -54,6 +54,11 @@ public class User {
     private Integer status;
 
     /**
+     * 用户角色：ADMIN-管理员，USER-普通用户，GUEST-访客
+     */
+    private String role;
+
+    /**
      * 最后登录时间
      */
     private LocalDateTime lastLoginTime;

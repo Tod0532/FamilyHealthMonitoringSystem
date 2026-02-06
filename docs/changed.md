@@ -4,6 +4,121 @@
 
 ---
 
+## 2026-02-06 晚（角色权限控制功能完成）
+
+### 📁 新增文件
+
+| 文件路径 | 说明 | 作者 |
+|----------|------|------|
+| flutter-app/lib/core/utils/permission_utils.dart | 权限工具类 | Claude |
+| flutter-app/lib/core/widgets/permission_builder.dart | 权限控制Widget组件 | Claude |
+| spring-boot-backend/src/main/java/com/health/config/RequireRole.java | 角色权限验证注解 | Claude |
+| spring-boot-backend/src/main/java/com/health/config/RoleInterceptor.java | 角色验证拦截器 | Claude |
+| spring-boot-backend/src/main/java/com/health/config/WebConfig.java | Web MVC配置类 | Claude |
+
+### 📝 修改文件
+
+| 文件路径 | 说明 | 作者 |
+|----------|------|------|
+| flutter-app/lib/core/models/user.dart | 新增UserRole枚举 | Claude |
+| flutter-app/lib/core/models/auth_response.dart | 新增role字段 | Claude |
+| flutter-app/lib/core/storage/storage_service.dart | 新增userRole属性和存储方法 | Claude |
+| flutter-app/lib/app/modules/login/login_controller.dart | 登录成功后保存用户角色 | Claude |
+| flutter-app/lib/app/modules/register/register_controller.dart | 注册成功后保存用户角色 | Claude |
+| flutter-app/lib/app/modules/members/members_page.dart | 集成权限控制 | Claude |
+| flutter-app/lib/app/modules/alerts/alert_rules_page.dart | 集成权限控制 | Claude |
+| flutter-app/lib/app/modules/export/export_page.dart | 集成权限控制 | Claude |
+| flutter-app/lib/app/modules/home/pages/profile_tab_page.dart | 显示用户角色标签 | Claude |
+| spring-boot-backend/src/main/java/com/health/domain/entity/User.java | 新增role字段 | Claude |
+| spring-boot-backend/src/main/java/com/health/interfaces/dto/AuthResponse.java | 新增role字段 | Claude |
+| spring-boot-backend/src/main/java/com/health/util/JwtUtil.java | JWT包含角色信息 | Claude |
+| spring-boot-backend/.../service/impl/UserServiceImpl.java | 用户角色处理 | Claude |
+| spring-boot-backend/.../controller/FamilyMemberController.java | 添加@RequireRole注解 | Claude |
+| spring-boot-backend/.../controller/AlertRuleController.java | 添加@RequireRole注解 | Claude |
+
+### 📋 变更内容
+
+#### 类型：feat（新功能）
+#### 范围：权限系统
+#### 描述：完成角色权限控制功能
+
+**权限设计**：
+
+1. **三种角色定义**：
+   - `admin`（管理员）：拥有所有权限
+   - `member`（普通成员）：可以录入和查看数据
+   - `guest`（访客）：仅只读权限
+
+2. **权限矩阵**：
+
+| 操作 | admin | member | guest |
+|------|-------|--------|-------|
+| 管理家庭成员 | ✅ | ❌ | ❌ |
+| 编辑预警规则 | ✅ | ❌ | ❌ |
+| 导出数据 | ✅ | ❌ | ❌ |
+| 录入健康数据 | ✅ | ✅ | ❌ |
+| 删除数据 | ✅ | ✅ | ❌ |
+| 查看数据 | ✅ | ✅ | ✅ |
+
+**前端实现**：
+
+1. **UserRole枚举**：
+   ```dart
+   enum UserRole {
+     admin('管理员', Icons.admin_panel_settings),
+     member('成员', Icons.person),
+     guest('访客', Icons.visibility);
+   }
+   ```
+
+2. **PermissionUtils工具类**：
+   - `isAdmin()` / `isMember()` / `isGuest()`
+   - `canManageMembers()` - 仅管理员
+   - `canEditAlertRules()` - 仅管理员
+   - `canAddHealthData()` - 管理员和成员
+   - `canExportAllData()` - 仅管理员
+   - `showPermissionDeniedTip()` - 权限不足提示
+
+3. **权限控制组件**：
+   - `PermissionBuilder` - 根据权限显示/隐藏组件
+   - `PermissionButton` - 权限控制按钮
+   - `PermissionIconButton` - 权限控制图标按钮
+   - `PermissionFab` - 权限控制浮动按钮
+
+4. **页面集成**：
+   - 成员管理页：添加/编辑/删除按钮仅管理员可见
+   - 预警规则页：编辑/删除按钮仅管理员可见
+   - 数据导出页：导出按钮仅管理员可见
+   - 个人中心：显示用户角色标签
+
+**后端实现**：
+
+1. **RequireRole注解**：
+   ```java
+   @RequireRole({"ADMIN", "USER"})
+   public ApiResponse<FamilyMember> addMember(...)
+   ```
+
+2. **RoleInterceptor拦截器**：
+   - 检查JWT Token中的角色
+   - 验证角色是否满足@RequireRole要求
+   - 返回401/403错误码
+
+3. **JWT增强**：
+   - Token中包含role字段
+   - `JwtUtil.getRoleFromToken()` 解析角色
+
+4. **WebConfig配置**：
+   - 注册RoleInterceptor拦截器
+   - 排除登录/注册/测试接口
+
+**编译验证**：
+- ✅ Flutter analyze 通过
+- ✅ Flutter build apk --debug 成功
+- ✅ 权限控制功能正常工作
+
+---
+
 ## 2026-02-05 晚（权限控制方案设计）
 
 ### 📝 修改文件

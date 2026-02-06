@@ -28,24 +28,25 @@ public class JwtUtil {
     /**
      * 生成访问令牌
      */
-    public String generateAccessToken(Long userId, String phone) {
-        return generateToken(userId, phone, 7200L); // 2 小时
+    public String generateAccessToken(Long userId, String phone, String role) {
+        return generateToken(userId, phone, role, 7200L); // 2 小时
     }
 
     /**
      * 生成刷新令牌
      */
-    public String generateRefreshToken(Long userId, String phone) {
-        return generateToken(userId, phone, 604800L); // 7 天
+    public String generateRefreshToken(Long userId, String phone, String role) {
+        return generateToken(userId, phone, role, 604800L); // 7 天
     }
 
     /**
      * 生成令牌
      */
-    private String generateToken(Long userId, String phone, Long expiration) {
+    private String generateToken(Long userId, String phone, String role, Long expiration) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("userId", userId);
         claims.put("phone", phone);
+        claims.put("role", role != null ? role : "USER");
 
         Date now = new Date();
         Date expiryDate = new Date(now.getTime() + expiration * 1000);
@@ -84,6 +85,14 @@ public class JwtUtil {
     public String getPhoneFromToken(String token) {
         Claims claims = getClaimsFromToken(token);
         return claims != null ? claims.get("phone", String.class) : null;
+    }
+
+    /**
+     * 从令牌中获取角色
+     */
+    public String getRoleFromToken(String token) {
+        Claims claims = getClaimsFromToken(token);
+        return claims != null ? claims.get("role", String.class) : "USER";
     }
 
     /**

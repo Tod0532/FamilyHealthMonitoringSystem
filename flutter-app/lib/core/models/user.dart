@@ -1,3 +1,26 @@
+import 'package:flutter/material.dart';
+
+/// 用户角色枚举
+enum UserRole {
+  admin('管理员', Icons.admin_panel_settings, 'ADMIN'),
+  member('普通成员', Icons.person, 'USER'),
+  guest('访客', Icons.visibility_off, 'GUEST');
+
+  final String label;
+  final IconData icon;
+  final String code;
+
+  const UserRole(this.label, this.icon, this.code);
+
+  static UserRole fromCode(String? code) {
+    if (code == null) return UserRole.member;
+    return values.firstWhere(
+      (e) => e.code == code,
+      orElse: () => UserRole.member,
+    );
+  }
+}
+
 /// 用户模型
 class User {
   final String id;
@@ -7,6 +30,7 @@ class User {
   final int gender;
   final DateTime? birthday;
   final int status;
+  final UserRole role; // 新增：用户角色
   final DateTime? lastLoginTime;
   final DateTime createTime;
 
@@ -18,6 +42,7 @@ class User {
     required this.gender,
     this.birthday,
     required this.status,
+    required this.role, // 新增
     this.lastLoginTime,
     required this.createTime,
   });
@@ -31,6 +56,7 @@ class User {
       gender: _parseInt(json['gender']) ?? 0,
       birthday: _parseDateTimeNullable(json['birthday']),
       status: _parseInt(json['status']) ?? 0,
+      role: UserRole.fromCode(json['role']), // 新增：解析角色
       lastLoginTime: _parseDateTimeNullable(json['lastLoginTime']),
       createTime: _parseDateTime(json['createTime']),
     );
@@ -45,6 +71,7 @@ class User {
       'gender': gender,
       'birthday': birthday?.toIso8601String(),
       'status': status,
+      'role': role.code, // 新增：序列化角色
       'lastLoginTime': lastLoginTime?.toIso8601String(),
       'createTime': createTime.toIso8601String(),
     };
@@ -101,6 +128,24 @@ class User {
   /// 是否正常状态
   bool get isNormal => status == 0;
 
+  /// 是否为管理员
+  bool get isAdmin => role == UserRole.admin;
+
+  /// 是否为普通成员
+  bool get isMember => role == UserRole.member;
+
+  /// 是否为访客
+  bool get isGuest => role == UserRole.guest;
+
+  /// 是否可以管理成员
+  bool get canManageMembers => isAdmin;
+
+  /// 是否可以编辑预警规则
+  bool get canEditAlertRules => isAdmin;
+
+  /// 是否可以查看所有数据
+  bool get canViewAllData => isAdmin;
+
   User copyWith({
     String? id,
     String? phone,
@@ -109,6 +154,7 @@ class User {
     int? gender,
     DateTime? birthday,
     int? status,
+    UserRole? role, // 新增
     DateTime? lastLoginTime,
     DateTime? createTime,
   }) {
@@ -120,6 +166,7 @@ class User {
       gender: gender ?? this.gender,
       birthday: birthday ?? this.birthday,
       status: status ?? this.status,
+      role: role ?? this.role, // 新增
       lastLoginTime: lastLoginTime ?? this.lastLoginTime,
       createTime: createTime ?? this.createTime,
     );

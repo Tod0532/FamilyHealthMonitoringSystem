@@ -243,6 +243,10 @@ class RegisterController extends GetxController {
       await _storage.saveUserId(authResponse.userInfo.id);
       await _storage.savePhone(authResponse.userInfo.phone);
       await _storage.saveNickname(authResponse.userInfo.nickname);
+      // 保存用户角色
+      if (authResponse.userInfo.role != null) {
+        await _storage.saveUserRole(authResponse.userInfo.role!);
+      }
       if (authResponse.userInfo.avatar != null) {
         await _storage.saveAvatar(authResponse.userInfo.avatar!);
       }

@@ -1,5 +1,6 @@
 package com.health.interfaces.controller;
 
+import com.health.config.RequireRole;
 import com.health.interfaces.dto.AlertRuleRequest;
 import com.health.interfaces.dto.AlertRuleResponse;
 import com.health.interfaces.response.ApiResponse;
@@ -54,6 +55,7 @@ public class AlertRuleController {
 
     @Operation(summary = "添加预警规则")
     @PostMapping
+    @RequireRole("ADMIN")
     public ApiResponse<AlertRuleResponse> create(
             @Valid @RequestBody AlertRuleRequest ruleRequest,
             HttpServletRequest request) {
@@ -64,6 +66,7 @@ public class AlertRuleController {
 
     @Operation(summary = "更新预警规则")
     @PutMapping("/{id}")
+    @RequireRole("ADMIN")
     public ApiResponse<AlertRuleResponse> update(
             @Parameter(description = "规则ID") @PathVariable Long id,
             @Valid @RequestBody AlertRuleRequest ruleRequest,
@@ -75,6 +78,7 @@ public class AlertRuleController {
 
     @Operation(summary = "删除预警规则")
     @DeleteMapping("/{id}")
+    @RequireRole("ADMIN")
     public ApiResponse<Void> delete(
             @Parameter(description = "规则ID") @PathVariable Long id,
             HttpServletRequest request) {
@@ -85,6 +89,7 @@ public class AlertRuleController {
 
     @Operation(summary = "启用/禁用规则")
     @PutMapping("/{id}/toggle")
+    @RequireRole("ADMIN")
     public ApiResponse<Void> toggleEnabled(
             @Parameter(description = "规则ID") @PathVariable Long id,
             @Parameter(description = "启用状态：0-禁用，1-启用") @RequestParam Integer enabled,

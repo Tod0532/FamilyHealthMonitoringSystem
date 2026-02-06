@@ -3,6 +3,8 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:health_center_app/app/modules/alerts/health_alert_controller.dart';
 import 'package:health_center_app/core/models/health_alert.dart';
+import 'package:health_center_app/core/utils/permission_utils.dart';
+import 'package:health_center_app/core/widgets/permission_builder.dart';
 
 /// 预警规则管理页面
 class AlertRulesPage extends GetView<HealthAlertController> {
@@ -18,11 +20,13 @@ class AlertRulesPage extends GetView<HealthAlertController> {
         backgroundColor: const Color(0xFFF44336),
         foregroundColor: Colors.white,
         actions: [
-          // 添加规则按钮
-          IconButton(
+          // 添加规则按钮 - 仅管理员可见
+          PermissionIconButton(
+            permissionCheck: PermissionUtils.canEditAlertRules,
             onPressed: () => controller.showAddRuleDialog(context),
-            icon: const Icon(Icons.add),
+            icon: Icons.add,
             tooltip: '添加规则',
+            color: Colors.white,
           ),
         ],
       ),
@@ -377,31 +381,21 @@ class AlertRulesPage extends GetView<HealthAlertController> {
                   ),
                 ],
                 const Spacer(),
-                // 编辑按钮
-                IconButton(
+                // 编辑按钮 - 仅管理员可见
+                PermissionIconButton(
+                  permissionCheck: PermissionUtils.canEditAlertRules,
                   onPressed: () => controller.showEditRuleDialog(context, rule),
-                  icon: const Icon(Icons.edit_outlined),
-                  iconSize: 18.sp,
-                  color: Colors.grey[600],
+                  icon: Icons.edit_outlined,
                   tooltip: '编辑',
-                  padding: EdgeInsets.zero,
-                  constraints: BoxConstraints(
-                    minWidth: 32.w,
-                    minHeight: 32.w,
-                  ),
+                  color: Colors.grey[600],
                 ),
-                // 删除按钮
-                IconButton(
+                // 删除按钮 - 仅管理员可见
+                PermissionIconButton(
+                  permissionCheck: PermissionUtils.canEditAlertRules,
                   onPressed: () => controller.confirmDeleteRule(context, rule),
-                  icon: const Icon(Icons.delete_outline),
-                  iconSize: 18.sp,
-                  color: Colors.red,
+                  icon: Icons.delete_outline,
                   tooltip: '删除',
-                  padding: EdgeInsets.zero,
-                  constraints: BoxConstraints(
-                    minWidth: 32.w,
-                    minHeight: 32.w,
-                  ),
+                  color: Colors.red,
                 ),
               ],
             ),

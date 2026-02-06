@@ -5,6 +5,7 @@ import 'package:health_center_app/core/models/health_data.dart';
 import 'package:health_center_app/core/models/family_member.dart';
 import 'package:health_center_app/core/network/dio_provider.dart';
 import 'package:health_center_app/app/modules/members/members_controller.dart';
+import 'package:health_center_app/core/utils/permission_utils.dart';
 
 /// 健康预警控制器
 ///
@@ -200,6 +201,12 @@ class HealthAlertController extends GetxController {
 
   /// 添加预警规则
   Future<bool> addAlertRule(HealthAlertRule rule) async {
+    // 权限检查：只有管理员可以添加预警规则
+    if (!PermissionUtils.canEditAlertRules()) {
+      PermissionUtils.showPermissionDeniedTip();
+      return false;
+    }
+
     isSubmitting.value = true;
 
     try {
@@ -232,6 +239,12 @@ class HealthAlertController extends GetxController {
 
   /// 更新预警规则
   Future<bool> updateAlertRule(HealthAlertRule rule) async {
+    // 权限检查：只有管理员可以更新预警规则
+    if (!PermissionUtils.canEditAlertRules()) {
+      PermissionUtils.showPermissionDeniedTip();
+      return false;
+    }
+
     isSubmitting.value = true;
 
     try {
@@ -267,6 +280,12 @@ class HealthAlertController extends GetxController {
 
   /// 删除预警规则
   Future<bool> deleteAlertRule(String ruleId) async {
+    // 权限检查：只有管理员可以删除预警规则
+    if (!PermissionUtils.canEditAlertRules()) {
+      PermissionUtils.showPermissionDeniedTip();
+      return false;
+    }
+
     isSubmitting.value = true;
 
     try {

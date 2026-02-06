@@ -6,6 +6,7 @@ import 'package:health_center_app/main.dart';
 import 'package:health_center_app/core/models/family_member.dart';
 import 'package:health_center_app/core/models/health_data.dart';
 import 'package:health_center_app/core/models/health_diary.dart';
+import 'package:health_center_app/core/models/user.dart';
 
 /// 存储服务
 ///
@@ -309,6 +310,34 @@ class StorageService extends GetxService {
     return true;
   }
 
+  // ==================== 用户角色管理 ====================
+
+  /// 获取用户角色代码
+  String? get userRoleCode => getString('user_role');
+
+  /// 获取用户角色
+  UserRole? get userRole {
+    final code = userRoleCode;
+    if (code == null) return null;
+    return UserRole.values.firstWhere(
+      (e) => e.code == code,
+      orElse: () => UserRole.member,
+    );
+  }
+
+  /// 设置用户角色
+  Future<bool> setUserRole(UserRole role) {
+    return setString('user_role', role.code);
+  }
+
+  /// 保存用户角色（登录后调用）
+  Future<bool> saveUserRole(String roleCode) {
+    return setString('user_role', roleCode);
+  }
+
+  /// 便捷方法：检查当前用户是否为管理员
+  bool get isCurrentUserAdmin => userRole == UserRole.admin;
+
   /// 获取当前家庭ID
   String? get currentFamilyId => getString(AppConstants.keyCurrentFamily);
 
@@ -332,6 +361,7 @@ class StorageService extends GetxService {
     await remove('user_nickname');
     await remove('user_avatar');
     await remove('user_password');
+    await remove('user_role'); // 清除角色
   }
 
   /// 清除Token（包括加密存储）

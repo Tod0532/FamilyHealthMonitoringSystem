@@ -1,5 +1,6 @@
 package com.health.interfaces.controller;
 
+import com.health.config.RequireRole;
 import com.health.interfaces.dto.FamilyMemberRequest;
 import com.health.interfaces.dto.FamilyMemberResponse;
 import com.health.interfaces.response.ApiResponse;
@@ -46,6 +47,7 @@ public class FamilyMemberController {
 
     @Operation(summary = "添加家庭成员")
     @PostMapping
+    @RequireRole("ADMIN")
     public ApiResponse<FamilyMemberResponse> create(
             @Valid @RequestBody FamilyMemberRequest memberRequest,
             HttpServletRequest request) {
@@ -56,6 +58,7 @@ public class FamilyMemberController {
 
     @Operation(summary = "更新家庭成员")
     @PutMapping("/{id}")
+    @RequireRole("ADMIN")
     public ApiResponse<FamilyMemberResponse> update(
             @Parameter(description = "成员ID") @PathVariable Long id,
             @Valid @RequestBody FamilyMemberRequest memberRequest,
@@ -67,6 +70,7 @@ public class FamilyMemberController {
 
     @Operation(summary = "删除家庭成员")
     @DeleteMapping("/{id}")
+    @RequireRole("ADMIN")
     public ApiResponse<Void> delete(
             @Parameter(description = "成员ID") @PathVariable Long id,
             HttpServletRequest request) {
@@ -77,6 +81,7 @@ public class FamilyMemberController {
 
     @Operation(summary = "批量删除家庭成员")
     @DeleteMapping("/batch")
+    @RequireRole("ADMIN")
     public ApiResponse<Void> batchDelete(
             @RequestBody List<Long> ids,
             HttpServletRequest request) {

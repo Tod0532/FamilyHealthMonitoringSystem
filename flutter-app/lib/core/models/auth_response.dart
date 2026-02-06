@@ -41,12 +41,14 @@ class UserInfo {
   final String phone;
   final String nickname;
   final String? avatar;
+  final String? role; // 新增：用户角色
 
   UserInfo({
     required this.id,
     required this.phone,
     required this.nickname,
     this.avatar,
+    this.role, // 新增
   });
 
   factory UserInfo.fromJson(Map<String, dynamic> json) {
@@ -55,6 +57,7 @@ class UserInfo {
       phone: json['phone'] ?? '',
       nickname: json['nickname'] ?? '',
       avatar: json['avatar'],
+      role: json['role'], // 新增：解析角色
     );
   }
 
@@ -64,6 +67,7 @@ class UserInfo {
       'phone': phone,
       'nickname': nickname,
       'avatar': avatar,
+      'role': role, // 新增：序列化角色
     };
   }
 }

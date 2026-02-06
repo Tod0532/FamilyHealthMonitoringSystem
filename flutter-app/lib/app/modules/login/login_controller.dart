@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:health_center_app/core/models/auth_request.dart';
 import 'package:health_center_app/core/models/auth_response.dart';
+import 'package:health_center_app/core/models/user.dart';
 import 'package:health_center_app/core/network/dio_provider.dart';
 import 'package:health_center_app/core/storage/storage_service.dart';
 
@@ -121,6 +122,10 @@ class LoginController extends GetxController {
       // 保存用户信息
       await _storage.saveUserId(authResponse.userInfo.id);
       await _storage.saveNickname(authResponse.userInfo.nickname);
+      // 保存用户角色
+      if (authResponse.userInfo.role != null) {
+        await _storage.saveUserRole(authResponse.userInfo.role!);
+      }
       if (authResponse.userInfo.avatar != null) {
         await _storage.saveAvatar(authResponse.userInfo.avatar!);
       }
@@ -204,6 +209,8 @@ class LoginController extends GetxController {
     await _storage.saveAccessToken('demo_token');
     await _storage.saveUserId('demo_user');
     await _storage.saveNickname('体验用户');
+    // 体验模式默认设置为管理员角色，可以体验所有功能
+    await _storage.saveUserRole(UserRole.admin.code);
 
     Get.snackbar(
       '体验模式',
