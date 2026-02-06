@@ -4,6 +4,162 @@
 
 ---
 
+## 2026-02-06 深夜（后端生产环境重新部署）
+
+### 📝 修改文件
+
+| 文件路径 | 说明 | 作者 |
+|----------|------|------|
+| spring-boot-backend/.../config/RoleInterceptor.java | 修复jakarta→javax、Lambda effectively final | Claude |
+| spring-boot-backend/pom.xml | 移除MySQL和JWT依赖的runtime scope | Claude |
+| /etc/systemd/system/health-app.service | 修复环境变量名SPRING_PROFILE→SPRING_PROFILES_ACTIVE | Claude |
+
+### 📋 变更内容
+
+#### 类型：fix（修复）、deploy（部署）
+#### 范围：后端代码、服务配置、生产环境
+#### 描述：后端JAR重新编译并部署到生产环境，解决依赖和配置问题
+
+**问题清单及解决方案**：
+
+| # | 问题 | 原因 | 解决方案 |
+|---|------|------|----------|
+| 1 | `ClassNotFoundException: jakarta.servlet...` | Spring Boot 2.7使用javax，不是jakarta | `jakarta.servlet` → `javax.servlet` |
+| 2 | Lambda表达式变量非effectively final | `userRole`被重新赋值 | 使用`final String finalUserRole` |
+| 3 | `ClassNotFoundException: com.mysql.cj.protocol...` | runtime scope导致打包时依赖缺失 | 移除`<scope>runtime</scope>` |
+| 4 | `ClassNotFoundException: io.jsonwebtoken...` | JWT依赖runtime scope | 移除`<scope>runtime</scope>` |
+| 5 | 应用使用dev profile而非prod | 环境变量名错误 | `SPRING_PROFILE` → `SPRING_PROFILES_ACTIVE` |
+| 6 | 测试用户不存在 | 手机号格式错误 | `13801380000` → `13800138000` |
+| 7 | curl中文乱码 | Windows cmd UTF-8编码问题 | 使用英文测试数据 |
+
+**详细修复记录**：
+
+**1. RoleInterceptor.java - 包兼容性修复**
+```java
+// 修复前
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
+// 修复后
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+```
+
+**2. RoleInterceptor.java - Lambda effectively final修复**
+```java
+// 修复前
+String userRole = jwtUtil.getRoleFromToken(token);
+if (userRole == null) {
+    userRole = "USER";
+}
+boolean hasPermission = Arrays.stream(requiredRoles)
+        .anyMatch(role -> role.equalsIgnoreCase(userRole));
+
+// 修复后
+String userRole = jwtUtil.getRoleFromToken(token);
+if (userRole == null) {
+    userRole = "USER";
+}
+final String finalUserRole = userRole;  // effectively final
+boolean hasPermission = Arrays.stream(requiredRoles)
+        .anyMatch(role -> role.equalsIgnoreCase(finalUserRole));
+```
+
+**3. pom.xml - MySQL依赖修复**
+```xml
+<!-- 修复前 -->
+<dependency>
+    <groupId>com.mysql</groupId>
+    <artifactId>mysql-connector-j</artifactId>
+    <scope>runtime</scope>  <!-- 问题：打包时不包含 -->
+</dependency>
+
+<!-- 修复后 -->
+<dependency>
+    <groupId>com.mysql</groupId>
+    <artifactId>mysql-connector-j</artifactId>
+    <!-- 移除scope，默认compile -->
+</dependency>
+```
+
+**4. pom.xml - JWT依赖修复**
+```xml
+<!-- 修复前 -->
+<dependency>
+    <groupId>io.jsonwebtoken</groupId>
+    <artifactId>jjwt-impl</artifactId>
+    <version>${jjwt.version}</version>
+    <scope>runtime</scope>
+</dependency>
+
+<!-- 修复后 -->
+<dependency>
+    <groupId>io.jsonwebtoken</groupId>
+    <artifactId>jjwt-impl</artifactId>
+    <version>${jjwt.version}</version>
+</dependency>
+```
+
+**5. systemd服务配置修复**
+```ini
+# 修复前
+Environment="SPRING_PROFILE=prod"
+
+# 修复后
+Environment="SPRING_PROFILES_ACTIVE=prod"
+```
+
+**编译与部署**：
+```bash
+# 1. 本地编译
+cd spring-boot-backend
+mvnw.cmd clean package -DskipTests
+
+# 2. 上传JAR
+scp target/health-center-backend-1.0.0.jar aliyun:/opt/health-center/target/health-center-1.0.0.jar
+
+# 3. 重启服务
+ssh aliyun "systemctl daemon-reload && systemctl restart health-app"
+```
+
+**API测试验证**：
+```bash
+# 1. 注册新用户
+curl -X POST "http://139.129.108.119:8080/api/auth/register" \
+  -H "Content-Type: application/json; charset=UTF-8" \
+  -d '{"phone":"13900000005","password":"abc123456","confirmPassword":"abc123456","nickname":"TestUser5","smsCode":"123456"}'
+# ✅ {"code":200,"message":"success",...}
+
+# 2. 创建家庭
+curl -X POST "http://139.129.108.119:8080/api/family/create" \
+  -H "Authorization: Bearer {token}" \
+  -H "X-User-Id: 2019651847365197826" \
+  -H "Content-Type: application/json; charset=UTF-8" \
+  -d '{"familyName":"TestFamily"}'
+# ✅ {"code":200,"message":"家庭创建成功","data":{"familyCode":"CK6UGB",...}}
+
+# 3. 获取家庭信息
+curl "http://139.129.108.119:8080/api/family/my" \
+  -H "Authorization: Bearer {token}" \
+  -H "X-User-Id: 2019651847365197826"
+# ✅ {"code":200,"data":{"familyName":"TestFamily","familyCode":"CK6UGB",...}}
+```
+
+**测试账号**：
+- 手机号：13900000005
+- 密码：abc123456
+- 家庭邀请码：CK6UGB
+
+**服务状态**：
+| 项目 | 状态 |
+|------|------|
+| 后端服务 | ✅ 运行中 (PID: 598401) |
+| Profile | ✅ prod |
+| 数据库 | ✅ MySQL connected |
+| API端口 | ✅ 8080 |
+
+---
+
 ## 2026-02-06 深夜（修复更新家庭名称API）
 
 ### 📝 修改文件
@@ -2290,10 +2446,10 @@ NoSuchMethodError: Class 'MemberRole' has no instance getter 'name'
 
 | 统计项 | 数量 |
 |--------|--------|
-| 总变更次数 | 8 |
-| 本周变更 | 8 |
+| 总变更次数 | 9 |
+| 本周变更 | 9 |
 | 新增文件 | 75 |
-| 修改文件 | 23 |
+| 修改文件 | 27 |
 | 删除文件 | 0 |
 
 ---

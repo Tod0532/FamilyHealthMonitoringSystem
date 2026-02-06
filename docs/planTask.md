@@ -49,6 +49,7 @@
 | M21: 家庭二维码功能 | ✅ 已完成 | 2026-02-06 | 二维码创建/扫码/成员管理功能 |
 | M22: 家庭功能生产部署 | ✅ 已完成 | 2026-02-06 | 阿里云部署+API测试通过 |
 | M23: 更新家庭名称API修复 | ✅ 已完成 | 2026-02-06 | 修复数据/编码问题 |
+| M24: 后端生产环境重新部署 | ✅ 已完成 | 2026-02-06 | 修复依赖scope、profile配置、编译打包 |
 
 ---
 
@@ -218,6 +219,32 @@
 ---
 
 ## 🎉 今日完成
+
+### 2026-02-06 深夜（后端生产环境重新部署）
+
+**问题诊断与解决**：
+
+| # | 问题 | 状态 | 解决方案 |
+|---|------|------|----------|
+| 1 | `ClassNotFoundException: jakarta.servlet...` | ✅ | 改为`javax.servlet`包 |
+| 2 | Lambda变量非effectively final | ✅ | 使用`final String finalUserRole` |
+| 3 | MySQL连接器类缺失 | ✅ | 移除`<scope>runtime</scope>` |
+| 4 | JWT依赖类缺失 | ✅ | 移除`<scope>runtime</scope>` |
+| 5 | 应用使用dev profile | ✅ | 环境变量改为`SPRING_PROFILES_ACTIVE` |
+| 6 | 测试用户不存在 | ✅ | 手机号改为`13800138000` |
+| 7 | curl中文乱码 | ✅ | 使用英文测试数据 |
+
+**修改文件**：
+- `spring-boot-backend/.../config/RoleInterceptor.java` - 修复包名和Lambda
+- `spring-boot-backend/pom.xml` - 移除runtime scope
+- `/etc/systemd/system/health-app.service` - 修复环境变量名
+
+**部署验证**：
+- 注册账号：13900000005 / abc123456
+- 创建家庭：成功，邀请码 CK6UGB
+- 家庭API：全部正常
+
+---
 
 ### 2026-02-06 深夜（更新家庭名称API修复）
 

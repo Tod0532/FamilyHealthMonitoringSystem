@@ -3,8 +3,8 @@ package com.health.config;
 import com.health.interfaces.response.ApiResponse;
 import com.health.util.JwtUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.method.HandlerMethod;
@@ -73,11 +73,12 @@ public class RoleInterceptor implements HandlerInterceptor {
         if (userRole == null) {
             userRole = "USER"; // 默认角色
         }
+        final String finalUserRole = userRole;
 
         // 检查角色是否匹配
         String[] requiredRoles = methodAnnotation.value();
         boolean hasPermission = Arrays.stream(requiredRoles)
-                .anyMatch(role -> role.equalsIgnoreCase(userRole));
+                .anyMatch(role -> role.equalsIgnoreCase(finalUserRole));
 
         if (!hasPermission) {
             log.warn("用户角色权限不足: uri={}, userRole={}, requiredRoles={}",
