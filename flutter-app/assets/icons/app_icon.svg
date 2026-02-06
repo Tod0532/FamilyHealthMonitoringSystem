@@ -1,0 +1,52 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <!-- 定义渐变 -->
+  <defs>
+    <linearGradient id="heartGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#81C784;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2E7D32;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4CAF50;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2E7D32;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- 圆角矩形背景 -->
+  <rect x="0" y="0" width="512" height="512" rx="110" ry="110" fill="url(#bgGradient)"/>
+
+  <!-- 白色外环装饰 -->
+  <circle cx="256" cy="230" r="140" fill="none" stroke="white" stroke-width="8" opacity="0.3"/>
+
+  <!-- 主心形 -->
+  <path d="M256 380
+           C256 380, 140 280, 140 190
+           C140 140, 180 110, 220 110
+           C245 110, 256 125, 256 125
+           C256 125, 267 110, 292 110
+           C332 110, 372 140, 372 190
+           C372 280, 256 380, 256 380Z"
+        fill="white"
+        stroke="#E8F5E9"
+        stroke-width="4"/>
+
+  <!-- 内部绿色心形 -->
+  <path d="M256 350
+           C256 350, 160 265, 160 190
+           C160 150, 190 130, 220 130
+           C240 130, 256 145, 256 145
+           C256 145, 272 130, 292 130
+           C322 130, 352 150, 352 190
+           C352 265, 256 350, 256 350Z"
+        fill="url(#heartGradient)"/>
+
+  <!-- 心电图波形 -->
+  <g stroke="white" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity="0.9">
+    <!-- 左侧波形 -->
+    <path d="M150 310 L170 310 L180 295 L195 330 L205 310 L220 310"/>
+    <!-- 右侧波形 -->
+    <path d="M292 310 L307 310 L317 295 L332 330 L342 310 L362 310"/>
+  </g>
+
+  <!-- 顶部小装饰点 -->
+  <circle cx="256" cy="60" r="8" fill="white" opacity="0.8"/>
+</svg>

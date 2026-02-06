@@ -1,6 +1,6 @@
 # 家庭健康中心APP - 项目进度跟踪
 
-> 最后更新时间：2026-02-06 深夜
+> 最后更新时间：2026-02-06 下午
 > 项目周期：12周（预计完成时间：2026-04-20）
 
 ---
@@ -48,8 +48,136 @@
 | M20: 角色权限控制 | ✅ 已完成 | 2026-02-06 | 三种角色权限控制功能完成 |
 | M21: 家庭二维码功能 | ✅ 已完成 | 2026-02-06 | 二维码创建/扫码/成员管理功能 |
 | M22: 家庭功能生产部署 | ✅ 已完成 | 2026-02-06 | 阿里云部署+API测试通过 |
-| M23: 更新家庭名称API修复 | ✅ 已完成 | 2026-02-06 | 修复数据/编码问题 |
+| M23: 家庭显示问题修复 | ✅ 已完成 | 2026-02-06 | 修复X-User-Id header缺失导致的显示问题 |
 | M24: 后端生产环境重新部署 | ✅ 已完成 | 2026-02-06 | 修复依赖scope、profile配置、编译打包 |
+| M25: 健康数据家庭共享修复 | ✅ 已完成 | 2026-02-06 | 修复跨用户健康数据共享+成员列表显示 |
+| M26: 应用图标与启动页优化 | ✅ 已完成 | 2026-02-06 | SVG图标生成+启动页浅绿配色 |
+
+---
+
+## 🖥️ 后端项目进度
+
+### 后端技术栈
+| 技术 | 版本 | 说明 |
+|------|------|------|
+| Java | 17 | 开发语言 |
+| Spring Boot | 2.7.18 | Web框架 |
+| MyBatis Plus | 3.5.5 | ORM框架 |
+| MySQL | 8.0.45 | 数据库 |
+| JWT | jjwt-0.12.3 | 认证授权 |
+| Lombok | 1.18.30 | 简化代码 |
+| Knife4j | 4.1.0 | API文档 |
+
+### 后端代码统计（73个Java文件）
+
+**按模块分类**：
+
+| 模块 | 文件数 | 说明 |
+|------|--------|------|
+| config | 8 | 配置类（CORS、JWT、Security、MyBatis、Web等） |
+| domain/entity | 5 | 实体类（User、Family、FamilyMember、HealthData、AlertRule/Record） |
+| domain/mapper | 6 | MyBatis Mapper接口 |
+| interfaces/controller | 7 | 控制器（7个RESTful API控制器） |
+| interfaces/dto | 15 | 数据传输对象（Request/Response） |
+| interfaces/exception | 4 | 异常处理（BusinessException、ErrorCode、GlobalExceptionHandler等） |
+| interfaces/response | 3 | 响应封装（ApiResponse、PageResponse、Result） |
+| service | 6 | 服务接口 |
+| service/impl | 6 | 服务实现类 |
+| filter | 1 | JWT认证过滤器 |
+| util | 3 | 工具类（JwtUtil、SecurityUtil） |
+| 主类 | 1 | HealthCenterApplication.java |
+
+### 后端API接口清单（30+个）
+
+| 控制器 | 接口数 | 路径前缀 | 状态 |
+|--------|--------|----------|------|
+| AuthController | 5 | /api/auth | ✅ |
+| UserController | 2 | /api/user | ✅ |
+| FamilyMemberController | 5 | /api/members | ✅ |
+| HealthDataController | 5 | /api/health-data | ✅ |
+| AlertRuleController | 5 | /api/alert-rules | ✅ |
+| AlertRecordController | 4 | /api/alert-records | ✅ |
+| FamilyController | 9 | /api/family | ✅ |
+
+**具体接口**：
+```
+认证API (/api/auth):
+  POST   /register        - 用户注册
+  POST   /login           - 用户登录
+  POST   /refresh         - 刷新令牌
+  POST   /logout          - 用户登出
+  POST   /change-password - 修改密码
+
+用户API (/api/user):
+  GET    /current         - 获取当前用户信息
+  PUT    /update          - 更新用户信息
+
+家庭成员API (/api/members):
+  GET    /                - 获取成员列表
+  POST   /                - 添加成员
+  PUT    /{id}            - 更新成员
+  DELETE /{id}            - 删除成员
+  GET    /stats           - 获取成员统计
+
+健康数据API (/api/health-data):
+  GET    /                - 获取健康数据列表
+  POST   /                - 添加健康数据
+  GET    /stats           - 获取数据统计
+  GET    /export          - 导出数据
+  GET    /{id}            - 获取单条数据
+
+预警规则API (/api/alert-rules):
+  GET    /                - 获取规则列表
+  POST   /                - 创建规则
+  PUT    /{id}            - 更新规则
+  DELETE /{id}            - 删除规则
+  POST   /check           - 手动检查预警
+
+预警记录API (/api/alert-records):
+  GET    /                - 获取预警记录
+  PUT    /{id}/read       - 标记已读
+  PUT    /{id}/handle     - 标记已处理
+  DELETE /{id}            - 删除记录
+
+家庭API (/api/family):
+  POST   /create          - 创建家庭
+  GET    /my              - 获取我的家庭
+  GET    /qrcode          - 获取二维码
+  GET    /info/{code}     - 解析邀请码
+  POST   /join            - 加入家庭
+  POST   /leave           - 退出家庭
+  GET    /members         - 获取家庭成员
+  DELETE /members/{uid}   - 移除成员
+  PUT    /name            - 更新家庭名称
+```
+
+### 后端部署信息
+
+**开发环境**：
+- 地址：localhost:8080
+- 数据库：H2内存数据库（开发）/ MySQL（生产）
+
+**生产环境**：
+- 服务器：阿里云 ECS
+- 公网IP：139.129.108.119:8080
+- 系统：Ubuntu 22.04
+- Java：OpenJDK 17.0.18
+- 数据库：MySQL 8.0.45
+- 部署方式：systemd服务（开机自启）
+- JAR包：health-center-backend-1.0.0.jar
+
+### 后端问题修复记录
+
+| 时间 | 问题 | 解决方案 |
+|------|------|----------|
+| 2026-02-06 | X-User-Id header缺失 | 前端DioProvider添加header，后端Filter设置属性 |
+| 2026-02-06 | ClassNotFoundException: jakarta.servlet | 改为javax.servlet包 |
+| 2026-02-06 | MySQL连接器类缺失 | 移除pom.xml中的runtime scope |
+| 2026-02-06 | JWT依赖类缺失 | 移除runtime scope |
+| 2026-02-06 | 应用使用dev profile | 环境变量改为SPRING_PROFILES_ACTIVE |
+| 2026-02-05 | 用户状态禁用 | 更新status=1 |
+| 2026-02-05 | JWT密钥过短 | 更新为54字符密钥 |
+| 2026-02-05 | 表结构不匹配 | ALTER TABLE添加字段 |
 
 ---
 
@@ -219,6 +347,111 @@
 ---
 
 ## 🎉 今日完成
+
+### 2026-02-06 晚（应用图标优化 + 启动页配色优化✅）
+
+**完成内容**：
+- ✅ 应用图标PNG生成 (使用svg2img)
+- ✅ Android/iOS各尺寸图标生成
+- ✅ 启动页配色从深绿改为浅绿渐变
+- ✅ 文字颜色从白色改为深绿色
+- ✅ APK编译并安装测试
+
+**配色对比**：
+| 元素 | 修改前 | 修改后 |
+|------|--------|--------|
+| 背景 | 深绿→主绿→浅绿 | 极浅绿→浅绿→中浅绿 |
+| 标题 | 白色 | 深绿色 |
+| 副标题 | 白色70% | 主绿色 |
+
+**修改文件**：
+- `assets/icons/app_icon.png` - 主图标PNG
+- `assets/icons/app_icon_foreground.png` - 前景图标PNG
+- `android/.../drawable*/launch_background.xml` - 启动背景
+- `lib/app/modules/splash/splash_page.dart` - 启动页配色
+
+---
+
+### 2026-02-06 下午（家庭显示问题修复✅验证通过）
+
+**问题描述**：
+用户登录后APP显示"创建或加入家庭"，而不是已存在的家庭信息。
+
+**根本原因分析**：
+| 组件 | 问题 |
+|------|------|
+| 后端Controller | 使用`@RequestHeader("X-User-Id")`从HTTP header读取用户ID |
+| 前端DioProvider | 只发送了Authorization Bearer token，没有发送X-User-Id header |
+| 结果 | MissingRequestHeaderException → 5000系统内部错误 |
+
+**修复内容**：
+| 文件 | 修改 |
+|------|------|
+| `flutter-app/lib/core/network/dio_provider.dart` | 请求拦截器中添加`X-User-Id` header |
+| `spring-boot-backend/.../filter/JwtAuthenticationFilter.java` | 同时设置`userId`和`X-User-Id`属性 |
+| `flutter-app/lib/app/modules/home/home_controller.dart` | 修复FamilyController初始化逻辑 |
+| `flutter-app/lib/app/modules/family/family_controller.dart` | 添加详细调试日志 |
+
+**代码变更**：
+```dart
+// dio_provider.dart - 添加X-User-Id header
+onRequest: (options, handler) {
+  final token = _storage.accessToken;
+  if (token != null && token.isNotEmpty) {
+    options.headers['Authorization'] = 'Bearer $token';
+  }
+  // 新增：注入用户ID
+  final userId = _storage.userId;
+  if (userId != null && userId.isNotEmpty) {
+    options.headers['X-User-Id'] = userId;
+  }
+  ...
+}
+```
+
+```java
+// JwtAuthenticationFilter.java - 同时设置两个属性
+private static final String USER_ID_ATTRIBUTE = "userId";
+private static final String USER_ID_HEADER = "X-User-Id";
+
+// 认证成功后
+request.setAttribute(USER_ID_ATTRIBUTE, userId);
+request.setAttribute(USER_ID_HEADER, userId);  // 新增
+```
+
+**API测试验证**：
+```bash
+curl http://139.129.108.119:8080/api/family/my \
+  -H "Authorization: Bearer xxx" \
+  -H "X-User-Id: 2019651847365197826"
+
+# 返回结果
+{
+  "code": 200,
+  "data": {
+    "id": 2019651977891938306,
+    "familyName": "TestFamily",
+    "familyCode": "CK6UGB",
+    "adminId": 2019651847365197826,
+    "adminNickname": "TestUser5",
+    "memberCount": 1,
+    "myRole": "admin"
+  }
+}
+```
+
+**APP验证结果（2026-02-06 14:40）**：
+- ✅ 登录后正常显示家庭信息
+- ✅ 家庭名称：TestFamily
+- ✅ 成员数量：1位成员
+- ✅ 邀请码：CK6UGB
+- ✅ 用户角色：管理员
+
+**测试账号**：
+- 手机号：13900000005
+- 密码：abc123456
+
+---
 
 ### 2026-02-06 深夜（后端生产环境重新部署）
 

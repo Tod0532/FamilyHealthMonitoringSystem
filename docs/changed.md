@@ -4,6 +4,292 @@
 
 ---
 
+## 2026-02-06 晚（应用图标优化 + 启动页配色优化）
+
+### 📝 修改文件
+
+| 文件路径 | 说明 | 作者 |
+|----------|------|------|
+| flutter-app/assets/icons/app_icon.png | 生成主图标PNG (1024x1024) | Claude |
+| flutter-app/assets/icons/app_icon_foreground.png | 生成Android自适应图标PNG (432x432) | Claude |
+| flutter-app/android/app/src/main/res/mipmap-*/ic_launcher.png | 生成5种尺寸Android图标 | Claude |
+| flutter-app/android/app/src/main/res/drawable-*/ic_launcher_foreground.png | 生成5种尺寸自适应前景图标 | Claude |
+| flutter-app/android/app/src/main/res/drawable/launch_background.xml | 修改启动背景为浅绿渐变 | Claude |
+| flutter-app/android/app/src/main/res/drawable-v21/launch_background.xml | 修改启动背景为浅绿渐变 | Claude |
+| flutter-app/lib/app/modules/splash/splash_page.dart | 优化启动页配色方案 | Claude |
+| flutter-app/android/app/build.gradle | 添加debug签名配置 | Claude |
+| flutter-app/android/app/debug.keystore | 生成debug签名密钥 | Claude |
+
+### 📋 变更内容
+
+#### 类型：feat（功能优化）
+#### 范围：UI界面、Android配置
+#### 描述：应用图标生成 + 启动页配色优化 - 修复深色背景问题
+
+**问题分析**：
+1. APP使用默认Flutter图标，缺乏品牌识别度
+2. 启动页深绿色渐变背景 (#2E7D32) 过深，看起来像黑色，视觉突兀
+3. 白色文字在深色背景上对比度不够舒适
+
+**解决方案**：
+
+**1. 应用图标生成**：
+- 使用Node.js的svg2img包将SVG转换为PNG
+- 主图标：app_icon.png (1024x1024, 58KB)
+- 前景图标：app_icon_foreground.png (432x432, 29KB)
+- 运行flutter_launcher_icons生成各平台图标
+
+**2. 启动背景配色优化**：
+
+| 元素 | 修改前 | 修改后 |
+|------|--------|--------|
+| Android启动背景 | 白色 | 浅绿渐变 (#E8F5E9→#C8E6C9) |
+| Flutter启动页背景 | 深绿→主绿→浅绿 | 极浅绿→浅绿→中浅绿 |
+| 标题颜色 | 白色 | 深绿色 #2E7D32 |
+| 副标题颜色 | 白色70% | 主绿色 #4CAF50 |
+| 标语背景 | 白色半透明 | 绿色半透明+边框 |
+| 标语文字 | 白色 | 深绿色 |
+| 加载指示器 | 白色 | 主绿色 |
+
+**3. 配色代码**：
+```xml
+<!-- Android启动背景 -->
+<gradient
+    android:startColor="#FFE8F5E9"  <!-- 极浅绿 -->
+    android:endColor="#FFC8E6C9"    <!-- 浅绿色 -->
+    android:angle="135" />
+```
+
+```dart
+// Flutter启动页背景
+colors: [
+  Color(0xFFE8F5E9),  // 极浅绿 - 柔和清新
+  Color(0xFFC8E6C9),  // 浅绿色 - 温暖舒适
+  Color(0xFFA5D6A7),  // 中浅绿 - 自然和谐
+]
+```
+
+**设计原则**：
+- ✅ 清新配色 - 浅绿色系符合健康APP主题
+- ✅ 柔和过渡 - 浅到中的渐变，视觉舒适
+- ✅ 对比度足够 - 深色文字在浅色背景上清晰可读
+- ✅ 品牌一致性 - 保持绿色主题色
+
+**测试结果**：
+- ✅ APK编译成功
+- ✅ 图标在手机上显示正常
+- ✅ 启动页浅绿渐变背景柔和不突兀
+- ✅ 文字清晰可读
+
+---
+
+## 2026-02-06 下午（健康数据家庭共享修复）
+
+### 📝 修改文件
+
+| 文件路径 | 说明 | 作者 |
+|----------|------|------|
+| spring-boot-backend/.../HealthDataServiceImpl.java | 添加familyId设置、改为按familyId查询 | Claude |
+| spring-boot-backend/.../FamilyMemberServiceImpl.java | 改为按familyId查询家庭成员 | Claude |
+| spring-boot-backend/.../filter/JwtAuthenticationFilter.java | 添加USER_ID_ATTRIBUTE常量，同时设置userId和X-User-Id属性 | Claude |
+| flutter-app/.../network/dio_provider.dart | 在请求拦截器中添加X-User-Id header | Claude |
+| flutter-app/.../home/home_controller.dart | 修复FamilyController的onInit调用（移除重复调用） | Claude |
+| flutter-app/.../family/family_controller.dart | 添加详细调试日志 | Claude |
+
+### 📋 变更内容
+
+#### 类型：fix（修复）、feat（新功能）
+#### 范围：后端代码、数据库
+#### 描述：修复健康数据家庭共享问题 - 第一台手机看不到第二台手机提交的数据
+
+**问题分析**：
+1. 后端查询健康数据使用 `userId` 而非 `familyId`，只能看到当前用户创建的数据
+2. 后端查询家庭成员使用 `userId` 而非 `familyId`，只能看到当前用户创建的成员
+3. 历史数据 `family_id` 字段为 NULL
+
+**解决方案**：
+
+**1. HealthDataServiceImpl.java 修改**：
+```java
+// 添加UserMapper依赖
+private final UserMapper userMapper;
+
+// create()方法 - 设置familyId
+if (request.getMemberId() != null) {
+    FamilyMember member = familyMemberMapper.selectById(request.getMemberId());
+    if (member != null) {
+        data.setFamilyId(member.getFamilyId());
+    }
+} else {
+    Long familyId = getUserFamilyId(userId);
+    data.setFamilyId(familyId);
+}
+
+// getList()方法 - 改为familyId查询
+Long familyId = getUserFamilyId(userId);
+if (familyId == null) {
+    throw new BusinessException(ErrorCode.FAMILY_NOT_FOUND, "您还未加入家庭");
+}
+wrapper.eq(HealthData::getFamilyId, familyId);
+
+// getTrend()方法 - 改为familyId查询
+// getById/update/delete - 改为检查家庭成员关系
+
+// 新增辅助方法
+private Long getUserFamilyId(Long userId) {
+    User user = userMapper.selectById(userId);
+    return user != null ? user.getFamilyId() : null;
+}
+```
+
+**2. FamilyMemberServiceImpl.java 修改**：
+```java
+// 添加UserMapper依赖
+private final UserMapper userMapper;
+
+// getList()方法 - 改为familyId查询
+Long familyId = getUserFamilyId(userId);
+if (familyId == null) {
+    return List.of();
+}
+List<FamilyMember> list = familyMemberMapper.selectList(
+    new LambdaQueryWrapper<FamilyMember>()
+        .eq(FamilyMember::getFamilyId, familyId)  // 改为familyId
+        .orderByAsc(FamilyMember::getSortOrder)
+);
+```
+
+**3. 数据库数据修复**：
+```sql
+-- 更新历史数据的familyId
+UPDATE health_data hd
+SET hd.family_id = (
+    SELECT fm.family_id
+    FROM family_member fm
+    WHERE fm.id = hd.member_id
+)
+WHERE hd.family_id IS NULL AND hd.member_id IS NOT NULL;
+```
+
+**测试结果**：
+- ✅ 手机二提交健康数据后，familyId正确设置
+- ✅ 手机一可以查询到整个家庭的健康数据
+- ✅ 成员列表显示所有家庭成员（包括其他用户创建的）
+- ✅ 成员名称正确显示（不再显示"未知成员"）
+
+**部署信息**：
+- 编译：`mvnw.cmd clean package -DskipTests` ✅
+- 上传：`scp ... aliyun:/opt/health-center/target/` ✅
+- 重启：`systemctl restart health-app` ✅
+- 服务状态：active (running) ✅
+
+---
+
+## 2026-02-06 下午（家庭功能显示问题修复）
+
+### 📝 修改文件
+
+| 文件路径 | 说明 | 作者 |
+|----------|------|------|
+| spring-boot-backend/.../filter/JwtAuthenticationFilter.java | 添加USER_ID_ATTRIBUTE常量，同时设置userId和X-User-Id属性 | Claude |
+| flutter-app/.../network/dio_provider.dart | 在请求拦截器中添加X-User-Id header | Claude |
+| flutter-app/.../home/home_controller.dart | 修复FamilyController的onInit调用（移除重复调用） | Claude |
+| flutter-app/.../family/family_controller.dart | 添加详细调试日志 | Claude |
+
+### 📋 变更内容
+
+#### 类型：fix（修复）
+#### 范围：后端代码、前端代码
+#### 描述：修复家庭信息显示问题，APP登录后无法显示已加入的家庭信息
+
+**问题分析**：
+1. 后端FamilyController使用`@RequestHeader("X-User-Id")`从HTTP header读取用户ID
+2. 前端DioProvider只发送了Authorization Bearer token，没有发送X-User-Id header
+3. 结果：MissingRequestHeaderException异常，返回5000错误
+
+**解决方案**：
+1. 前端DioProvider在请求拦截器中添加X-User-Id header（从StorageService.userId读取）
+2. 后端JwtAuthenticationFilter同时设置userId和X-User-Id属性（向后兼容）
+
+**代码变更**：
+
+**1. dio_provider.dart - 添加X-User-Id header**
+```dart
+onRequest: (options, handler) {
+  // 注入 Token
+  final token = _storage.accessToken;
+  if (token != null && token.isNotEmpty) {
+    options.headers['Authorization'] = 'Bearer $token';
+  }
+
+  // 注入用户ID（后端需要）- 新增
+  final userId = _storage.userId;
+  if (userId != null && userId.isNotEmpty) {
+    options.headers['X-User-Id'] = userId;
+  }
+  ...
+}
+```
+
+**2. JwtAuthenticationFilter.java - 同时设置两个属性**
+```java
+private static final String USER_ID_ATTRIBUTE = "userId";
+private static final String USER_ID_HEADER = "X-User-Id";
+
+// 在认证成功后
+request.setAttribute(USER_ID_ATTRIBUTE, userId);
+request.setAttribute(USER_ID_HEADER, userId);  // 新增
+```
+
+**测试验证**：
+```bash
+# 正确请求（包含两个header）
+curl http://139.129.108.119:8080/api/family/my \
+  -H "Authorization: Bearer xxx" \
+  -H "X-User-Id: 2019651847365197826"
+
+# 返回结果
+{
+  "code": 200,
+  "data": {
+    "id": 2019651977891938306,
+    "familyName": "TestFamily",
+    "familyCode": "CK6UGB",
+    "memberCount": 1,
+    "myRole": "admin"
+  }
+}
+```
+
+**✅ 验证结果（2026-02-06 14:40）**：
+用户登录后APP已正常显示家庭信息：
+- 家庭名称：TestFamily
+- 成员数量：1位成员
+- 邀请码：CK6UGB
+- 角色：管理员
+
+---
+```bash
+# 正确请求（包含两个header）
+curl http://139.129.108.119:8080/api/family/my \
+  -H "Authorization: Bearer xxx" \
+  -H "X-User-Id: 2019651847365197826"
+
+# 返回结果
+{
+  "code": 200,
+  "data": {
+    "id": 2019651977891938306,
+    "familyName": "TestFamily",
+    "familyCode": "CK6UGB",
+    "memberCount": 1,
+    "myRole": "admin"
+  }
+}
+```
+
+---
+
 ## 2026-02-06 深夜（后端生产环境重新部署）
 
 ### 📝 修改文件
@@ -2444,13 +2730,57 @@ NoSuchMethodError: Class 'MemberRole' has no instance getter 'name'
 
 ## 统计信息
 
-| 统计项 | 数量 |
-|--------|--------|
-| 总变更次数 | 9 |
-| 本周变更 | 9 |
-| 新增文件 | 75 |
-| 修改文件 | 27 |
-| 删除文件 | 0 |
+### 项目整体统计
+
+| 统计项 | 前端 | 后端 | 合计 |
+|--------|------|------|------|
+| 总变更次数 | - | - | 10 |
+| 本周变更 | - | - | 10 |
+| 新增文件 | 75+ | 40+ | 115+ |
+| 修改文件 | 30+ | 15 | 45+ |
+| 删除文件 | 0 | 0 | 0 |
+
+### 前端代码统计（Flutter）
+
+| 类别 | 文件数 | 说明 |
+|------|--------|------|
+| 页面 (pages) | 25+ | 各功能页面 |
+| 控制器 (controllers) | 15+ | GetX控制器 |
+| 模型 (models) | 20+ | 数据模型 |
+| 组件 (widgets) | 10+ | 可复用组件 |
+| 工具 (utils) | 5+ | 工具类 |
+| 网络 (network) | 3+ | DioProvider、API异常等 |
+| 存储 (storage) | 2+ | SharedPreferences封装 |
+| 路由 (routes) | 3+ | 路由配置 |
+
+### 后端代码统计（Spring Boot）
+
+| 类别 | 文件数 | 说明 |
+|------|--------|------|
+| 实体类 (entity) | 5 | User, Family, FamilyMember, HealthData, AlertRule/Record |
+| Mapper接口 | 6 | MyBatis-Plus Mapper |
+| 控制器 (controller) | 7 | RESTful API控制器 |
+| 服务接口 (service) | 6 | 业务逻辑接口 |
+| 服务实现 (service/impl) | 6 | 业务逻辑实现 |
+| DTO对象 | 15+ | Request/Response对象 |
+| 配置类 (config) | 8 | JWT, Security, MyBatis, CORS等 |
+| 工具类 (util) | 3 | JwtUtil, SecurityUtil等 |
+| 异常处理 | 4 | 全局异常处理 |
+| 过滤器 (filter) | 1 | JWT认证过滤器 |
+| **合计** | **73** | Java源文件总数 |
+
+### API接口统计
+
+| 模块 | 接口数 | 状态 |
+|------|--------|------|
+| 用户认证 | 5 | ✅ |
+| 用户管理 | 2 | ✅ |
+| 家庭成员 | 5 | ✅ |
+| 健康数据 | 5 | ✅ |
+| 预警规则 | 5 | ✅ |
+| 预警记录 | 4 | ✅ |
+| 家庭管理 | 9 | ✅ |
+| **合计** | **35+** | ✅ 全部完成 |
 
 ---
 
