@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:health_center_app/app/modules/family/family_controller.dart';
 
 /// 首页控制器
 class HomeController extends GetxController {
@@ -13,10 +12,8 @@ class HomeController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    // 注册家庭控制器
-    if (!Get.isRegistered<FamilyController>()) {
-      Get.put(FamilyController());
-    }
+    debugPrint('=== HomeController.onInit() 开始 ===');
+    // FamilyController 已在 HomeBinding 中注册
   }
 
   @override

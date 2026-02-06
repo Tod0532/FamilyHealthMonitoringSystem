@@ -4,6 +4,84 @@
 
 ---
 
+## 2026-02-06 晚（首页真实数据 + 控制器依赖修复）
+
+### 📝 修改文件
+
+| 文件路径 | 说明 | 作者 |
+|----------|------|------|
+| flutter-app/lib/app/modules/home/home_binding.dart | 添加FamilyController和HealthAlertController注册 | Claude |
+| flutter-app/lib/app/modules/home/home_controller.dart | 移除冗余的FamilyController注册逻辑 | Claude |
+| flutter-app/lib/app/modules/home/pages/home_tab_page.dart | 首页数据改为真实数据源 | Claude |
+
+### 📋 变更内容
+
+#### 类型：fix（修复）、feat（数据真实化）
+#### 范围：首页、依赖注入
+#### 描述：首页显示真实健康数据 + 修复控制器依赖缺失问题
+
+**问题1：FamilyController未注册**
+- 现象：首页无法获取家庭信息，显示"创建或加入家庭"
+- 原因：`HomeBinding` 没有注册 `FamilyController`
+- 修复：在 `HomeBinding.dependencies()` 中添加 `Get.put(FamilyController())`
+
+**问题2：HealthAlertController未注册**
+- 现象：启动报错 "HealthAlertController not found"
+- 原因：首页尝试获取预警控制器但未注册
+- 修复：在 `HomeBinding.dependencies()` 中添加 `Get.put(HealthAlertController())`
+
+**问题3：首页使用模拟数据**
+- 现象：家庭健康卡片数据是固定的模拟值
+- 修复：改为从各控制器获取真实数据
+
+**首页真实数据来源**：
+
+| 数据项 | 来源 | 计算方式 |
+|--------|------|----------|
+| 健康分 | HealthDataController | 基础60分 + 近7天数据量×2（最高100） |
+| 家庭成员 | FamilyController / MembersController | `family.memberCount` 或 `members.length` |
+| 今日录入 | HealthDataController | 筛选今天创建的数据 |
+| 异常预警 | HealthAlertController | 未处理的预警记录数 |
+| 最近数据 | HealthDataController | 取最新的3条，显示真实值和成员名 |
+
+**代码变更**：
+```dart
+// home_binding.dart - 添加控制器注册
+Get.put(HomeController());
+Get.put(MembersController());
+Get.put(HealthDataController());
+Get.put(FamilyController());           // 新增
+Get.put(HealthAlertController());      // 新增
+```
+
+```dart
+// home_tab_page.dart - 使用Obx响应数据变化
+Widget _buildHealthScoreCard() {
+  final familyController = Get.find<FamilyController>();
+  final membersController = Get.find<MembersController>();
+  final healthDataController = Get.find<HealthDataController>();
+  final alertController = Get.find<HealthAlertController>();
+
+  return Obx(() {
+    final memberCount = family?.memberCount ?? membersController.members.length;
+    final healthScore = _calculateHealthScore(healthDataController.healthDataList);
+    final todayCount = _getTodayDataCount(healthDataController.healthDataList);
+    final alertCount = alertController.alertRecords.where((a) => !a.isHandled).length;
+    // ...
+  });
+}
+```
+
+**测试结果**：
+- ✅ 首页显示真实家庭信息
+- ✅ 家庭成员数量正确显示
+- ✅ 健康分根据真实数据计算
+- ✅ 今日录入数量实时统计
+- ✅ 异常预警数量正确显示
+- ✅ 最近健康数据显示真实记录
+
+---
+
 ## 2026-02-06 晚（应用图标优化 + 启动页配色优化）
 
 ### 📝 修改文件

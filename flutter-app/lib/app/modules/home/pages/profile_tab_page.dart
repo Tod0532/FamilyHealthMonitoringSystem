@@ -487,9 +487,48 @@ class ProfileTabPage extends StatelessWidget {
                 ),
                 onTap: () => Get.toNamed(AppRoutes.familyQrCode),
               ),
+            Divider(height: 1.h, indent: 72.w),
+            ListTile(
+              leading: const SizedBox(width: 40),
+              title: Text(
+                '退出家庭',
+                style: TextStyle(fontSize: 14.sp, color: Colors.red),
+              ),
+              trailing: Icon(
+                Icons.chevron_right,
+                size: 20.w,
+                color: Colors.red,
+              ),
+              onTap: () => _showLeaveFamilyDialog(controller),
+            ),
           ],
         );
       }),
+    );
+  }
+
+  /// 显示退出家庭对话框
+  void _showLeaveFamilyDialog(FamilyController controller) {
+    Get.defaultDialog(
+      title: '退出家庭',
+      middleText: '确定要退出当前家庭吗？\n\n退出后您将无法查看家庭共享的健康数据。',
+      textConfirm: '确定退出',
+      textCancel: '取消',
+      confirmTextColor: Colors.white,
+      buttonColor: Colors.red,
+      onConfirm: () async {
+        Get.back();
+        final success = await controller.leaveFamily();
+        if (success) {
+          Get.snackbar(
+            '成功',
+            '已退出家庭',
+            snackPosition: SnackPosition.BOTTOM,
+            backgroundColor: const Color(0xFF4CAF50),
+            colorText: Colors.white,
+          );
+        }
+      },
     );
   }
 

@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:health_center_app/app/modules/members/members_controller.dart';
+import 'package:health_center_app/app/modules/family/family_controller.dart';
+import 'package:health_center_app/app/modules/health/health_data_controller.dart';
+import 'package:health_center_app/app/modules/alerts/health_alert_controller.dart';
 import 'package:health_center_app/core/storage/storage_service.dart';
 
 /// 首页Tab - 主页内容
@@ -32,6 +35,11 @@ class HomeTabPage extends GetView {
 
                   // 今日待办
                   _buildTodayTasksCard(),
+
+                  SizedBox(height: 16.h),
+
+                  // 家庭状态卡片
+                  _buildFamilyStatusCard(),
 
                   SizedBox(height: 16.h),
 
@@ -164,88 +172,134 @@ class HomeTabPage extends GetView {
 
   /// 家庭健康评分卡片
   Widget _buildHealthScoreCard() {
-    return Container(
-      padding: EdgeInsets.all(20.w),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF4CAF50), Color(0xFF81C784)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+    // 获取各控制器
+    final familyController = Get.find<FamilyController>();
+    final membersController = Get.find<MembersController>();
+    final healthDataController = Get.find<HealthDataController>();
+    final alertController = Get.find<HealthAlertController>();
+
+    return Obx(() {
+      // 计算真实数据
+      final family = familyController.family.value;
+      final memberCount = family?.memberCount ?? membersController.members.length;
+      final healthScore = _calculateHealthScore(healthDataController.healthDataList);
+      final todayCount = _getTodayDataCount(healthDataController.healthDataList);
+      final alertCount = alertController.alertRecords
+          .where((a) => !a.isHandled)
+          .length;
+
+      return Container(
+        padding: EdgeInsets.all(20.w),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFF4CAF50), Color(0xFF81C784)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(16.r),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF4CAF50).withOpacity(0.3),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
-        borderRadius: BorderRadius.circular(16.r),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF4CAF50).withOpacity(0.3),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          // 圆形进度指示器
-          Stack(
-            children: [
-              Container(
-                width: 80.w,
-                height: 80.w,
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
-                  shape: BoxShape.circle,
-                ),
-              ),
-              Positioned.fill(
-                child: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        '85',
-                        style: TextStyle(
-                          fontSize: 28.sp,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                      Text(
-                        '健康分',
-                        style: TextStyle(
-                          fontSize: 12.sp,
-                          color: Colors.white70,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-          SizedBox(width: 20.w),
-          // 统计信息
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+        child: Row(
+          children: [
+            // 圆形进度指示器
+            Stack(
               children: [
-                Text(
-                  '家庭健康状况',
-                  style: TextStyle(
-                    fontSize: 16.sp,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                Container(
+                  width: 80.w,
+                  height: 80.w,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    shape: BoxShape.circle,
                   ),
                 ),
-                SizedBox(height: 8.h),
-                _buildStatItem('家庭成员', '3 人'),
-                SizedBox(height: 6.h),
-                _buildStatItem('今日录入', '5 条'),
-                SizedBox(height: 6.h),
-                _buildStatItem('异常预警', '0 条'),
+                Positioned.fill(
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          '$healthScore',
+                          style: TextStyle(
+                            fontSize: 28.sp,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                        Text(
+                          '健康分',
+                          style: TextStyle(
+                            fontSize: 12.sp,
+                            color: Colors.white70,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ],
             ),
-          ),
-        ],
-      ),
-    );
+            SizedBox(width: 20.w),
+            // 统计信息
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '家庭健康状况',
+                    style: TextStyle(
+                      fontSize: 16.sp,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  SizedBox(height: 8.h),
+                  _buildStatItem('家庭成员', '$memberCount 人'),
+                  SizedBox(height: 6.h),
+                  _buildStatItem('今日录入', '$todayCount 条'),
+                  SizedBox(height: 6.h),
+                  _buildStatItem('异常预警', '$alertCount 条'),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    });
+  }
+
+  /// 计算健康分（基于健康数据数量和最近记录）
+  int _calculateHealthScore(List healthDataList) {
+    if (healthDataList.isEmpty) return 0;
+
+    // 简单算法：基于最近7天数据量
+    final now = DateTime.now();
+    final weekAgo = now.subtract(const Duration(days: 7));
+
+    final recentDataCount = healthDataList.where((data) {
+      final recordTime = data.recordTime;
+      return recordTime != null && recordTime.isAfter(weekAgo);
+    }).length;
+
+    // 基础分60，每条数据+2分，最高100分
+    final score = (60 + recentDataCount * 2).clamp(0, 100);
+    return score;
+  }
+
+  /// 获取今日录入数量
+  int _getTodayDataCount(List healthDataList) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+
+    return healthDataList.where((data) {
+      final recordTime = data.recordTime;
+      return recordTime != null && recordTime.isAfter(today);
+    }).length;
   }
 
   Widget _buildStatItem(String label, String value) {
@@ -506,42 +560,137 @@ class HomeTabPage extends GetView {
 
   /// 最近健康数据卡片
   Widget _buildRecentHealthCard() {
-    return Container(
-      padding: EdgeInsets.all(16.w),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16.r),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '最近健康数据',
-            style: TextStyle(
-              fontSize: 16.sp,
-              fontWeight: FontWeight.bold,
-              color: const Color(0xFF1A1A1A),
+    final healthDataController = Get.find<HealthDataController>();
+    final membersController = Get.find<MembersController>();
+
+    return Obx(() {
+      final dataList = healthDataController.healthDataList;
+      final members = membersController.members;
+
+      // 获取最近3条数据
+      final recentData = dataList.take(3).toList();
+
+      return Container(
+        padding: EdgeInsets.all(16.w),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16.r),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 2),
             ),
-          ),
-          SizedBox(height: 16.h),
-          _buildHealthItem('血压', '120/80 mmHg', '正常', '爸爸', '2小时前'),
-          SizedBox(height: 12.h),
-          _buildHealthItem('血糖', '5.6 mmol/L', '正常', '妈妈', '今天'),
-          SizedBox(height: 12.h),
-          _buildHealthItem('体重', '65 kg', '正常', '我', '昨天'),
-        ],
-      ),
-    );
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  '最近健康数据',
+                  style: TextStyle(
+                    fontSize: 16.sp,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF1A1A1A),
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () => Get.toNamed('/health/data-entry'),
+                  child: Text(
+                    '查看全部',
+                    style: TextStyle(
+                      fontSize: 12.sp,
+                      color: const Color(0xFF4CAF50),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 16.h),
+            if (recentData.isEmpty)
+              Padding(
+                padding: EdgeInsets.symmetric(vertical: 20.h),
+                child: Center(
+                  child: Column(
+                    children: [
+                      Icon(
+                        Icons.inbox,
+                        size: 48.w,
+                        color: Colors.grey.shade300,
+                      ),
+                      SizedBox(height: 8.h),
+                      Text(
+                        '暂无健康数据',
+                        style: TextStyle(
+                          fontSize: 14.sp,
+                          color: Colors.grey.shade500,
+                        ),
+                      ),
+                      SizedBox(height: 12.h),
+                      TextButton.icon(
+                        onPressed: () => Get.toNamed('/health/data-entry'),
+                        icon: const Icon(Icons.add),
+                        label: const Text('立即录入'),
+                        style: TextButton.styleFrom(
+                          foregroundColor: const Color(0xFF4CAF50),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+            else
+              ...recentData.asMap().entries.map((entry) {
+                final index = entry.key;
+                final data = entry.value;
+                return Padding(
+                  padding: EdgeInsets.only(bottom: index < recentData.length - 1 ? 12.h : 0),
+                  child: _buildHealthItemFromData(data, members),
+                );
+              }),
+          ],
+        ),
+      );
+    });
   }
 
-  Widget _buildHealthItem(String type, String value, String status, String person, String time) {
+  /// 从健康数据构建显示项
+  Widget _buildHealthItemFromData(dynamic healthData, List members) {
+    // 获取数据类型标签
+    final typeLabel = healthData.type?.label ?? '健康数据';
+    final value = healthData.displayValue ?? '--';
+    final recordTime = healthData.recordTime;
+
+    // 获取成员名称
+    String memberName = '未知';
+    if (healthData.memberId != null) {
+      final member = members.firstWhereOrNull(
+        (m) => m.id == healthData.memberId,
+      );
+      memberName = member?.name ?? '未知';
+    }
+
+    // 计算时间显示
+    String timeDisplay = '';
+    if (recordTime != null) {
+      final now = DateTime.now();
+      final diff = now.difference(recordTime);
+      if (diff.inMinutes < 60) {
+        timeDisplay = '${diff.inMinutes}分钟前';
+      } else if (diff.inHours < 24) {
+        timeDisplay = '${diff.inHours}小时前';
+      } else if (diff.inDays == 1) {
+        timeDisplay = '昨天';
+      } else if (diff.inDays < 7) {
+        timeDisplay = '${diff.inDays}天前';
+      } else {
+        timeDisplay = '${recordTime.month}月${recordTime.day}日';
+      }
+    }
+
     return Row(
       children: [
         Container(
@@ -552,7 +701,7 @@ class HomeTabPage extends GetView {
             borderRadius: BorderRadius.circular(8.r),
           ),
           child: Icon(
-            _getHealthIcon(type),
+            _getHealthIcon(typeLabel),
             color: const Color(0xFF4CAF50),
             size: 20,
           ),
@@ -563,7 +712,7 @@ class HomeTabPage extends GetView {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                type,
+                typeLabel,
                 style: TextStyle(
                   fontSize: 12.sp,
                   color: Colors.grey[600],
@@ -584,14 +733,14 @@ class HomeTabPage extends GetView {
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             Text(
-              status,
+              '正常',
               style: TextStyle(
                 fontSize: 12.sp,
                 color: const Color(0xFF4CAF50),
               ),
             ),
             Text(
-              '$person · $time',
+              '$memberName · $timeDisplay',
               style: TextStyle(
                 fontSize: 11.sp,
                 color: Colors.grey[500],
@@ -789,6 +938,216 @@ class HomeTabPage extends GetView {
                   ),
                 ],
               ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 家庭状态卡片
+  Widget _buildFamilyStatusCard() {
+    // 确保FamilyController已注册
+    if (!Get.isRegistered<FamilyController>()) {
+      return const SizedBox.shrink();
+    }
+
+    final controller = Get.find<FamilyController>();
+
+    return Obx(() {
+      final isInFamily = controller.isInFamily;
+      final family = controller.family.value;
+
+      if (!isInFamily) {
+        // 未加入家庭，显示创建入口
+        return GestureDetector(
+          onTap: () => _showJoinFamilyDialog(controller),
+          child: Container(
+            padding: EdgeInsets.all(20.w),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF2196F3), Color(0xFF64B5F6)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(16.r),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF2196F3).withOpacity(0.3),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 48.w,
+                  height: 48.w,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(24.r),
+                  ),
+                  child: const Icon(
+                    Icons.family_restroom,
+                    size: 24,
+                    color: Colors.white,
+                  ),
+                ),
+                SizedBox(width: 16.w),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '创建或加入家庭',
+                        style: TextStyle(
+                          fontSize: 16.sp,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                      SizedBox(height: 4.h),
+                      Text(
+                        '与家人共享健康数据，共同守护健康',
+                        style: TextStyle(
+                          fontSize: 12.sp,
+                          color: Colors.white70,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  Icons.arrow_forward_ios,
+                  size: 16.sp,
+                  color: Colors.white,
+                ),
+              ],
+            ),
+          ),
+        );
+      }
+
+      // 已加入家庭，显示家庭信息
+      return Container(
+        padding: EdgeInsets.all(20.w),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFF4CAF50), Color(0xFF81C784)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(16.r),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF4CAF50).withOpacity(0.3),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 48.w,
+              height: 48.w,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(24.r),
+              ),
+              child: const Icon(
+                Icons.home,
+                size: 24,
+                color: Colors.white,
+              ),
+            ),
+            SizedBox(width: 16.w),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    family?.familyName ?? '我的家庭',
+                    style: TextStyle(
+                      fontSize: 16.sp,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  SizedBox(height: 4.h),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.people,
+                        size: 14.sp,
+                        color: Colors.white70,
+                      ),
+                      SizedBox(width: 4.w),
+                      Text(
+                        '${family?.memberCount ?? 1} 位成员',
+                        style: TextStyle(
+                          fontSize: 12.sp,
+                          color: Colors.white70,
+                        ),
+                      ),
+                      SizedBox(width: 12.w),
+                      Container(
+                        padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 2.h),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(10.r),
+                        ),
+                        child: Text(
+                          '邀请码: ${family?.familyCode ?? ''}',
+                          style: TextStyle(
+                            fontSize: 11.sp,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            GestureDetector(
+              onTap: () => Get.toNamed('/family/members'),
+              child: Icon(
+                Icons.arrow_forward_ios,
+                size: 16.sp,
+                color: Colors.white,
+              ),
+            ),
+          ],
+        ),
+      );
+    });
+  }
+
+  /// 显示加入家庭对话框
+  void _showJoinFamilyDialog(FamilyController controller) {
+    Get.dialog(
+      AlertDialog(
+        title: const Text('家庭管理'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.add_circle_outline, color: Color(0xFF4CAF50)),
+              title: const Text('创建家庭'),
+              onTap: () {
+                Get.back();
+                Get.toNamed('/family/create');
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.qr_code_scanner, color: Color(0xFF2196F3)),
+              title: const Text('扫码加入'),
+              onTap: () {
+                Get.back();
+                Get.toNamed('/family/scan');
+              },
             ),
           ],
         ),

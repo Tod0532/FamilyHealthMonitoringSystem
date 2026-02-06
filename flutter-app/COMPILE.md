@@ -47,6 +47,9 @@ D:\ReadHealthInfo\flutter-app\build\app\outputs\flutter-apk\app-debug.apk
 | v4 (内容推荐) | ~118 MB | 17.5s | 2026-01-30 晚 |
 | v5 (首页入口) | ~118 MB | 15.2s | 2026-01-30 深夜 |
 | v6 (个人设置) | 117.9 MB | 30.7s | 2026-01-31 |
+| v7 (家庭功能) | ~118 MB | ~90s | 2026-02-06 |
+| v8 (图标优化) | ~118 MB | ~85s | 2026-02-06 |
+| v9 (首页真实数据) | ~118 MB | ~82s | 2026-02-06 |
 
 ## 编译命令
 
@@ -384,5 +387,110 @@ flutter build apk --debug
 ### 代码质量
 - Flutter analyze: 29 issues (仅info级别)
 - 无错误和警告
+
+---
+
+## AI 辅助编译过程（2026-02-06）
+
+### 编译环境
+- 执行方式：Git Bash
+- Flutter路径：`C:\flutter\bin\flutter.bat`
+- 项目路径：`D:\ReadHealthInfo\flutter-app`
+- ADB路径：`C:\Users\AppData\Local\Android\Sdk\platform-tools\adb.exe`
+
+### 编译步骤（v7-v9版本）
+
+```bash
+# v7 - 家庭功能与控制器依赖修复
+cd /d/ReadHealthInfo/flutter-app
+
+# 问题1: FamilyController未注册导致首页无法显示家庭信息
+# 修改: lib/app/modules/home/home_binding.dart
+# 添加: Get.put(FamilyController())
+
+# 问题2: HealthAlertController未注册导致启动报错
+# 修改: lib/app/modules/home/home_binding.dart
+# 添加: Get.put(HealthAlertController())
+
+# 问题3: 首页使用模拟数据
+# 修改: lib/app/modules/home/pages/home_tab_page.dart
+# 改为从各控制器获取真实数据
+
+flutter build apk --debug
+# 结果：Built build\app\outputs\flutter-apk\app-debug.apk
+# 耗时：约90秒
+
+# v8 - 应用图标生成与启动页配色优化
+
+# 1. 转换SVG图标为PNG
+cd assets/icons
+npm install svg2img
+node -e "const svg2img = require('svg2img'); ..."
+
+# 2. 生成各平台图标
+flutter pub run flutter_launcher_icons
+
+# 3. 修改启动页配色（深绿→浅绿）
+# splash_page.dart: #2E7D32 → #E8F5E9
+
+flutter build apk --debug
+# 结果：Built build\app\outputs\flutter-apk\app-debug.apk
+# 耗时：约85秒
+
+# v9 - 首页真实数据集成
+
+# 问题: HealthData.dataType 属性不存在
+# 修复: healthData.dataType?.label → healthData.type?.label
+
+flutter clean  # 清除缓存确保更改生效
+flutter build apk --debug
+# 结果：Built build\app\outputs\flutter-apk\app-debug.apk
+# 耗时：约82秒
+```
+
+### 已修复的编译问题（2026-02-06）
+
+| 问题 | 文件 | 修复 |
+|------|------|------|
+| **FamilyController未注册** | home_binding.dart | 添加 `Get.put(FamilyController())` |
+| **HealthAlertController未注册** | home_binding.dart | 添加 `Get.put(HealthAlertController())` |
+| **HealthData.dataType不存在** | home_tab_page.dart | `dataType?.label` → `type?.label` |
+| **热重载不生效** | - | 使用 `flutter clean` 清除缓存 |
+| **membersList不存在** | home_tab_page.dart | `membersList` → `members` |
+| **未使用的方法** | home_tab_page.dart | 删除 `_buildHealthItem` 方法 |
+
+### 编译输出示例
+
+```bash
+$ flutter build apk --debug
+Running Gradle task 'assembleDebug'...
+√ Built build\app\outputs\flutter-apk\app-debug.apk
+```
+
+### ADB安装命令
+
+```bash
+# 检查设备连接
+adb devices
+
+# 安装APK（覆盖安装）
+adb install -r build/app/outputs/flutter-apk/app-debug.apk
+
+# 启动应用
+adb shell monkey -p com.healthcenter.health_center_app.debug -c android.intent.category.LAUNCHER 1
+```
+
+### 日志调试
+
+```bash
+# 获取应用日志
+adb logcat -d --pid=$(adb shell pidof com.healthcenter.health_center_app.debug)
+
+# 获取Flutter日志
+adb logcat -d -s flutter:*
+
+# 使用flutter attach实时查看
+flutter attach
+```
 
 ---
