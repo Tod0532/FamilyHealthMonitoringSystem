@@ -1,0 +1,427 @@
+{
+  "info": {
+    "name": "家庭功能API测试集合",
+    "description": "用于测试家庭功能的完整API集合",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://139.129.108.119:8080"
+    },
+    {
+      "key": "tokenA",
+      "value": ""
+    },
+    {
+      "key": "userIdA",
+      "value": ""
+    },
+    {
+      "key": "tokenB",
+      "value": ""
+    },
+    {
+      "key": "userIdB",
+      "value": ""
+    },
+    {
+      "key": "familyCode",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "01-认证",
+      "item": [
+        {
+          "name": "用户A登录",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if(jsonData.code === 200 && jsonData.data) {",
+                  "    pm.collectionVariables.set('tokenA', jsonData.data.token);",
+                  "    pm.collectionVariables.set('userIdA', jsonData.data.id.toString());",
+                  "    console.log('Token A:', jsonData.data.token);",
+                  "    console.log('User ID A:', jsonData.data.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"13800138000\",\n  \"password\": \"abc123456\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "login"]
+            }
+          }
+        },
+        {
+          "name": "用户B登录",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if(jsonData.code === 200 && jsonData.data) {",
+                  "    pm.collectionVariables.set('tokenB', jsonData.data.token);",
+                  "    pm.collectionVariables.set('userIdB', jsonData.data.id.toString());",
+                  "    console.log('Token B:', jsonData.data.token);",
+                  "    console.log('User ID B:', jsonData.data.id);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"13900139000\",\n  \"password\": \"xyz123456\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "login"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "02-创建家庭",
+      "item": [
+        {
+          "name": "创建家庭",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if(jsonData.code === 200 && jsonData.data) {",
+                  "    pm.collectionVariables.set('familyCode', jsonData.data.familyCode);",
+                  "    console.log('Family Code:', jsonData.data.familyCode);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{userIdA}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"familyName\": \"温馨小家\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/family/create",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "family", "create"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "03-获取家庭信息",
+      "item": [
+        {
+          "name": "获取我的家庭(用户A)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{userIdA}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/family/my",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "family", "my"]
+            }
+          }
+        },
+        {
+          "name": "获取我的家庭(用户B)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{userIdB}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/family/my",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "family", "my"]
+            }
+          }
+        },
+        {
+          "name": "获取家庭二维码",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{userIdA}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/family/qrcode",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "family", "qrcode"]
+            }
+          }
+        },
+        {
+          "name": "解析邀请码",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/family/info/{{familyCode}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "family", "info", "{{familyCode}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "04-加入家庭",
+      "item": [
+        {
+          "name": "用户B加入家庭",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{userIdB}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"inviteCode\": \"{{familyCode}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/family/join",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "family", "join"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "05-成员管理",
+      "item": [
+        {
+          "name": "获取成员列表(用户A)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{userIdA}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/family/members",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "family", "members"]
+            }
+          }
+        },
+        {
+          "name": "获取成员列表(用户B)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{userIdB}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/family/members",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "family", "members"]
+            }
+          }
+        },
+        {
+          "name": "移除成员(用户A移除用户B)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{userIdA}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/family/members/{{userIdB}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "family", "members", "{{userIdB}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "06-退出与更新",
+      "item": [
+        {
+          "name": "更新家庭名称",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{userIdA}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/family/name?familyName=新的家庭名称",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "family", "name"],
+              "query": [
+                {
+                  "key": "familyName",
+                  "value": "新的家庭名称"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "退出家庭(用户B)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{userIdB}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/family/leave",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "family", "leave"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "07-错误场景测试",
+      "item": [
+        {
+          "name": "无效邀请码",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{userIdB}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"inviteCode\": \"INVALID\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/family/join",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "family", "join"]
+            }
+          }
+        },
+        {
+          "name": "空家庭名",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{userIdA}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"familyName\": \"\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/family/create",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "family", "create"]
+            }
+          }
+        },
+        {
+          "name": "空邀请码",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{userIdB}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"inviteCode\": \"\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/family/join",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "family", "join"]
+            }
+          }
+        },
+        {
+          "name": "普通成员获取二维码(应失败)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-User-Id",
+                "value": "{{userIdB}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/family/qrcode",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "family", "qrcode"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -4,6 +4,50 @@
 
 ---
 
+## 2026-02-06 晚（修复更新家庭名称API）
+
+### 📝 修改文件
+
+| 文件路径 | 说明 | 作者 |
+|----------|------|------|
+| spring-boot-backend/.../dto/FamilyUpdateNameRequest.java | 新增更新家庭名称DTO | Claude |
+| 数据库：family表 | 修复deleted字段 1→0 | Claude |
+| 数据库：user表 | 修复family_role字段 member→admin | Claude |
+
+### 📋 变更内容
+
+#### 类型：fix（修复）
+#### 范围：后端API、数据库
+#### 描述：修复更新家庭名称API返回500错误的问题
+
+**问题原因**：
+1. family记录的`deleted`字段值为1（逻辑删除状态），导致MyBatis-Plus查询不到
+2. user记录的`family_role`字段值为`member`，而业务逻辑要求只有`admin`才能修改
+
+**修复步骤**：
+```sql
+-- 修复family表deleted字段
+UPDATE family SET deleted=0 WHERE id=2019604459758014466;
+
+-- 修复user表family_role字段
+UPDATE user SET family_role="admin" WHERE id=2019307347694460930;
+```
+
+**API测试结果**：
+```bash
+# PUT /api/family/name - 使用RequestBody
+curl -X PUT "http://139.129.108.119:8080/api/family/name" \
+  -H "Content-Type: application/json" \
+  -H "X-User-Id: 2019307347694460930" \
+  -H "Authorization: Bearer {token}" \
+  -d '{"familyName":"MyHealthFamily"}'
+# ✅ {"code":200,"message":"家庭名称已更新"}
+```
+
+**注意**：Windows curl发送中文字符时存在UTF-8编码问题，Flutter APP中不会出现此问题。
+
+---
+
 ## 2026-02-06 中午（家庭功能生产环境部署完成）
 
 ### 📝 修改文件

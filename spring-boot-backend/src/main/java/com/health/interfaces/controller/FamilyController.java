@@ -140,9 +140,23 @@ public class FamilyController {
     public ApiResponse<Void> updateFamilyName(
             @Parameter(description = "用户ID", required = true)
             @RequestHeader("X-User-Id") Long userId,
+            @org.springframework.web.bind.annotation.RequestBody @Valid FamilyUpdateNameRequest request) {
+        log.info("更新家庭名称: userId={}, familyName={}", userId, request.getFamilyName());
+        familyService.updateFamilyName(userId, request.getFamilyName());
+        return ApiResponse.success("家庭名称已更新", null);
+    }
+
+    /**
+     * 更新家庭名称（使用RequestParam）
+     */
+    @PostMapping("/api/family/update-name")
+    @Operation(summary = "更新家庭名称", description = "管理员更新家庭名称（备用接口）")
+    public ApiResponse<Void> updateFamilyNameV2(
+            @Parameter(description = "用户ID", required = true)
+            @RequestHeader("X-User-Id") Long userId,
             @Parameter(description = "新家庭名称", required = true)
-            @RequestParam String familyName) {
-        log.info("更新家庭名称: userId={}, familyName={}", userId, familyName);
+            @RequestParam(name = "familyName") String familyName) {
+        log.info("更新家庭名称V2: userId={}, familyName={}", userId, familyName);
         familyService.updateFamilyName(userId, familyName);
         return ApiResponse.success("家庭名称已更新", null);
     }
