@@ -273,7 +273,7 @@ class _FamilyScanPageState extends State<FamilyScanPage> {
           child: TextFormField(
             controller: codeController,
             autofocus: true,
-            uppercase: true,
+            textCapitalization: TextCapitalization.characters,
             maxLength: 6,
             decoration: const InputDecoration(
               hintText: '请输入6位邀请码',

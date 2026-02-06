@@ -41,3 +41,8 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Android signing - 勿将签名文件提交到版本控制
+/android/app/release.keystore
+/android/app/*.keystore
+/android/app/keystore.properties

@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:health_center_app/app/modules/family/family_controller.dart';
+import 'package:health_center_app/core/models/family.dart';
 
 /// 家庭二维码页面
 class FamilyQrCodePage extends GetView<FamilyController> {

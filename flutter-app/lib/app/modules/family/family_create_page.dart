@@ -31,7 +31,7 @@ class FamilyCreatePage extends GetView<FamilyController> {
               SizedBox(height: 32.h),
 
               // 创建按钮
-              _buildCreateButton(),
+              _buildCreateButton(context),
             ],
           ),
         ),
@@ -121,7 +121,7 @@ class FamilyCreatePage extends GetView<FamilyController> {
   }
 
   /// 创建按钮
-  Widget _buildCreateButton() {
+  Widget _buildCreateButton(BuildContext context) {
     return Obx(() {
       final isLoading = controller.isLoading.value;
 
