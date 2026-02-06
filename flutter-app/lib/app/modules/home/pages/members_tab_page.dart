@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
+import 'package:health_center_app/app/modules/members/members_controller.dart';
+import 'package:health_center_app/app/modules/members/widgets/member_dialog.dart';
 import 'package:health_center_app/core/models/family_member.dart';
-import 'package:health_center_app/core/utils/logger.dart';
+import 'package:health_center_app/core/utils/permission_utils.dart';
+import 'package:health_center_app/core/widgets/permission_builder.dart';
 
-/// 成员Tab页 - 自管理控制器版本
+/// 成员Tab页 - 使用完整成员管理功能
 class MembersTabPage extends StatefulWidget {
   const MembersTabPage({super.key});
 
@@ -13,59 +16,46 @@ class MembersTabPage extends StatefulWidget {
 }
 
 class _MembersTabPageState extends State<MembersTabPage> {
-  // 使用简单列表存储数据
-  final List<FamilyMember> members = [
-    FamilyMember(
-      id: '1',
-      name: '张三',
-      relation: MemberRelation.father,
-      role: MemberRole.admin,
-      gender: 1,
-      birthday: DateTime(1965, 5, 15),
-      createTime: DateTime.now(),
-    ),
-    FamilyMember(
-      id: '2',
-      name: '李四',
-      relation: MemberRelation.mother,
-      role: MemberRole.admin,
-      gender: 2,
-      birthday: DateTime(1968, 8, 20),
-      createTime: DateTime.now(),
-    ),
-    FamilyMember(
-      id: '3',
-      name: '小明',
-      relation: MemberRelation.son,
-      role: MemberRole.member,
-      gender: 1,
-      birthday: DateTime(2010, 3, 10),
-      createTime: DateTime.now(),
-    ),
-  ];
+  // 从MembersController获取数据
+  late MembersController _controller;
+  bool _controllerFound = false;
 
   @override
   void initState() {
     super.initState();
-    // 调试：打印数据
-    AppLogger.d('MembersTabPage: 成员数量 = ${members.length}');
+    _initController();
+  }
+
+  void _initController() {
+    if (Get.isRegistered<MembersController>()) {
+      _controller = Get.find<MembersController>();
+      _controllerFound = true;
+    } else {
+      _controller = Get.put(MembersController());
+      _controllerFound = true;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF5F5F5),
-      body: members.isEmpty
-          ? _buildEmptyState()
-          : ListView.separated(
-              padding: EdgeInsets.all(16.w),
-              itemCount: members.length,
-              separatorBuilder: (_, __) => SizedBox(height: 12.h),
-              itemBuilder: (context, index) {
-                final member = members[index];
-                return _buildMemberCard(context, member);
-              },
-            ),
+      body: _controllerFound
+          ? Obx(() {
+              if (_controller.members.isEmpty) {
+                return _buildEmptyState();
+              }
+              return ListView.separated(
+                padding: EdgeInsets.all(16.w),
+                itemCount: _controller.members.length,
+                separatorBuilder: (_, __) => SizedBox(height: 12.h),
+                itemBuilder: (context, index) {
+                  final member = _controller.members[index];
+                  return _buildMemberCard(context, member);
+                },
+              );
+            })
+          : _buildEmptyState(),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showAddMemberDialog(context),
         backgroundColor: const Color(0xFF4CAF50),
@@ -196,40 +186,43 @@ class _MembersTabPageState extends State<MembersTabPage> {
               ),
 
               // 操作按钮
-              PopupMenuButton<String>(
-                onSelected: (value) {
-                  switch (value) {
-                    case 'edit':
-                      _showEditMemberDialog(context, member);
-                      break;
-                    case 'delete':
-                      _confirmDeleteMember(context, member);
-                      break;
-                  }
-                },
-                icon: Icon(Icons.more_vert, color: Colors.grey[600]),
-                itemBuilder: (context) => [
-                  const PopupMenuItem(
-                    value: 'edit',
-                    child: Row(
-                      children: [
-                        Icon(Icons.edit, size: 18, color: Color(0xFF4CAF50)),
-                        SizedBox(width: 8),
-                        Text('编辑'),
-                      ],
+              PermissionBuilder(
+                permissionCheck: PermissionUtils.canManageMembers,
+                child: PopupMenuButton<String>(
+                  onSelected: (value) {
+                    switch (value) {
+                      case 'edit':
+                        _showEditMemberDialog(context, member);
+                        break;
+                      case 'delete':
+                        _confirmDeleteMember(context, member);
+                        break;
+                    }
+                  },
+                  icon: Icon(Icons.more_vert, color: Colors.grey[600]),
+                  itemBuilder: (context) => [
+                    const PopupMenuItem(
+                      value: 'edit',
+                      child: Row(
+                        children: [
+                          Icon(Icons.edit, size: 18, color: Color(0xFF4CAF50)),
+                          SizedBox(width: 8),
+                          Text('编辑'),
+                        ],
+                      ),
                     ),
-                  ),
-                  const PopupMenuItem(
-                    value: 'delete',
-                    child: Row(
-                      children: [
-                        Icon(Icons.delete, size: 18, color: Colors.red),
-                        SizedBox(width: 8),
-                        Text('删除'),
-                      ],
+                    const PopupMenuItem(
+                      value: 'delete',
+                      child: Row(
+                        children: [
+                          Icon(Icons.delete, size: 18, color: Colors.red),
+                          SizedBox(width: 8),
+                          Text('删除'),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ],
           ),
@@ -310,26 +303,30 @@ class _MembersTabPageState extends State<MembersTabPage> {
 
   /// 显示添加成员弹窗
   void _showAddMemberDialog(BuildContext context) {
-    Get.snackbar(
-      '提示',
-      '添加成员功能开发中',
-      snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: Colors.grey[100],
+    if (!_controllerFound) return;
+    showDialog(
+      context: context,
+      builder: (context) => MemberDialog(
+        onSave: (member) => _controller.addMember(member),
+      ),
     );
   }
 
   /// 显示编辑成员弹窗
   void _showEditMemberDialog(BuildContext context, FamilyMember member) {
-    Get.snackbar(
-      '提示',
-      '编辑成员功能开发中',
-      snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: Colors.grey[100],
+    if (!_controllerFound) return;
+    showDialog(
+      context: context,
+      builder: (context) => MemberDialog(
+        member: member,
+        onSave: (member) => _controller.updateMember(member),
+      ),
     );
   }
 
   /// 确认删除成员
   void _confirmDeleteMember(BuildContext context, FamilyMember member) {
+    if (!_controllerFound) return;
     Get.dialog(
       AlertDialog(
         title: const Text('确认删除'),
@@ -341,16 +338,8 @@ class _MembersTabPageState extends State<MembersTabPage> {
           ),
           TextButton(
             onPressed: () {
-              setState(() {
-                members.removeWhere((m) => m.id == member.id);
-              });
               Get.back();
-              Get.snackbar(
-                '成功',
-                '已删除成员',
-                snackPosition: SnackPosition.BOTTOM,
-                backgroundColor: Colors.green.shade100,
-              );
+              _controller.deleteMember(member.id);
             },
             style: TextButton.styleFrom(foregroundColor: Colors.red),
             child: const Text('删除'),

@@ -110,20 +110,26 @@ class RegisterController extends GetxController {
     isSendingSms.value = true;
 
     try {
-      // 调用发送验证码接口（需要后端支持）
-      await _dioProvider.post(
-        '/sms/send',
-        data: SendSmsRequest(
-          phone: phoneController.text.trim(),
-          type: 'register',
-        ).toJson(),
-      );
+      // 开发环境：模拟验证码发送成功（无需后端接口）
+      // 生产环境：调用真实的短信验证码接口
+      // await _dioProvider.post(
+      //   '/sms/send',
+      //   data: SendSmsRequest(
+      //     phone: phoneController.text.trim(),
+      //     type: 'register',
+      //   ).toJson(),
+      // );
+
+      // 模拟网络延迟
+      await Future.delayed(const Duration(milliseconds: 500));
 
       Get.snackbar(
-        '发送成功',
-        '验证码已发送，请注意查收',
+        '验证码',
+        '开发模式：任意6位数字即可（如：123456）',
         snackPosition: SnackPosition.TOP,
-        backgroundColor: Colors.green.shade100,
+        backgroundColor: Colors.orange.shade100,
+        icon: const Icon(Icons.info, color: Colors.orange),
+        duration: const Duration(seconds: 3),
       );
 
       // 开始倒计时
@@ -244,9 +250,13 @@ class RegisterController extends GetxController {
       await _storage.savePhone(authResponse.userInfo.phone);
       await _storage.saveNickname(authResponse.userInfo.nickname);
       // 保存用户角色
-      if (authResponse.userInfo.role != null) {
-        await _storage.saveUserRole(authResponse.userInfo.role!);
+      String userRole = authResponse.userInfo.role ?? 'USER';
+      // 前端逻辑：如果本地没有家庭成员，注册的用户自动成为管理员（家庭创建者）
+      final members = _storage.getFamilyMembers();
+      if (members.isEmpty) {
+        userRole = 'ADMIN';
       }
+      await _storage.saveUserRole(userRole);
       if (authResponse.userInfo.avatar != null) {
         await _storage.saveAvatar(authResponse.userInfo.avatar!);
       }

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
+import 'package:health_center_app/app/modules/family/family_controller.dart';
 import 'package:health_center_app/core/models/user.dart';
 import 'package:health_center_app/core/storage/storage_service.dart';
 import 'package:health_center_app/core/utils/permission_utils.dart';
 import 'package:health_center_app/core/widgets/permission_builder.dart';
+import 'package:health_center_app/app/routes/app_routes.dart';
 
 /// 我的Tab页（个人中心）
 class ProfileTabPage extends StatelessWidget {
@@ -148,6 +150,10 @@ class ProfileTabPage extends StatelessWidget {
             _buildSectionHeader('应用设置'),
             _buildMenuItem(Icons.settings, '设置', '', onTap: () => Get.toNamed('/profile/settings')),
             _buildMenuItem(Icons.cleaning_services, '清除缓存', '', onTap: () => _showClearCacheDialog()),
+
+            // 功能组2.5：家庭管理
+            _buildSectionHeader('家庭'),
+            _buildFamilyCard(),
 
             // 功能组3：数据管理 - 仅管理员可见
             PermissionBuilder(
@@ -343,6 +349,177 @@ class ProfileTabPage extends StatelessWidget {
           colorText: Colors.white,
         );
       },
+    );
+  }
+
+  /// 构建家庭管理卡片
+  Widget _buildFamilyCard() {
+    // 确保FamilyController已注册
+    if (!Get.isRegistered<FamilyController>()) {
+      return const SizedBox.shrink();
+    }
+
+    final controller = Get.find<FamilyController>();
+
+    return Container(
+      margin: EdgeInsets.symmetric(horizontal: 16.w),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12.r),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Obx(() {
+        final isInFamily = controller.isInFamily;
+        final family = controller.family.value;
+
+        if (!isInFamily) {
+          // 未加入家庭，显示创建/加入按钮
+          return Column(
+            children: [
+              ListTile(
+                leading: Container(
+                  width: 40.w,
+                  height: 40.w,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF4CAF50).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(20.r),
+                  ),
+                  child: const Icon(
+                    Icons.home_work_outlined,
+                    color: Color(0xFF4CAF50),
+                  ),
+                ),
+                title: Text(
+                  '创建或加入家庭',
+                  style: TextStyle(
+                    fontSize: 15.sp,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                subtitle: Text(
+                  '与家人共享健康数据',
+                  style: TextStyle(
+                    fontSize: 12.sp,
+                    color: Colors.grey[600],
+                  ),
+                ),
+                trailing: Icon(
+                  Icons.chevron_right,
+                  size: 20.w,
+                  color: Colors.grey[400],
+                ),
+                onTap: () => _showFamilyActionDialog(controller),
+              ),
+            ],
+          );
+        }
+
+        // 已加入家庭，显示家庭信息
+        return Column(
+          children: [
+            ListTile(
+              leading: Container(
+                width: 40.w,
+                height: 40.w,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF4CAF50).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(20.r),
+                ),
+                child: const Icon(
+                  Icons.home,
+                  color: Color(0xFF4CAF50),
+                ),
+              ),
+              title: Text(
+                family?.familyName ?? '我的家庭',
+                style: TextStyle(
+                  fontSize: 15.sp,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              subtitle: Text(
+                '${family?.memberCount ?? 1} 位成员 · 邀请码: ${family?.familyCode ?? ''}',
+                style: TextStyle(
+                  fontSize: 12.sp,
+                  color: Colors.grey[600],
+                ),
+              ),
+              trailing: Icon(
+                Icons.chevron_right,
+                size: 20.w,
+                color: Colors.grey[400],
+              ),
+              onTap: () => Get.toNamed(AppRoutes.familyMembers),
+            ),
+            Divider(height: 1.h, indent: 72.w),
+            ListTile(
+              leading: const SizedBox(width: 40),
+              title: Text(
+                '家庭成员',
+                style: TextStyle(fontSize: 14.sp),
+              ),
+              trailing: Icon(
+                Icons.chevron_right,
+                size: 20.w,
+                color: Colors.grey[400],
+              ),
+              onTap: () => Get.toNamed(AppRoutes.familyMembers),
+            ),
+            if (controller.isFamilyAdmin)
+              Divider(height: 1.h, indent: 72.w),
+            if (controller.isFamilyAdmin)
+              ListTile(
+                leading: const SizedBox(width: 40),
+                title: Text(
+                  '邀请家人',
+                  style: TextStyle(fontSize: 14.sp),
+                ),
+                trailing: Icon(
+                  Icons.chevron_right,
+                  size: 20.w,
+                  color: Colors.grey[400],
+                ),
+                onTap: () => Get.toNamed(AppRoutes.familyQrCode),
+              ),
+          ],
+        );
+      }),
+    );
+  }
+
+  /// 显示家庭操作对话框
+  void _showFamilyActionDialog(FamilyController controller) {
+    Get.dialog(
+      AlertDialog(
+        title: const Text('家庭管理'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.add_circle_outline, color: Color(0xFF4CAF50)),
+              title: const Text('创建家庭'),
+              onTap: () {
+                Get.back();
+                Get.toNamed(AppRoutes.familyCreate);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.qr_code_scanner, color: Color(0xFF2196F3)),
+              title: const Text('扫码加入'),
+              onTap: () {
+                Get.back();
+                Get.toNamed(AppRoutes.familyScan);
+              },
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

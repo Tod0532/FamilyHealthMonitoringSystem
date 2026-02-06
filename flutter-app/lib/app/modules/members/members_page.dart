@@ -33,9 +33,9 @@ class MembersPage extends GetView<MembersController> {
           },
         );
       }),
-      floatingActionButton: PermissionFab(
-        permissionCheck: PermissionUtils.canManageMembers,
+      floatingActionButton: FloatingActionButton(
         onPressed: () => controller.showAddMemberDialog(context),
+        backgroundColor: const Color(0xFF4CAF50),
         child: const Icon(Icons.add, color: Colors.white),
       ),
     );

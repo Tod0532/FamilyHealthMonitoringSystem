@@ -32,35 +32,8 @@ class MembersController extends GetxController {
 
   /// 加载模拟成员数据（用于演示）
   void _loadMockMembers() {
-    members.value = [
-      FamilyMember(
-        id: '1',
-        name: '张三',
-        relation: MemberRelation.father,
-        role: MemberRole.admin,
-        gender: 1,
-        birthday: DateTime(1965, 5, 15),
-        createTime: DateTime.now(),
-      ),
-      FamilyMember(
-        id: '2',
-        name: '李四',
-        relation: MemberRelation.mother,
-        role: MemberRole.admin,
-        gender: 2,
-        birthday: DateTime(1968, 8, 20),
-        createTime: DateTime.now(),
-      ),
-      FamilyMember(
-        id: '3',
-        name: '小明',
-        relation: MemberRelation.son,
-        role: MemberRole.member,
-        gender: 1,
-        birthday: DateTime(2010, 3, 10),
-        createTime: DateTime.now(),
-      ),
-    ];
+    // 新用户从空列表开始，由用户自行添加家庭成员
+    members.value = [];
   }
 
   /// 获取成员列表

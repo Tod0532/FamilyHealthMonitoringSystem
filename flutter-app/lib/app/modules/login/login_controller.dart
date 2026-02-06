@@ -122,10 +122,13 @@ class LoginController extends GetxController {
       // 保存用户信息
       await _storage.saveUserId(authResponse.userInfo.id);
       await _storage.saveNickname(authResponse.userInfo.nickname);
-      // 保存用户角色
-      if (authResponse.userInfo.role != null) {
-        await _storage.saveUserRole(authResponse.userInfo.role!);
+      // 保存用户角色 - 家庭中第一个登录/注册的用户自动成为管理员
+      String userRole = authResponse.userInfo.role ?? 'USER';
+      final members = _storage.getFamilyMembers();
+      if (members.isEmpty) {
+        userRole = 'ADMIN';
       }
+      await _storage.saveUserRole(userRole);
       if (authResponse.userInfo.avatar != null) {
         await _storage.saveAvatar(authResponse.userInfo.avatar!);
       }

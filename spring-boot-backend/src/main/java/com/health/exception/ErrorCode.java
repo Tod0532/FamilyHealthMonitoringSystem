@@ -32,7 +32,15 @@ public enum ErrorCode {
     // 业务相关
     MEMBER_NOT_FOUND(3001, "成员不存在"),
     DATA_NOT_FOUND(3002, "数据不存在"),
-    RULE_NOT_FOUND(3003, "规则不存在");
+    RULE_NOT_FOUND(3003, "规则不存在"),
+
+    // 家庭相关
+    FAMILY_NOT_FOUND(4001, "家庭不存在"),
+    FAMILY_CODE_INVALID(4002, "邀请码无效"),
+    ALREADY_IN_FAMILY(4003, "您已加入家庭"),
+    NOT_FAMILY_ADMIN(4004, "您不是家庭管理员"),
+    CANNOT_REMOVE_ADMIN(4005, "不能移除家庭管理员"),
+    FAMILY_NAME_EXISTS(4006, "家庭名称已存在");
 
     private final int code;
     private final String message;

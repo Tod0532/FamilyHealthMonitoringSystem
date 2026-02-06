@@ -24,6 +24,11 @@ public class FamilyMember {
     private Long userId;
 
     /**
+     * 所属家庭ID
+     */
+    private Long familyId;
+
+    /**
      * 成员名称
      */
     private String name;

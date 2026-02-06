@@ -44,35 +44,8 @@ class _HealthDataTabPageState extends State<HealthDataTabPage> {
     if (Get.isRegistered<MembersController>()) {
       final controller = Get.find<MembersController>();
       members = controller.members.toList();
-    } else {
-      // 使用模拟成员
-      members = [
-        FamilyMember(
-          id: '1',
-          name: '张三',
-          relation: MemberRelation.father,
-          role: MemberRole.admin,
-          gender: 1,
-          createTime: DateTime.now(),
-        ),
-        FamilyMember(
-          id: '2',
-          name: '李四',
-          relation: MemberRelation.mother,
-          role: MemberRole.admin,
-          gender: 2,
-          createTime: DateTime.now(),
-        ),
-        FamilyMember(
-          id: '3',
-          name: '小明',
-          relation: MemberRelation.son,
-          role: MemberRole.member,
-          gender: 1,
-          createTime: DateTime.now(),
-        ),
-      ];
     }
+    // 新用户无成员时为空列表
   }
 
   // 获取筛选后的数据

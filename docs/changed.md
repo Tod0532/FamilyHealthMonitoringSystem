@@ -4,6 +4,158 @@
 
 ---
 
+## 2026-02-06 中午（家庭功能生产环境部署完成）
+
+### 📝 修改文件
+
+| 文件路径 | 说明 | 作者 |
+|----------|------|------|
+| spring-boot-backend/.../entity/User.java | 修复表名sys_user→user | Claude |
+| spring-boot-backend/.../controller/FamilyController.java | 修复jakarta→javax | Claude |
+| spring-boot-backend/.../dto/FamilyCreateRequest.java | 修复jakarta→javax | Claude |
+| spring-boot-backend/.../dto/FamilyJoinRequest.java | 修复jakarta→javax | Claude |
+| spring-boot-backend/.../exception/ErrorCode.java | 添加家庭相关错误码 | Claude |
+| docs/planTask.md | 更新M21里程碑状态 | Claude |
+| docs/planNext.md | 更新下一步计划 | Claude |
+
+### 📋 变更内容
+
+#### 类型：deploy（部署）、fix（修复）
+#### 范围：生产环境、后端代码
+#### 描述：家庭二维码功能部署到阿里云生产环境
+
+**部署执行清单**：
+- [x] 备份数据库（`/root/backup_family_20260206_103758.sql`）
+- [x] 执行数据库迁移（family_id字段添加）
+- [x] 修复后端代码（表名、包名、错误码）
+- [x] 服务器编译打包（Maven clean package）
+- [x] 重启后端服务（systemctl restart health-app）
+- [x] API接口测试通过
+
+**生产环境验证**：
+```bash
+# 登录测试
+curl -X POST "http://139.129.108.119:8080/api/auth/login" \
+  -d '{"phone": "13800138000", "password": "abc123456"}'
+# ✅ 返回Token和用户信息
+
+# 创建家庭测试
+curl -X POST "http://139.129.108.119:8080/api/family/create" \
+  -H "Authorization: Bearer {token}" \
+  -d '{"familyName": "测试家庭"}'
+# ✅ 返回家庭ID和邀请码 N9Z6QZ
+
+# 二维码测试
+curl "http://139.129.108.119:8080/api/family/qrcode" \
+  -H "Authorization: Bearer {token}"
+# ✅ 返回 qrContent: "FAMILY_INVITE:N9Z6QZ"
+```
+
+**服务器状态**：
+| 项目 | 状态 |
+|------|------|
+| 后端服务 | ✅ 运行中 (PID: 479653) |
+| API端口 | ✅ 8080监听中 |
+| 外网访问 | ✅ 正常 |
+
+**修复的问题**：
+1. User实体表名错误 (`sys_user` → `user`)
+2. jakarta.validation包兼容 (`jakarta` → `javax`)
+3. ErrorCode缺少家庭相关错误码
+
+---
+
+## 2026-02-06 晚（家庭二维码加入功能）
+
+### 📁 新增文件
+
+| 文件路径 | 说明 | 作者 |
+|----------|------|------|
+| spring-boot-backend/src/main/resources/db/migration-family.sql | 数据库迁移脚本 | Claude |
+| spring-boot-backend/.../domain/entity/Family.java | 家庭实体类 | Claude |
+| spring-boot-backend/.../domain/mapper/FamilyMapper.java | 家庭Mapper | Claude |
+| spring-boot-backend/.../dto/FamilyResponse.java | 家庭响应DTO | Claude |
+| spring-boot-backend/.../dto/FamilyCreateRequest.java | 创建家庭请求DTO | Claude |
+| spring-boot-backend/.../dto/FamilyQrCodeResponse.java | 二维码响应DTO | Claude |
+| spring-boot-backend/.../dto/FamilyJoinRequest.java | 加入家庭请求DTO | Claude |
+| spring-boot-backend/.../dto/FamilyMemberUserResponse.java | 家庭用户响应DTO | Claude |
+| spring-boot-backend/.../service/FamilyService.java | 家庭服务接口 | Claude |
+| spring-boot-backend/.../service/impl/FamilyServiceImpl.java | 家庭服务实现 | Claude |
+| spring-boot-backend/.../controller/FamilyController.java | 家庭控制器 | Claude |
+| flutter-app/lib/core/models/family.dart | 家庭数据模型 | Claude |
+| flutter-app/lib/app/modules/family/family_controller.dart | 家庭控制器 | Claude |
+| flutter-app/lib/app/modules/family/family_binding.dart | 依赖注入 | Claude |
+| flutter-app/lib/app/modules/family/family_create_page.dart | 创建家庭页面 | Claude |
+| flutter-app/lib/app/modules/family/family_qrcode_page.dart | 二维码展示页面 | Claude |
+| flutter-app/lib/app/modules/family/family_scan_page.dart | 扫码加入页面 | Claude |
+| flutter-app/lib/app/modules/family/family_members_page.dart | 家庭成员列表页面 | Claude |
+
+### 📝 修改文件
+
+| 文件路径 | 说明 | 作者 |
+|----------|------|------|
+| spring-boot-backend/.../entity/User.java | 添加familyId和familyRole字段 | Claude |
+| spring-boot-backend/.../entity/FamilyMember.java | 添加familyId字段 | Claude |
+| spring-boot-backend/.../entity/HealthData.java | 添加familyId字段 | Claude |
+| spring-boot-backend/.../dto/UserVO.java | 添加family相关字段 | Claude |
+| spring-boot-backend/.../dto/AuthResponse.java | 添加family相关字段 | Claude |
+| spring-boot-backend/.../exception/ErrorCode.java | 添加家庭相关错误码 | Claude |
+| spring-boot-backend/.../service/impl/UserServiceImpl.java | 更新用户信息包含family字段 | Claude |
+| flutter-app/lib/core/models/user.dart | 添加familyId和familyRole字段 | Claude |
+| flutter-app/lib/pubspec.yaml | 添加qr_flutter依赖 | Claude |
+| flutter-app/lib/app/routes/app_routes.dart | 添加家庭相关路由 | Claude |
+| flutter-app/lib/app/routes/app_pages.dart | 注册家庭相关路由 | Claude |
+| flutter-app/lib/app/modules/home/home_controller.dart | 注册FamilyController | Claude |
+| flutter-app/lib/app/modules/home/pages/profile_tab_page.dart | 添加家庭管理入口 | Claude |
+
+### 📋 变更内容
+
+#### 类型：feat（新功能）
+#### 范围：数据库、API接口、UI界面
+#### 描述：实现家庭二维码加入功能，支持多设备家庭数据共享
+
+**功能场景**：
+```
+手机A（管理员）                手机B（普通成员）
+     ↓                              ↓
+ 创建家庭                        注册账号
+     ↓                              ↓
+ 显示二维码                        扫描二维码
+     ↓                              ↓
+┌──────────────────────────────────────────┐
+│         共享家庭数据和成员列表              │
+└──────────────────────────────────────────┘
+```
+
+**数据库变更**：
+
+1. **新增 family 表**：家庭ID、家庭名称、6位邀请码、管理员ID、成员数
+2. **修改 sys_user 表**：添加family_id和family_role字段
+3. **修改 family_member 表**：添加family_id字段
+4. **修改 health_data 表**：添加family_id字段
+
+**后端实现**：
+- 9个API接口（创建家庭、获取信息、二维码、加入、退出、成员管理等）
+- 6位唯一邀请码生成算法
+- 家庭角色管理（admin-管理员，member-普通成员）
+
+**前端实现**：
+- 家庭数据模型
+- 创建家庭页面
+- 二维码展示页面
+- 扫码加入页面
+- 家庭成员列表页面
+- 个人中心家庭管理入口
+
+**依赖更新**：
+- qr_flutter: ^4.1.0（二维码生成）
+
+#### 影响文件
+- 新增：18个文件
+- 修改：13个文件
+
+---
+
 ## 2026-02-06 晚（角色权限控制功能完成）
 
 ### 📁 新增文件

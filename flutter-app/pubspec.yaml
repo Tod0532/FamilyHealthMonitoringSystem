@@ -55,6 +55,7 @@ dependencies:
 
   # 二维码扫描
   mobile_scanner: ^4.0.1
+  qr_flutter: ^4.1.0
 
   # 图片选择
   image_picker: ^1.0.5

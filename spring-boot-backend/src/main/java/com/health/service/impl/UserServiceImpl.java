@@ -64,7 +64,11 @@ public class UserServiceImpl implements UserService {
         user.setNickname(request.getNickname() != null ? request.getNickname() : defaultNickname);
         user.setGender(null);  // 用户注册时性别可选
         user.setStatus(1);  // 正常状态
-        user.setRole("USER");  // 默认角色为普通用户
+
+        // 检查是否为第一个注册用户（家庭创建者），自动设为管理员
+        Long userCount = userMapper.selectCount(null);
+        user.setRole(userCount == 0 ? "ADMIN" : "USER");  // 第一个用户为管理员
+
         user.setCreateTime(LocalDateTime.now());
         user.setUpdateTime(LocalDateTime.now());
 
@@ -191,6 +195,8 @@ public class UserServiceImpl implements UserService {
                 .nickname(user.getNickname())
                 .avatar(user.getAvatar())
                 .role(userRole)
+                .familyId(user.getFamilyId())
+                .familyRole(user.getFamilyRole())
                 .build();
 
         return AuthResponse.builder()
@@ -214,6 +220,9 @@ public class UserServiceImpl implements UserService {
                 .gender(user.getGender())
                 .birthday(user.getBirthday())
                 .status(user.getStatus())
+                .role(user.getRole())
+                .familyId(user.getFamilyId())
+                .familyRole(user.getFamilyRole())
                 .lastLoginTime(user.getLastLoginTime())
                 .createTime(user.getCreateTime())
                 .build();

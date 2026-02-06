@@ -35,6 +35,11 @@ import 'package:health_center_app/app/modules/device/device_data_page.dart';
 import 'package:health_center_app/core/bluetooth/models/ble_device.dart';
 import 'package:health_center_app/app/modules/diary/diary_binding.dart';
 import 'package:health_center_app/app/modules/diary/diary_page.dart';
+import 'package:health_center_app/app/modules/family/family_binding.dart';
+import 'package:health_center_app/app/modules/family/family_create_page.dart';
+import 'package:health_center_app/app/modules/family/family_qrcode_page.dart';
+import 'package:health_center_app/app/modules/family/family_scan_page.dart';
+import 'package:health_center_app/app/modules/family/family_members_page.dart';
 
 /// 应用路由配置
 class AppPages {
@@ -235,6 +240,42 @@ class AppPages {
       name: '/diary',
       page: () => const DiaryPage(),
       binding: DiaryBinding(),
+      middlewares: [AuthMiddleware()],
+      transition: Transition.rightToLeft,
+    ),
+
+    // 创建家庭页面
+    GetPage(
+      name: '/family/create',
+      page: () => const FamilyCreatePage(),
+      binding: FamilyBinding(),
+      middlewares: [AuthMiddleware()],
+      transition: Transition.rightToLeft,
+    ),
+
+    // 家庭二维码页面
+    GetPage(
+      name: '/family/qrcode',
+      page: () => const FamilyQrCodePage(),
+      binding: FamilyBinding(),
+      middlewares: [AuthMiddleware()],
+      transition: Transition.rightToLeft,
+    ),
+
+    // 扫码加入家庭页面
+    GetPage(
+      name: '/family/scan',
+      page: () => const FamilyScanPage(),
+      binding: FamilyBinding(),
+      middlewares: [AuthMiddleware()],
+      transition: Transition.rightToLeft,
+    ),
+
+    // 家庭成员管理页面
+    GetPage(
+      name: '/family/members',
+      page: () => const FamilyMembersPage(),
+      binding: FamilyBinding(),
       middlewares: [AuthMiddleware()],
       transition: Transition.rightToLeft,
     ),

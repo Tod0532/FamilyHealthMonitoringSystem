@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'family.dart';
 
 /// 用户角色枚举
 enum UserRole {
@@ -31,6 +32,8 @@ class User {
   final DateTime? birthday;
   final int status;
   final UserRole role; // 新增：用户角色
+  final String? familyId; // 所属家庭ID
+  final FamilyRole familyRole; // 家庭角色
   final DateTime? lastLoginTime;
   final DateTime createTime;
 
@@ -43,9 +46,11 @@ class User {
     this.birthday,
     required this.status,
     required this.role, // 新增
+    this.familyId,
+    FamilyRole? familyRole,
     this.lastLoginTime,
     required this.createTime,
-  });
+  }) : familyRole = familyRole ?? FamilyRole.member;
 
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
@@ -57,6 +62,8 @@ class User {
       birthday: _parseDateTimeNullable(json['birthday']),
       status: _parseInt(json['status']) ?? 0,
       role: UserRole.fromCode(json['role']), // 新增：解析角色
+      familyId: json['familyId']?.toString(),
+      familyRole: FamilyRole.fromCode(json['familyRole']),
       lastLoginTime: _parseDateTimeNullable(json['lastLoginTime']),
       createTime: _parseDateTime(json['createTime']),
     );
@@ -72,6 +79,8 @@ class User {
       'birthday': birthday?.toIso8601String(),
       'status': status,
       'role': role.code, // 新增：序列化角色
+      'familyId': familyId,
+      'familyRole': familyRole.code,
       'lastLoginTime': lastLoginTime?.toIso8601String(),
       'createTime': createTime.toIso8601String(),
     };
@@ -137,6 +146,15 @@ class User {
   /// 是否为访客
   bool get isGuest => role == UserRole.guest;
 
+  /// 是否已加入家庭
+  bool get isInFamily => familyId != null && familyId!.isNotEmpty;
+
+  /// 是否为家庭管理员
+  bool get isFamilyAdmin => familyRole == FamilyRole.admin;
+
+  /// 是否可以管理家庭
+  bool get canManageFamily => isFamilyAdmin;
+
   /// 是否可以管理成员
   bool get canManageMembers => isAdmin;
 
@@ -154,7 +172,9 @@ class User {
     int? gender,
     DateTime? birthday,
     int? status,
-    UserRole? role, // 新增
+    UserRole? role,
+    String? familyId,
+    FamilyRole? familyRole,
     DateTime? lastLoginTime,
     DateTime? createTime,
   }) {
@@ -166,7 +186,9 @@ class User {
       gender: gender ?? this.gender,
       birthday: birthday ?? this.birthday,
       status: status ?? this.status,
-      role: role ?? this.role, // 新增
+      role: role ?? this.role,
+      familyId: familyId ?? this.familyId,
+      familyRole: familyRole ?? this.familyRole,
       lastLoginTime: lastLoginTime ?? this.lastLoginTime,
       createTime: createTime ?? this.createTime,
     );

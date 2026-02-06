@@ -24,6 +24,11 @@ public class HealthData {
     private Long userId;
 
     /**
+     * 所属家庭ID
+     */
+    private Long familyId;
+
+    /**
      * 成员ID
      */
     private Long memberId;

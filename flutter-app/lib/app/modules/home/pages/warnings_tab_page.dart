@@ -35,37 +35,8 @@ class WarningsTabPage extends StatefulWidget {
 }
 
 class _WarningsTabPageState extends State<WarningsTabPage> {
-  // 模拟预警数据
-  final List<AlertItem> alerts = [
-    AlertItem(
-      id: '1',
-      title: '血压偏高',
-      message: '收缩压145mmHg，舒张压95mmHg，超出正常范围',
-      memberName: '张三',
-      level: AlertLevel.danger,
-      type: AlertType.bloodPressure,
-      time: DateTime.now().subtract(const Duration(minutes: 30)),
-    ),
-    AlertItem(
-      id: '2',
-      title: '心率异常',
-      message: '静息心率105次/分，略高于正常值',
-      memberName: '李四',
-      level: AlertLevel.warning,
-      type: AlertType.heartRate,
-      time: DateTime.now().subtract(const Duration(hours: 2)),
-      isRead: true,
-    ),
-    AlertItem(
-      id: '3',
-      title: '血糖偏低',
-      message: '空腹血糖3.5mmol/L，低于正常值',
-      memberName: '小明',
-      level: AlertLevel.warning,
-      type: AlertType.bloodSugar,
-      time: DateTime.now().subtract(const Duration(hours: 5)),
-    ),
-  ];
+  // 新用户无预警数据
+  final List<AlertItem> alerts = [];
 
   int get unreadCount => alerts.where((a) => !a.isRead).length;
 
