@@ -365,45 +365,145 @@ class _HealthDataTabPageState extends State<HealthDataTabPage> {
     int? gender,
     VoidCallback? onTap,
   }) {
+    // 是否为"全部"选项
+    final bool isAllOption = label == '全部';
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+        padding: EdgeInsets.symmetric(
+          horizontal: isAllOption ? 16.w : 8.w,
+          vertical: 8.h,
+        ),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF4CAF50).withOpacity(0.15) : Colors.grey[100],
+          gradient: isSelected
+              ? const LinearGradient(
+                  colors: [Color(0xFF4CAF50), Color(0xFF66BB6A)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                )
+              : null,
+          color: isSelected ? null : Colors.grey[100],
           borderRadius: BorderRadius.circular(20.r),
           border: Border.all(
-            color: isSelected ? const Color(0xFF4CAF50) : Colors.transparent,
-            width: 1.5,
+            color: isSelected ? Colors.transparent : Colors.grey[300]!,
+            width: 1,
           ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: const Color(0xFF4CAF50).withOpacity(0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (relation != null) ...[
+            // 全部选项显示图标
+            if (isAllOption) ...[
+              Icon(
+                Icons.people_outline_rounded,
+                size: 18.sp,
+                color: isSelected ? Colors.white : Colors.grey[600],
+              ),
+              SizedBox(width: 6.w),
               Text(
-                relation,
+                label,
                 style: TextStyle(
-                  fontSize: 11.sp,
-                  color: isSelected ? const Color(0xFF4CAF50) : Colors.grey[500],
+                  fontSize: 14.sp,
+                  color: isSelected ? Colors.white : Colors.grey[700],
+                  fontWeight: FontWeight.w600,
                 ),
               ),
-              Text(
-                ' · ',
-                style: TextStyle(fontSize: 11.sp, color: Colors.grey[400]),
+            ] else ...[
+              // 成员选项显示头像
+              _buildMemberChipAvatar(label, gender, isSelected),
+              SizedBox(width: 8.w),
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 13.sp,
+                      color: isSelected ? Colors.white : Colors.grey[800],
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  if (relation != null)
+                    Text(
+                      relation,
+                      style: TextStyle(
+                        fontSize: 10.sp,
+                        color: isSelected ? Colors.white70 : Colors.grey[500],
+                      ),
+                    ),
+                ],
               ),
             ],
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 13.sp,
-                color: isSelected ? const Color(0xFF4CAF50) : Colors.grey[700],
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-              ),
-            ),
           ],
         ),
       ),
+    );
+  }
+
+  /// 构建成员芯片头像
+  Widget _buildMemberChipAvatar(String name, int? gender, bool isSelected) {
+    Color avatarColor;
+    IconData? avatarIcon;
+
+    if (gender != null) {
+      if (gender == 1) {
+        avatarColor = const Color(0xFF64B5F6);
+        avatarIcon = Icons.male;
+      } else if (gender == 2) {
+        avatarColor = const Color(0xFFF06292);
+        avatarIcon = Icons.female;
+      } else {
+        avatarColor = const Color(0xFF90A4AE);
+      }
+    } else {
+      avatarColor = const Color(0xFF90A4AE);
+    }
+
+    return Container(
+      width: 38.w,
+      height: 38.w,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            avatarColor,
+            avatarColor.withOpacity(0.8),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: isSelected ? Colors.white : Colors.white70,
+          width: 2,
+        ),
+      ),
+      child: avatarIcon != null
+          ? Icon(
+              avatarIcon,
+              size: 18.sp,
+              color: Colors.white,
+            )
+          : Center(
+              child: Text(
+                name.isNotEmpty ? name[0].toUpperCase() : '?',
+                style: TextStyle(
+                  fontSize: 16.sp,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+            ),
     );
   }
 
