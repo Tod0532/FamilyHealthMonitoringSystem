@@ -6,6 +6,7 @@ import 'package:health_center_app/app/modules/family/family_controller.dart';
 import 'package:health_center_app/app/modules/health/health_data_controller.dart';
 import 'package:health_center_app/app/modules/alerts/health_alert_controller.dart';
 import 'package:health_center_app/core/storage/storage_service.dart';
+import 'package:health_center_app/core/models/family.dart';
 
 /// 首页Tab - 主页内容
 class HomeTabPage extends GetView {
@@ -1029,7 +1030,14 @@ class HomeTabPage extends GetView {
         );
       }
 
-      // 已加入家庭，显示家庭信息
+      // 自动加载家庭成员列表（如果尚未加载）
+      if (controller.familyMembers.isEmpty && !controller.isLoadingMembers.value) {
+        controller.loadFamilyMembers();
+      }
+
+      final members = controller.familyMembers;
+
+      // 已加入家庭，显示丰富的家庭信息卡片
       return Container(
         padding: EdgeInsets.all(20.w),
         decoration: BoxDecoration(
@@ -1047,82 +1055,324 @@ class HomeTabPage extends GetView {
             ),
           ],
         ),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // 顶部：家庭名称和图标
+            Row(
+              children: [
+                Container(
+                  width: 52.w,
+                  height: 52.w,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.25),
+                    borderRadius: BorderRadius.circular(26.r),
+                  ),
+                  child: const Icon(
+                    Icons.home_rounded,
+                    size: 28,
+                    color: Colors.white,
+                  ),
+                ),
+                SizedBox(width: 16.w),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // 家庭名称 - 更大更醒目
+                      Text(
+                        family?.familyName ?? '我的家庭',
+                        style: TextStyle(
+                          fontSize: 20.sp,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                      SizedBox(height: 6.h),
+                      // 成员数量和邀请码
+                      Row(
+                        children: [
+                          Container(
+                            padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(12.r),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.people_outline_rounded,
+                                  size: 14.sp,
+                                  color: Colors.white,
+                                ),
+                                SizedBox(width: 4.w),
+                                Text(
+                                  '${members.length > 0 ? members.length : family?.memberCount ?? 1} 位成员',
+                                  style: TextStyle(
+                                    fontSize: 12.sp,
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          SizedBox(width: 8.w),
+                          Container(
+                            padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(12.r),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.vpn_key_rounded,
+                                  size: 12.sp,
+                                  color: Colors.white70,
+                                ),
+                                SizedBox(width: 4.w),
+                                Text(
+                                  family?.familyCode ?? '',
+                                  style: TextStyle(
+                                    fontSize: 12.sp,
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w600,
+                                    letterSpacing: 1.5,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () => Get.toNamed('/family/members'),
+                  child: Container(
+                    padding: EdgeInsets.all(8.w),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(12.r),
+                    ),
+                    child: Icon(
+                      Icons.arrow_forward_ios_rounded,
+                      size: 18.sp,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+
+            // 底部：成员头像列表
+            if (members.isNotEmpty) ...[
+              SizedBox(height: 20.h),
+              // 分隔线
+              Container(
+                height: 1,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                ),
+              ),
+              SizedBox(height: 16.h),
+              // 成员头像行
+              Row(
+                children: [
+                  Text(
+                    '家庭成员',
+                    style: TextStyle(
+                      fontSize: 13.sp,
+                      color: Colors.white70,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const Spacer(),
+                  GestureDetector(
+                    onTap: () => Get.toNamed('/family/members'),
+                    child: Text(
+                      '查看全部',
+                      style: TextStyle(
+                        fontSize: 12.sp,
+                        color: Colors.white,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                  Icon(
+                    Icons.chevron_right_rounded,
+                    size: 18.sp,
+                    color: Colors.white,
+                  ),
+                ],
+              ),
+              SizedBox(height: 12.h),
+              // 成员头像列表（横向堆叠显示）
+              SizedBox(
+                height: 56.h,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  shrinkWrap: true,
+                  itemCount: members.length > 6 ? 6 : members.length,
+                  separatorBuilder: (context, index) => SizedBox(width: 12.w),
+                  itemBuilder: (context, index) {
+                    final member = members[index];
+                    return _buildMemberAvatar(member);
+                  },
+                ),
+              ),
+              // 如果成员超过6个，显示更多提示
+              if (members.length > 6) ...[
+                SizedBox(width: 8.w),
+                Container(
+                  width: 44.w,
+                  height: 44.w,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(22.r),
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.3),
+                      width: 2,
+                    ),
+                  ),
+                  child: Center(
+                    child: Text(
+                      '+${members.length - 6}',
+                      style: TextStyle(
+                        fontSize: 13.sp,
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ],
+        ),
+      );
+    });
+  }
+
+  /// 构建成员头像
+  Widget _buildMemberAvatar(FamilyUser member) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Stack(
+          clipBehavior: Clip.none,
           children: [
             Container(
               width: 48.w,
               height: 48.w,
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(24.r),
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.4),
+                  width: 2,
+                ),
               ),
-              child: const Icon(
-                Icons.home,
-                size: 24,
-                color: Colors.white,
-              ),
+              child: member.avatar != null && member.avatar!.isNotEmpty
+                  ? ClipOval(
+                      child: Image.network(
+                        member.avatar!,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => _buildDefaultAvatar(member),
+                      ),
+                    )
+                  : _buildDefaultAvatar(member),
             ),
-            SizedBox(width: 16.w),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    family?.familyName ?? '我的家庭',
-                    style: TextStyle(
-                      fontSize: 16.sp,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
+            // 管理员标识
+            if (member.familyRole == FamilyRole.admin)
+              Positioned(
+                right: -4,
+                bottom: -2,
+                child: Container(
+                  width: 18.w,
+                  height: 18.w,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFFFC107),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.admin_panel_settings,
+                    size: 11.sp,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            // 当前用户标识
+            if (member.isMe)
+              Positioned(
+                left: -4,
+                bottom: -2,
+                child: Container(
+                  width: 16.w,
+                  height: 16.w,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF2196F3),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: const Color(0xFF4CAF50),
+                      width: 2,
                     ),
                   ),
-                  SizedBox(height: 4.h),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.people,
-                        size: 14.sp,
-                        color: Colors.white70,
-                      ),
-                      SizedBox(width: 4.w),
-                      Text(
-                        '${family?.memberCount ?? 1} 位成员',
-                        style: TextStyle(
-                          fontSize: 12.sp,
-                          color: Colors.white70,
-                        ),
-                      ),
-                      SizedBox(width: 12.w),
-                      Container(
-                        padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 2.h),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(10.r),
-                        ),
-                        child: Text(
-                          '邀请码: ${family?.familyCode ?? ''}',
-                          style: TextStyle(
-                            fontSize: 11.sp,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ],
+                  child: Icon(
+                    Icons.person,
+                    size: 9.sp,
+                    color: Colors.white,
                   ),
-                ],
+                ),
               ),
-            ),
-            GestureDetector(
-              onTap: () => Get.toNamed('/family/members'),
-              child: Icon(
-                Icons.arrow_forward_ios,
-                size: 16.sp,
-                color: Colors.white,
-              ),
-            ),
           ],
         ),
-      );
-    });
+        SizedBox(height: 6.h),
+        // 成员昵称
+        SizedBox(
+          width: 60.w,
+          child: Text(
+            member.nickname,
+            style: TextStyle(
+              fontSize: 11.sp,
+              color: Colors.white,
+              fontWeight: member.isMe ? FontWeight.bold : FontWeight.normal,
+            ),
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// 构建默认头像
+  Widget _buildDefaultAvatar(FamilyUser member) {
+    // 根据性别选择颜色
+    final bgColor = member.gender == 'male'
+        ? const Color(0xFF64B5F6)
+        : member.gender == 'female'
+            ? const Color(0xFFF06292)
+            : const Color(0xFF90A4AE);
+
+    return Container(
+      color: bgColor,
+      child: Center(
+        child: Text(
+          member.nickname.isNotEmpty ? member.nickname[0].toUpperCase() : '?',
+          style: TextStyle(
+            fontSize: 18.sp,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+      ),
+    );
   }
 
   /// 显示加入家庭对话框
