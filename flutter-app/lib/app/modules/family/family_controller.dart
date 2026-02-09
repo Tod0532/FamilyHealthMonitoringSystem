@@ -206,17 +206,59 @@ class FamilyController extends GetxController {
   /// 加载家庭成员列表
   Future<void> loadFamilyMembers() async {
     isLoadingMembers.value = true;
+    errorMessage.value = '';
 
     try {
+      debugPrint('=== FamilyController.loadFamilyMembers() 开始 ===');
+      debugPrint('正在调用 /api/family/members ...');
+
       final response = await _dioProvider.get('/api/family/members');
+      debugPrint('API响应: $response');
+
+      // 检查响应数据格式
+      if (response == null) {
+        throw Exception('响应为空');
+      }
+
+      if (response['data'] == null) {
+        debugPrint('响应data为空，清空成员列表');
+        familyMembers.clear();
+        return;
+      }
+
+      if (response['data'] is! List) {
+        debugPrint('响应data不是List类型: ${response['data'].runtimeType}');
+        throw Exception('数据格式错误：期望数组类型');
+      }
+
       final List<dynamic> list = response['data'] as List<dynamic>;
+      debugPrint('解析到 ${list.length} 个成员');
+
       familyMembers.value = list
           .map((e) => FamilyUser.fromJson(e as Map<String, dynamic>))
           .toList();
+
+      debugPrint('成员列表加载成功，共 ${familyMembers.length} 人');
+      for (var member in familyMembers) {
+        debugPrint('  - ${member.nickname} (${member.genderText}, ${member.isMe ? "我" : "其他"})');
+      }
     } catch (e) {
       debugPrint('加载家庭成员失败: $e');
+      errorMessage.value = '加载失败: ${e.toString()}';
+      familyMembers.clear();
+
+      // 如果是网络错误或未登录，给用户提示
+      final errorStr = e.toString();
+      if (errorStr.contains('401') || errorStr.contains('未授权') || errorStr.contains('Unauthorized')) {
+        errorMessage.value = '请先登录';
+      } else if (errorStr.contains('网络') || errorStr.contains('Socket') || errorStr.contains('Connection')) {
+        errorMessage.value = '网络连接失败';
+      } else if (errorStr.contains('404') || errorStr.contains('家庭')) {
+        errorMessage.value = '请先加入家庭';
+      }
     } finally {
       isLoadingMembers.value = false;
+      debugPrint('=== FamilyController.loadFamilyMembers() 结束 ===');
     }
   }
 

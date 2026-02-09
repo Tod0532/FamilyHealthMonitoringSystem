@@ -110,8 +110,9 @@ public class FamilyController {
      */
     @GetMapping("/api/family/members")
     @Operation(summary = "获取家庭成员", description = "获取当前家庭的所有成员列表")
-    public ApiResponse<List<FamilyMemberUserResponse>> getFamilyMembers(HttpServletRequest request) {
-        Long userId = com.health.util.SecurityUtil.getUserId(request);
+    public ApiResponse<List<FamilyMemberUserResponse>> getFamilyMembers(
+            @Parameter(description = "用户ID", required = true)
+            @RequestHeader("X-User-Id") Long userId) {
         log.info("获取家庭成员列表: userId={}", userId);
         List<FamilyMemberUserResponse> response = familyService.getFamilyMembers(userId);
         return ApiResponse.success(response);

@@ -66,6 +66,29 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     log.debug("用户认证成功: userId={}, phone={}", userId, phone);
                 }
             }
+        } else {
+            // 开发环境降级：如果没有JWT token，尝试从X-User-Id header获取
+            String userIdHeader = request.getHeader(USER_ID_HEADER);
+            if (userIdHeader != null) {
+                try {
+                    Long userId = Long.valueOf(userIdHeader);
+                    // 创建认证对象并存入SecurityContext
+                    UsernamePasswordAuthenticationToken authentication =
+                            new UsernamePasswordAuthenticationToken(
+                                    userId,
+                                    null,
+                                    Collections.singletonList(new SimpleGrantedAuthority("ROLE_USER"))
+                            );
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
+
+                    // 将用户ID添加到请求属性
+                    request.setAttribute(USER_ID_ATTRIBUTE, userId);
+                    request.setAttribute(USER_ID_HEADER, userId);
+                    log.debug("用户认证成功: userId={}", userId);
+                } catch (NumberFormatException e) {
+                    log.warn("无效的X-User-Id header值: {}", userIdHeader);
+                }
+            }
         }
 
         filterChain.doFilter(request, response);

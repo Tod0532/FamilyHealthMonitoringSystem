@@ -41,12 +41,31 @@ class MembersController extends GetxController {
     errorMessage.value = '';
 
     try {
+      AppLogger.d('=== MembersController.fetchMembers() 开始 ===');
+      AppLogger.d('正在调用 /api/family/members ...');
+
       // 使用家庭API获取成员列表（包括所有家庭用户）
       final response = await dioProvider.get('/api/family/members');
 
       AppLogger.d('MembersController: API响应 = ${response.toString()}');
 
-      final List dataList = response['data'] as List? ?? [];
+      // 检查响应格式
+      if (response == null) {
+        throw Exception('响应为空');
+      }
+
+      if (response['data'] == null) {
+        AppLogger.d('响应data为空，清空成员列表');
+        members.clear();
+        return;
+      }
+
+      if (response['data'] is! List) {
+        AppLogger.d('响应data不是List类型: ${response['data'].runtimeType}');
+        throw Exception('数据格式错误：期望数组类型');
+      }
+
+      final List dataList = response['data'] as List;
       AppLogger.d('MembersController: 后端返回 ${dataList.length} 个成员');
 
       // 将后端返回的家庭用户转换为 FamilyMember 格式
@@ -78,13 +97,30 @@ class MembersController extends GetxController {
       }).toList();
 
       AppLogger.d('MembersController: 最终成员列表长度 = ${members.length}');
+
+      // 打印所有成员信息用于调试
+      for (var member in members) {
+        AppLogger.d('  - ${member.name} (id=${member.id}, gender=${member.gender})');
+      }
     } catch (e) {
       AppLogger.e('获取成员列表失败: $e');
-      errorMessage.value = '获取成员列表失败: $e';
-      // 失败时使用本地模拟数据
-      _loadMockMembers();
+      errorMessage.value = '获取失败: ${e.toString()}';
+
+      // 根据错误类型设置更友好的提示
+      final errorStr = e.toString();
+      if (errorStr.contains('401') || errorStr.contains('未授权') || errorStr.contains('Unauthorized')) {
+        errorMessage.value = '请先登录';
+      } else if (errorStr.contains('网络') || errorStr.contains('Socket') || errorStr.contains('Connection')) {
+        errorMessage.value = '网络连接失败';
+      } else if (errorStr.contains('404') || errorStr.contains('家庭')) {
+        errorMessage.value = '请先加入家庭';
+      }
+
+      // 失败时清空成员列表
+      members.clear();
     } finally {
       isLoading.value = false;
+      AppLogger.d('=== MembersController.fetchMembers() 结束 ===');
     }
   }
 

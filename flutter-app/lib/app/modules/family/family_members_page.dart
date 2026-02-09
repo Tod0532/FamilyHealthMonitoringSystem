@@ -41,6 +41,11 @@ class FamilyMembersPage extends GetView<FamilyController> {
           );
         }
 
+        // 显示错误状态
+        if (controller.errorMessage.value.isNotEmpty) {
+          return _buildErrorState();
+        }
+
         if (controller.familyMembers.isEmpty) {
           return _buildEmptyState();
         }
@@ -79,6 +84,54 @@ class FamilyMembersPage extends GetView<FamilyController> {
             style: TextStyle(
               fontSize: 16.sp,
               color: Colors.grey[600],
+            ),
+          ),
+          SizedBox(height: 24.h),
+          ElevatedButton.icon(
+            onPressed: () => controller.loadFamilyMembers(),
+            icon: const Icon(Icons.refresh),
+            label: const Text('刷新'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF4CAF50),
+              foregroundColor: Colors.white,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 错误状态
+  Widget _buildErrorState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.error_outline,
+            size: 80.sp,
+            color: Colors.red[300],
+          ),
+          SizedBox(height: 16.h),
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: 32.w),
+            child: Text(
+              controller.errorMessage.value,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14.sp,
+                color: Colors.grey[600],
+              ),
+            ),
+          ),
+          SizedBox(height: 24.h),
+          ElevatedButton.icon(
+            onPressed: () => controller.loadFamilyMembers(),
+            icon: const Icon(Icons.refresh),
+            label: const Text('重试'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF4CAF50),
+              foregroundColor: Colors.white,
             ),
           ),
         ],
