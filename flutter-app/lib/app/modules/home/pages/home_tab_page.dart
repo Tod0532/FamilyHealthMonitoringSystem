@@ -1214,7 +1214,7 @@ class HomeTabPage extends GetView {
               SizedBox(height: 12.h),
               // 成员头像列表（横向堆叠显示）
               SizedBox(
-                height: 56.h,
+                height: 72.h,
                 child: ListView.separated(
                   scrollDirection: Axis.horizontal,
                   shrinkWrap: true,
@@ -1264,72 +1264,78 @@ class HomeTabPage extends GetView {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Stack(
-          clipBehavior: Clip.none,
-          children: [
-            Container(
-              width: 48.w,
-              height: 48.w,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: Colors.white.withOpacity(0.4),
-                  width: 2,
-                ),
-              ),
-              child: member.avatar != null && member.avatar!.isNotEmpty
-                  ? ClipOval(
-                      child: Image.network(
-                        member.avatar!,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => _buildDefaultAvatar(member),
-                      ),
-                    )
-                  : _buildDefaultAvatar(member),
-            ),
-            // 管理员标识
-            if (member.familyRole == FamilyRole.admin)
-              Positioned(
-                right: -4,
-                bottom: -2,
+        SizedBox(
+          height: 52.w,
+          width: 52.w,
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Center(
                 child: Container(
-                  width: 18.w,
-                  height: 18.w,
-                  decoration: const BoxDecoration(
-                    color: Color(0xFFFFC107),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.admin_panel_settings,
-                    size: 11.sp,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-            // 当前用户标识
-            if (member.isMe)
-              Positioned(
-                left: -4,
-                bottom: -2,
-                child: Container(
-                  width: 16.w,
-                  height: 16.w,
+                  width: 48.w,
+                  height: 48.w,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF2196F3),
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: const Color(0xFF4CAF50),
+                      color: Colors.white.withOpacity(0.4),
                       width: 2,
                     ),
                   ),
-                  child: Icon(
-                    Icons.person,
-                    size: 9.sp,
-                    color: Colors.white,
-                  ),
+                  child: member.avatar != null && member.avatar!.isNotEmpty
+                      ? ClipOval(
+                          child: Image.network(
+                            member.avatar!,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) => _buildDefaultAvatar(member),
+                          ),
+                        )
+                      : _buildDefaultAvatar(member),
                 ),
               ),
-          ],
+              // 管理员标识
+              if (member.familyRole == FamilyRole.admin)
+                Positioned(
+                  right: 0,
+                  bottom: 0,
+                  child: Container(
+                    width: 18.w,
+                    height: 18.w,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFFFC107),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.admin_panel_settings,
+                      size: 11.sp,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              // 当前用户标识
+              if (member.isMe)
+                Positioned(
+                  left: 0,
+                  bottom: 0,
+                  child: Container(
+                    width: 16.w,
+                    height: 16.w,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF2196F3),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: const Color(0xFF4CAF50),
+                        width: 2,
+                      ),
+                    ),
+                    child: Icon(
+                      Icons.person,
+                      size: 9.sp,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ),
         SizedBox(height: 6.h),
         // 成员昵称
