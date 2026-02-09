@@ -91,3 +91,34 @@
 -dontwarn com.google.android.play.core.splitcompat.SplitCompatApplication
 -keep class com.google.android.play.core.** { *; }
 -dontwarn com.google.android.play.core.**
+
+# Dio 网络请求相关（解决 403/Token 问题）
+-keep class io.flutter.plugins.** { *; }
+-dontwarn io.flutter.plugins.**
+
+# GetX 相关
+-keep class com.getxtk.** { *; }
+-keep class get.** { *; }
+-dontwarn com.getxtk.**
+-dontwarn get.**
+
+# Dio 相关
+-dontwarn dio.**
+-keep class dio.** { *; }
+-keep class okhttp3.** { *; }
+-keep class okio.** { *; }
+
+# JSON 序列化相关
+-keepattributes *Annotation*
+-keepclassmembers class * {
+    @com.google.gson.annotations.SerializedName <fields>;
+}
+-keepclassmembers enum * {
+    public static **[] values();
+    public static ** valueOf(java.lang.String);
+}
+
+# Flutter 相关
+-keep class io.flutter.app.** { *; }
+-keep class io.flutter.plugin.** { *; }
+-keep class com.healthcenter.health_center_app.** { *; }

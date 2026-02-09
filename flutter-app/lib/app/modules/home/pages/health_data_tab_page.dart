@@ -52,9 +52,18 @@ class _HealthDataTabPageState extends State<HealthDataTabPage> {
   List<HealthData> getFilteredData() {
     var result = List<HealthData>.from(_healthDataController.healthDataList);
 
-    // 按成员筛选
+    // 按成员筛选 - 支持memberId和memberName匹配
     if (selectedMemberId != null) {
-      result = result.where((d) => d.memberId == selectedMemberId).toList();
+      final selectedMember = members.firstWhereOrNull((m) => m.id == selectedMemberId);
+      result = result.where((d) {
+        // 优先按memberId匹配
+        if (d.memberId == selectedMemberId) return true;
+        // 如果memberId为空（家庭用户），则按memberName匹配
+        if (d.memberId.isEmpty && d.memberName != null && selectedMember != null) {
+          return d.memberName == selectedMember.name;
+        }
+        return false;
+      }).toList();
     }
 
     // 按类型筛选
@@ -116,8 +125,18 @@ class _HealthDataTabPageState extends State<HealthDataTabPage> {
                 separatorBuilder: (_, __) => SizedBox(height: 12.h),
                 itemBuilder: (context, index) {
                   final healthData = data[index];
-                  final member = _healthDataController.getMemberById(healthData.memberId);
-                  return _buildDataCard(context, healthData, member);
+                  // 调试日志
+                  print('=== 显示健康数据[$index] ===');
+                  print('  memberId: ${healthData.memberId}');
+                  print('  memberName: ${healthData.memberName}');
+                  print('  memberName类型: ${healthData.memberName.runtimeType}');
+                  // 优先使用后端返回的memberName，否则从本地成员列表查找
+                  final member = healthData.memberName != null && healthData.memberName!.isNotEmpty
+                      ? null
+                      : _healthDataController.getMemberById(healthData.memberId);
+                  print('  使用本地member: ${member != null}');
+                  print('  最终显示名称: ${healthData.memberName ?? member?.name ?? '未知成员'}');
+                  return _buildDataCard(context, healthData, member, healthData.memberName);
                 },
               );
             }),
@@ -556,10 +575,17 @@ class _HealthDataTabPageState extends State<HealthDataTabPage> {
   }
 
   /// 数据卡片
-  Widget _buildDataCard(BuildContext context, HealthData data, FamilyMember? member) {
-    final memberName = member?.name ?? '未知成员';
-    final memberRelation = member?.relation.label ?? '未知关系';
+  Widget _buildDataCard(BuildContext context, HealthData data, FamilyMember? member, [String? memberNameFromApi]) {
+    // 优先使用后端返回的memberName，否则使用本地member数据，最后显示"未知成员"
+    final memberName = memberNameFromApi ?? member?.name ?? '未知成员';
+    final memberRelation = member?.relation.label ?? '';
     final memberGender = member?.gender ?? 0;
+
+    // 调试日志
+    print('=== _buildDataCard ===');
+    print('  memberNameFromApi: $memberNameFromApi');
+    print('  member?.name: ${member?.name}');
+    print('  最终memberName: $memberName');
 
     return Container(
       decoration: BoxDecoration(
@@ -575,7 +601,7 @@ class _HealthDataTabPageState extends State<HealthDataTabPage> {
       ),
       child: InkWell(
         borderRadius: BorderRadius.circular(12.r),
-        onTap: () => _showDataDetail(context, data, member),
+        onTap: () => _showDataDetail(context, data, member, data.memberName),
         child: Padding(
           padding: EdgeInsets.all(16.w),
           child: Column(
@@ -693,13 +719,14 @@ class _HealthDataTabPageState extends State<HealthDataTabPage> {
                     ),
                   ),
                   SizedBox(width: 4.w),
-                  Text(
-                    '($memberRelation)',
-                    style: TextStyle(
-                      fontSize: 12.sp,
-                      color: Colors.grey[500],
+                  if (memberRelation.isNotEmpty)
+                    Text(
+                      '($memberRelation)',
+                      style: TextStyle(
+                        fontSize: 12.sp,
+                        color: Colors.grey[500],
+                      ),
                     ),
-                  ),
                   const Spacer(),
                   Icon(
                     Icons.access_time,
@@ -871,9 +898,10 @@ class _HealthDataTabPageState extends State<HealthDataTabPage> {
   }
 
   /// 显示数据详情
-  void _showDataDetail(BuildContext context, HealthData data, FamilyMember? member) {
-    final memberName = member?.name ?? '未知成员';
-    final memberRelation = member?.relation.label ?? '未知关系';
+  void _showDataDetail(BuildContext context, HealthData data, FamilyMember? member, [String? memberNameFromApi]) {
+    // 优先使用后端返回的memberName，否则使用本地member数据，最后显示"未知成员"
+    final memberName = memberNameFromApi ?? member?.name ?? '未知成员';
+    final memberRelation = member?.relation.label ?? '';
 
     showModalBottomSheet(
       context: context,
@@ -975,7 +1003,7 @@ class _HealthDataTabPageState extends State<HealthDataTabPage> {
                     SizedBox(height: 16.h),
 
                     // 详情列表
-                    _buildDetailRow('成员', '$memberName（$memberRelation）'),
+                    _buildDetailRow('成员', memberRelation.isNotEmpty ? '$memberName（$memberRelation）' : memberName),
                     _buildDetailRow('记录时间', _formatFullTime(data.recordTime)),
                     _buildDetailRow('状态', data.level.label, color: data.level.color),
                     if (data.notes != null && data.notes!.isNotEmpty)

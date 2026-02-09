@@ -28,6 +28,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtUtil jwtUtil;
 
+    private static final String USER_ID_ATTRIBUTE = "userId";
     private static final String USER_ID_HEADER = "X-User-Id";
 
     @Override
@@ -58,7 +59,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                             );
                     SecurityContextHolder.getContext().setAuthentication(authentication);
 
-                    // 将用户ID添加到请求头，方便后续使用
+                    // 将用户ID添加到请求属性，方便后续使用
+                    request.setAttribute(USER_ID_ATTRIBUTE, userId);
+                    // 同时也设置到请求头属性（用于Controller的@RequestHeader）
                     request.setAttribute(USER_ID_HEADER, userId);
                     log.debug("用户认证成功: userId={}, phone={}", userId, phone);
                 }

@@ -50,6 +50,7 @@ enum HealthDataLevel {
 class HealthData {
   final String id;
   final String memberId; // 关联家庭成员ID
+  final String? memberName; // 成员名称（后端返回，优先使用）
   final HealthDataType type;
   final double value1; // 主要数值（如收缩压、心率等）
   final double? value2; // 次要数值（如舒张压，仅血压需要）
@@ -61,6 +62,7 @@ class HealthData {
   HealthData({
     required this.id,
     required this.memberId,
+    this.memberName,
     required this.type,
     required this.value1,
     this.value2,
@@ -114,6 +116,7 @@ class HealthData {
     return HealthData(
       id: json['id']?.toString() ?? '',
       memberId: json['memberId']?.toString() ?? json['member_id']?.toString() ?? '',
+      memberName: json['memberName']?.toString() ?? json['member_name']?.toString(),
       type: parsedType,
       value1: (json['value1'] ?? 0).toDouble(),
       value2: json['value2']?.toDouble(),
@@ -132,6 +135,7 @@ class HealthData {
     return {
       'id': id,
       'memberId': memberId,
+      'memberName': memberName,
       'type': type.name,
       'value1': value1,
       'value2': value2,
@@ -211,6 +215,7 @@ class HealthData {
   HealthData copyWith({
     String? id,
     String? memberId,
+    String? memberName,
     HealthDataType? type,
     double? value1,
     double? value2,
@@ -222,6 +227,7 @@ class HealthData {
     return HealthData(
       id: id ?? this.id,
       memberId: memberId ?? this.memberId,
+      memberName: memberName ?? this.memberName,
       type: type ?? this.type,
       value1: value1 ?? this.value1,
       value2: value2 ?? this.value2,

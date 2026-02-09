@@ -549,11 +549,21 @@ class HealthDataController extends GetxController {
         // 默认显示全部类型
       }
 
-      // 成员筛选
+      // 成员筛选 - 支持memberId和memberName匹配
       if (selectedMemberId.value != 'all') {
-        if (data.memberId != selectedMemberId.value) {
-          return false;
+        bool matches = false;
+        // 优先按memberId匹配
+        if (data.memberId == selectedMemberId.value) {
+          matches = true;
         }
+        // 如果memberId为空（家庭用户），则按memberName匹配
+        if (!matches && data.memberId.isEmpty && data.memberName != null) {
+          final member = members.firstWhereOrNull((m) => m.id == selectedMemberId.value);
+          if (member != null && data.memberName == member.name) {
+            matches = true;
+          }
+        }
+        if (!matches) return false;
       }
 
       // 日期范围筛选
@@ -655,8 +665,20 @@ class HealthDataController extends GetxController {
     }
   }
 
-  /// 获取成员列表
-  List<FamilyMember> get members => _membersController.members;
+  /// 获取成员列表（刷新后返回）
+  List<FamilyMember> get members {
+    // 如果成员列表为空，主动刷新一次
+    if (_membersController.members.isEmpty) {
+      AppLogger.d('HealthDataController: 成员列表为空，主动刷新');
+      _membersController.fetchMembers();
+    }
+    return _membersController.members;
+  }
+
+  /// 刷新成员列表
+  Future<void> refreshMembers() async {
+    await _membersController.fetchMembers();
+  }
 
   /// 根据ID获取成员
   FamilyMember? getMemberById(String memberId) {
@@ -687,6 +709,7 @@ class HealthDataController extends GetxController {
           return HealthData(
             id: item['id']?.toString() ?? '',
             memberId: item['memberId']?.toString() ?? '',
+            memberName: item['memberName']?.toString(), // 后端返回的成员名称
             type: _parseDataType(item['dataType']?.toString()),
             value1: _parseDouble(item['value1']),
             value2: _parseDouble(item['value2']),
@@ -701,6 +724,10 @@ class HealthDataController extends GetxController {
         AppLogger.d('API返回数据数量: ${dataList.length}');
         AppLogger.d('解析后数据类型: ${healthDataList.map((d) => d.type.name).toList()}');
         AppLogger.d('解析后数据数量: ${healthDataList.length}');
+        // 打印第一条数据的memberName用于调试
+        if (healthDataList.isNotEmpty) {
+          AppLogger.d('第一条数据 - memberId: ${healthDataList.first.memberId}, memberName: ${healthDataList.first.memberName}');
+        }
 
         _applyFilter();
       } else {

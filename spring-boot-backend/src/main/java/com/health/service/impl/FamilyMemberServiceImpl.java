@@ -4,7 +4,9 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.health.domain.entity.FamilyMember;
+import com.health.domain.entity.User;
 import com.health.domain.mapper.FamilyMemberMapper;
+import com.health.domain.mapper.UserMapper;
 import com.health.exception.BusinessException;
 import com.health.exception.ErrorCode;
 import com.health.interfaces.dto.FamilyMemberRequest;
@@ -27,19 +29,34 @@ import java.util.stream.Collectors;
 public class FamilyMemberServiceImpl implements FamilyMemberService {
 
     private final FamilyMemberMapper familyMemberMapper;
+    private final UserMapper userMapper;
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
     @Override
     public List<FamilyMemberResponse> getList(Long userId) {
+        // 获取用户的familyId
+        Long familyId = getUserFamilyId(userId);
+        if (familyId == null) {
+            return List.of();
+        }
+
         List<FamilyMember> list = familyMemberMapper.selectList(
                 new LambdaQueryWrapper<FamilyMember>()
-                        .eq(FamilyMember::getUserId, userId)
+                        .eq(FamilyMember::getFamilyId, familyId)
                         .orderByAsc(FamilyMember::getSortOrder)
                         .orderByAsc(FamilyMember::getCreateTime)
         );
         return list.stream()
                 .map(this::toResponse)
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * 获取用户的家庭ID
+     */
+    private Long getUserFamilyId(Long userId) {
+        User user = userMapper.selectById(userId);
+        return user != null ? user.getFamilyId() : null;
     }
 
     @Override

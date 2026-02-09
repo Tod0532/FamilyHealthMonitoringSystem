@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletRequest;
 import java.util.List;
 
 /**
@@ -109,9 +110,8 @@ public class FamilyController {
      */
     @GetMapping("/api/family/members")
     @Operation(summary = "获取家庭成员", description = "获取当前家庭的所有成员列表")
-    public ApiResponse<List<FamilyMemberUserResponse>> getFamilyMembers(
-            @Parameter(description = "用户ID", required = true)
-            @RequestHeader("X-User-Id") Long userId) {
+    public ApiResponse<List<FamilyMemberUserResponse>> getFamilyMembers(HttpServletRequest request) {
+        Long userId = com.health.util.SecurityUtil.getUserId(request);
         log.info("获取家庭成员列表: userId={}", userId);
         List<FamilyMemberUserResponse> response = familyService.getFamilyMembers(userId);
         return ApiResponse.success(response);

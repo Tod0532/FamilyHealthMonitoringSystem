@@ -34,7 +34,7 @@ class DioProvider {
         receiveTimeout: const Duration(milliseconds: 30000),
         sendTimeout: const Duration(milliseconds: 30000),
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/json; charset=UTF-8',
           'Accept': 'application/json',
         },
       );
@@ -51,6 +51,12 @@ class DioProvider {
         final token = _storage.accessToken;
         if (token != null && token.isNotEmpty) {
           options.headers['Authorization'] = 'Bearer $token';
+        }
+
+        // 注入用户ID（后端需要）
+        final userId = _storage.userId;
+        if (userId != null && userId.isNotEmpty) {
+          options.headers['X-User-Id'] = userId;
         }
 
         // 添加设备信息

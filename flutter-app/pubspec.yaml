@@ -1,7 +1,7 @@
 name: health_center_app
 description: 家庭健康中心APP
 publish_to: 'none'
-version: 1.0.0+1
+version: 1.0.1+2
 
 environment:
   sdk: '>=3.2.0 <4.0.0'
@@ -77,6 +77,9 @@ dev_dependencies:
   # 代码分析
   flutter_lints: ^3.0.1
 
+  # 应用图标生成
+  flutter_launcher_icons: ^0.13.1
+
 flutter:
   uses-material-design: true
 
@@ -84,6 +87,26 @@ flutter:
     - assets/images/
     - assets/icons/
     - assets/fonts/
+
+# 应用图标配置
+# 运行命令生成图标: flutter pub run flutter_launcher_icons
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/icons/app_icon.png"
+  # 自适应图标配置
+  adaptive_icon_background: "#4CAF50"
+  adaptive_icon_foreground: "assets/icons/app_icon_foreground.png"
+  # 移除透明通道
+  remove_alpha_ios: true
+  # 图标主题色（用于 Windows）
+  windows:
+    generate: true
+    image_path: "assets/icons/app_icon.png"
+    icon_size: 48
+  macos:
+    generate: true
+    image_path: "assets/icons/app_icon.png"
 
   # 字体文件暂时注释，使用系统默认字体
   # fonts:

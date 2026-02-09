@@ -25,9 +25,8 @@ class MembersController extends GetxController {
   void onInit() {
     super.onInit();
     AppLogger.d('MembersController: 初始化开始');
-    _loadMockMembers(); // 暂时使用模拟数据
+    fetchMembers(); // 从后端API获取成员数据
     AppLogger.d('MembersController: 成员列表长度 = ${members.length}');
-    // fetchMembers(); // 后端API就绪后启用
   }
 
   /// 加载模拟成员数据（用于演示）
@@ -42,14 +41,48 @@ class MembersController extends GetxController {
     errorMessage.value = '';
 
     try {
-      final response = await dioProvider.get('/family/members');
+      // 使用家庭API获取成员列表（包括所有家庭用户）
+      final response = await dioProvider.get('/api/family/members');
+
+      AppLogger.d('MembersController: API响应 = ${response.toString()}');
 
       final List dataList = response['data'] as List? ?? [];
-      members.value = dataList
-          .map((item) => FamilyMember.fromJson(item as Map<String, dynamic>))
-          .toList();
+      AppLogger.d('MembersController: 后端返回 ${dataList.length} 个成员');
+
+      // 将后端返回的家庭用户转换为 FamilyMember 格式
+      members.value = dataList.map((item) {
+        // 处理gender：male->1, female->2
+        int genderValue = 0;
+        final genderStr = item['gender']?.toString() ?? '';
+        if (genderStr == 'male') genderValue = 1;
+        else if (genderStr == 'female') genderValue = 2;
+
+        // 处理role：admin->admin, member->member
+        final roleStr = item['familyRole']?.toString() ?? 'member';
+        final memberRole = roleStr == 'admin' ? MemberRole.admin : MemberRole.member;
+
+        final member = FamilyMember(
+          id: item['id']?.toString() ?? '',
+          name: item['nickname']?.toString() ?? item['phone']?.toString() ?? '未命名',
+          avatar: item['avatar']?.toString(),
+          relation: MemberRelation.other, // 家庭用户默认为other
+          role: memberRole,
+          gender: genderValue,
+          birthday: item['birthday'] != null ? DateTime.tryParse(item['birthday'].toString()) : null,
+          phone: item['phone']?.toString(),
+          createTime: DateTime.tryParse(item['joinTime']?.toString() ?? '') ?? DateTime.now(),
+        );
+
+        AppLogger.d('MembersController: 解析成员 - id=${member.id}, name=${member.name}, role=${member.role.name}');
+        return member;
+      }).toList();
+
+      AppLogger.d('MembersController: 最终成员列表长度 = ${members.length}');
     } catch (e) {
-      errorMessage.value = '获取成员列表失败';
+      AppLogger.e('获取成员列表失败: $e');
+      errorMessage.value = '获取成员列表失败: $e';
+      // 失败时使用本地模拟数据
+      _loadMockMembers();
     } finally {
       isLoading.value = false;
     }

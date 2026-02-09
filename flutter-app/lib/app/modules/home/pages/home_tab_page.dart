@@ -664,9 +664,9 @@ class HomeTabPage extends GetView {
     final value = healthData.displayValue ?? '--';
     final recordTime = healthData.recordTime;
 
-    // 获取成员名称
-    String memberName = '未知';
-    if (healthData.memberId != null) {
+    // 获取成员名称 - 优先使用后端返回的memberName
+    String memberName = healthData.memberName ?? '未知';
+    if (memberName == '未知' && healthData.memberId != null) {
       final member = members.firstWhereOrNull(
         (m) => m.id == healthData.memberId,
       );

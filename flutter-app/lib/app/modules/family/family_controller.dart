@@ -47,16 +47,21 @@ class FamilyController extends GetxController {
 
   /// 加载我的家庭信息
   Future<void> loadMyFamily() async {
+    debugPrint('=== FamilyController.loadMyFamily() 开始 ===');
     isLoading.value = true;
     errorMessage.value = '';
 
     try {
+      debugPrint('正在调用 /api/family/my ...');
       final response = await _dioProvider.get('/api/family/my');
+      debugPrint('API响应: $response');
 
       if (response['data'] != null) {
         family.value = Family.fromJson(response['data']);
+        debugPrint('家庭信息加载成功: ${family.value?.familyName}');
       } else {
         family.value = null;
+        debugPrint('家庭数据为空，设置 family.value = null');
       }
     } catch (e) {
       // 如果未加入家庭不算错误
@@ -64,8 +69,10 @@ class FamilyController extends GetxController {
         debugPrint('加载家庭信息失败: $e');
       }
       family.value = null;
+      debugPrint('异常，设置 family.value = null');
     } finally {
       isLoading.value = false;
+      debugPrint('=== FamilyController.loadMyFamily() 结束, isInFamily=${isInFamily} ===');
     }
   }
 

@@ -4,8 +4,10 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.health.domain.entity.FamilyMember;
 import com.health.domain.entity.HealthData;
+import com.health.domain.entity.User;
 import com.health.domain.mapper.FamilyMemberMapper;
 import com.health.domain.mapper.HealthDataMapper;
+import com.health.domain.mapper.UserMapper;
 import com.health.exception.BusinessException;
 import com.health.exception.ErrorCode;
 import com.health.interfaces.dto.HealthDataRequest;
@@ -33,14 +35,21 @@ public class HealthDataServiceImpl implements HealthDataService {
 
     private final HealthDataMapper healthDataMapper;
     private final FamilyMemberMapper familyMemberMapper;
+    private final UserMapper userMapper;
     private static final DateTimeFormatter DATETIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     private static final int MAX_PAGE_SIZE = 100;
 
     @Override
     public List<HealthDataResponse> getList(Long userId, Long memberId, String dataType,
                                              String startDate, String endDate, Integer page, Integer size) {
+        // 获取用户的familyId
+        Long familyId = getUserFamilyId(userId);
+        if (familyId == null) {
+            throw new BusinessException(ErrorCode.FAMILY_NOT_FOUND, "您还未加入家庭");
+        }
+
         LambdaQueryWrapper<HealthData> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(HealthData::getUserId, userId);
+        wrapper.eq(HealthData::getFamilyId, familyId);
 
         if (memberId != null) {
             wrapper.eq(HealthData::getMemberId, memberId);
@@ -84,7 +93,12 @@ public class HealthDataServiceImpl implements HealthDataService {
     @Override
     public HealthDataResponse getById(Long id, Long userId) {
         HealthData data = healthDataMapper.selectById(id);
-        if (data == null || !data.getUserId().equals(userId)) {
+        if (data == null) {
+            throw new BusinessException(ErrorCode.DATA_NOT_FOUND, "数据不存在");
+        }
+        // 检查是否是同家庭成员
+        Long familyId = getUserFamilyId(userId);
+        if (familyId == null || !familyId.equals(data.getFamilyId())) {
             throw new BusinessException(ErrorCode.DATA_NOT_FOUND, "数据不存在");
         }
         return toResponse(data);
@@ -102,6 +116,18 @@ public class HealthDataServiceImpl implements HealthDataService {
         BeanUtils.copyProperties(request, data);
         data.setUserId(userId);
         data.setDataSource(StringUtils.hasText(request.getDataSource()) ? request.getDataSource() : "manual");
+
+        // 设置familyId（从成员信息中获取）
+        if (request.getMemberId() != null) {
+            FamilyMember member = familyMemberMapper.selectById(request.getMemberId());
+            if (member != null) {
+                data.setFamilyId(member.getFamilyId());
+            }
+        } else {
+            // 如果没有指定成员，使用用户的家庭ID
+            Long familyId = getUserFamilyId(userId);
+            data.setFamilyId(familyId);
+        }
 
         if (StringUtils.hasText(request.getMeasureTime())) {
             try {
@@ -135,7 +161,12 @@ public class HealthDataServiceImpl implements HealthDataService {
     @Transactional(rollbackFor = Exception.class)
     public HealthDataResponse update(Long id, Long userId, HealthDataRequest request) {
         HealthData data = healthDataMapper.selectById(id);
-        if (data == null || !data.getUserId().equals(userId)) {
+        if (data == null) {
+            throw new BusinessException(ErrorCode.DATA_NOT_FOUND, "数据不存在");
+        }
+        // 检查是否是同家庭成员
+        Long familyId = getUserFamilyId(userId);
+        if (familyId == null || !familyId.equals(data.getFamilyId())) {
             throw new BusinessException(ErrorCode.DATA_NOT_FOUND, "数据不存在");
         }
 
@@ -160,7 +191,12 @@ public class HealthDataServiceImpl implements HealthDataService {
     @Transactional(rollbackFor = Exception.class)
     public void delete(Long id, Long userId) {
         HealthData data = healthDataMapper.selectById(id);
-        if (data == null || !data.getUserId().equals(userId)) {
+        if (data == null) {
+            throw new BusinessException(ErrorCode.DATA_NOT_FOUND, "数据不存在");
+        }
+        // 检查是否是同家庭成员
+        Long familyId = getUserFamilyId(userId);
+        if (familyId == null || !familyId.equals(data.getFamilyId())) {
             throw new BusinessException(ErrorCode.DATA_NOT_FOUND, "数据不存在");
         }
         healthDataMapper.deleteById(id);
@@ -201,13 +237,19 @@ public class HealthDataServiceImpl implements HealthDataService {
 
     @Override
     public List<HealthStatsResponse.TrendData> getTrend(Long userId, Long memberId, String dataType) {
+        // 获取用户的familyId
+        Long familyId = getUserFamilyId(userId);
+        if (familyId == null) {
+            return new ArrayList<>();
+        }
+
         // 获取最近7天的数据
         LocalDateTime endTime = LocalDateTime.now();
         LocalDateTime startTime = endTime.minusDays(7);
 
         List<HealthData> list = healthDataMapper.selectList(
                 new LambdaQueryWrapper<HealthData>()
-                        .eq(HealthData::getUserId, userId)
+                        .eq(HealthData::getFamilyId, familyId)
                         .eq(memberId != null, HealthData::getMemberId, memberId)
                         .eq(dataType != null, HealthData::getDataType, dataType)
                         .ge(HealthData::getMeasureTime, startTime)
@@ -246,12 +288,25 @@ public class HealthDataServiceImpl implements HealthDataService {
     }
 
     /**
-     * 验证成员是否存在
+     * 获取用户的家庭ID
+     */
+    private Long getUserFamilyId(Long userId) {
+        User user = userMapper.selectById(userId);
+        return user != null ? user.getFamilyId() : null;
+    }
+
+    /**
+     * 验证成员是否存在（家庭成员可以互相记录健康数据）
      */
     private void validateMember(Long memberId, Long userId) {
         FamilyMember member = familyMemberMapper.selectById(memberId);
-        if (member == null || !member.getUserId().equals(userId)) {
+        if (member == null) {
             throw new BusinessException(ErrorCode.MEMBER_NOT_FOUND, "成员不存在");
+        }
+        // 检查是否在同一家庭
+        Long userFamilyId = getUserFamilyId(userId);
+        if (userFamilyId == null || !userFamilyId.equals(member.getFamilyId())) {
+            throw new BusinessException(ErrorCode.MEMBER_NOT_FOUND, "成员不存在或不在同一家庭");
         }
     }
 

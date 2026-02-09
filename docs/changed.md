@@ -4,6 +4,154 @@
 
 ---
 
+## 2026-02-09 下午（健康数据显示与筛选功能修复）
+
+### 📝 修改文件
+
+| 文件路径 | 说明 | 作者 |
+|----------|------|------|
+| flutter-app/lib/core/models/health_data.dart | 添加memberName字段及更新构造函数 | Claude |
+| flutter-app/lib/app/modules/health/health_data_controller.dart | 解析API返回的memberName，更新筛选逻辑 | Claude |
+| flutter-app/lib/app/modules/home/pages/health_data_tab_page.dart | 优先使用memberName显示，修复筛选条件 | Claude |
+| flutter-app/lib/app/modules/home/pages/home_tab_page.dart | 优先使用memberName显示 | Claude |
+| spring-boot-backend/src/main/java/com/health/interfaces/controller/FamilyController.java | 修改/api/family/members使用JWT认证 | Claude |
+
+### 📋 变更内容
+
+#### 类型：fix（修复）
+#### 范围：数据显示、成员筛选、API接口
+#### 描述：修复健康数据显示成员名称问题，修复按成员筛选功能
+
+**问题1：健康数据显示"未知成员"**
+- 现象：健康数据页面显示"未知成员"
+- 原因：后端返回memberName字段，但前端模型没有该字段，也未解析
+- 修复：HealthData模型添加memberName字段，解析API响应时捕获该字段
+
+**问题2：按成员筛选无数据**
+- 现象：点击具体成员时显示"暂无健康数据"
+- 原因：筛选条件使用 `d.memberId == null` 判断，但memberId是String类型，空值是''而非null
+- 修复：改为 `d.memberId.isEmpty`
+
+**问题3：成员列表API返回500错误**
+- 现象：/api/family/members接口返回500错误
+- 原因：接口使用@RequestHeader("X-User-Id")获取用户ID，但Flutter使用JWT认证
+- 修复：改为使用HttpServletRequest + SecurityUtil.getUserId(request)
+
+**代码变更**：
+
+1. **HealthData模型**（flutter-app/lib/core/models/health_data.dart）：
+```dart
+class HealthData {
+  final String id;
+  final String memberId;
+  final String? memberName;  // 新增：后端返回的成员名称
+  // ...
+}
+```
+
+2. **筛选逻辑**（health_data_tab_page.dart）：
+```dart
+// 修改前
+if (d.memberId == null && d.memberName != null && selectedMember != null) {
+
+// 修改后
+if (d.memberId.isEmpty && d.memberName != null && selectedMember != null) {
+```
+
+3. **后端接口**（FamilyController.java）：
+```java
+// 修改前
+@GetMapping("/api/family/members")
+public ApiResponse<List<FamilyMemberUserResponse>> getFamilyMembers(
+        @RequestHeader("X-User-Id") Long userId) {
+
+// 修改后
+@GetMapping("/api/family/members")
+public ApiResponse<List<FamilyMemberUserResponse>> getFamilyMembers(HttpServletRequest request) {
+    Long userId = SecurityUtil.getUserId(request);
+```
+
+**数据说明**：
+- 旧健康数据使用family_member表ID，与新User表ID不匹配
+- 新录入的健康数据memberId为null，通过memberName进行筛选匹配
+- 用户需重新录入健康数据以使用筛选功能
+
+**测试结果**：
+- ✅ 成员名称正确显示
+- ✅ 按成员筛选功能正常（新数据）
+- ✅ /api/family/members接口正常返回成员列表
+
+---
+
+## 2026-02-09 晚（修复健康数据显示"未知成员"问题）
+#### 范围：数据模型、健康数据展示
+#### 描述：修复健康数据列表显示"未知成员"问题
+
+**问题现象**：
+- 健康数据页面显示成员名称为"未知成员"
+- 后端API正确返回了memberName字段（胖子、帝国时代等）
+- 前端没有解析和使用这个字段
+
+**问题根因**：
+1. HealthData模型没有memberName字段，只有memberId
+2. 前端通过memberId查找本地成员列表获取名称
+3. 家庭用户（User表）的memberId为null（因为外键约束问题），导致查找不到
+
+**解决方案**：
+
+**1. HealthData模型添加memberName字段**：
+```dart
+class HealthData {
+  final String id;
+  final String memberId;
+  final String? memberName;  // 新增：后端返回的成员名称
+  final HealthDataType type;
+  // ...
+}
+```
+
+**2. 更新fromJson解析memberName**：
+```dart
+factory HealthData.fromJson(Map<String, dynamic> json) {
+  return HealthData(
+    id: json['id']?.toString() ?? '',
+    memberId: json['memberId']?.toString() ?? '',
+    memberName: json['memberName']?.toString(),  // 解析后端返回的成员名称
+    // ...
+  );
+}
+```
+
+**3. 控制器解析API响应时捕获memberName**：
+```dart
+healthDataList.value = dataList.map((item) {
+  return HealthData(
+    id: item['id']?.toString() ?? '',
+    memberId: item['memberId']?.toString() ?? '',
+    memberName: item['memberName']?.toString(),  // 从API响应中获取
+    // ...
+  );
+}).toList();
+```
+
+**4. 页面显示优先使用memberName**：
+```dart
+// 优先使用后端返回的memberName，否则从本地成员列表查找
+final memberName = memberNameFromApi ?? member?.name ?? '未知成员';
+```
+
+**测试结果**：
+- ✅ 后端API返回正确的memberName（胖子、帝国时代、TestUser5）
+- ✅ 前端正确解析和显示成员名称
+- ✅ 健康数据列表不再显示"未知成员"
+
+**APK发布**：
+- 版本：app-release.apk
+- 路径：D:\ReadHealthInfo\flutter-app\build\app\outputs\flutter-apk\app-release.apk
+- 大小：34.7MB
+
+---
+
 ## 2026-02-06 晚（首页真实数据 + 控制器依赖修复）
 
 ### 📝 修改文件

@@ -2,8 +2,10 @@ package com.health.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.health.domain.entity.Family;
+import com.health.domain.entity.FamilyMember;
 import com.health.domain.entity.User;
 import com.health.domain.mapper.FamilyMapper;
+import com.health.domain.mapper.FamilyMemberMapper;
 import com.health.domain.mapper.UserMapper;
 import com.health.exception.BusinessException;
 import com.health.exception.ErrorCode;
@@ -29,6 +31,7 @@ public class FamilyServiceImpl implements FamilyService {
 
     private final FamilyMapper familyMapper;
     private final UserMapper userMapper;
+    private final FamilyMemberMapper familyMemberMapper;
 
     private static final String QR_CODE_PREFIX = "FAMILY_INVITE:";
     private static final int CODE_LENGTH = 6;
@@ -66,10 +69,21 @@ public class FamilyServiceImpl implements FamilyService {
         user.setUpdateTime(LocalDateTime.now());
         userMapper.updateById(user);
 
-        log.info("用户创建家庭成功: userId={}, familyId={}, familyCode={}", userId, family.getId(), familyCode);
+        // 5. 创建family_member记录（管理员）
+        FamilyMember familyMember = new FamilyMember();
+        familyMember.setUserId(userId);
+        familyMember.setFamilyId(family.getId());
+        familyMember.setName(user.getNickname() != null ? user.getNickname() : "管理员");
+        familyMember.setGender(user.getGender());
+        familyMember.setRelation("other"); // 默认关系，可后续修改
+        familyMember.setRole("admin");
+        familyMember.setBirthday(user.getBirthday());
+        familyMember.setAvatar(user.getAvatar());
+        familyMember.setCreateTime(LocalDateTime.now());
+        familyMember.setUpdateTime(LocalDateTime.now());
+        familyMemberMapper.insert(familyMember);
 
-        // 5. 同步更新家庭成员表的family_id
-        syncFamilyMembersFamilyId(userId, family.getId());
+        log.info("用户创建家庭成功: userId={}, familyId={}, familyCode={}", userId, family.getId(), familyCode);
 
         return toFamilyResponse(family, "admin");
     }
@@ -152,21 +166,32 @@ public class FamilyServiceImpl implements FamilyService {
             throw new BusinessException(ErrorCode.FAMILY_CODE_INVALID, "邀请码无效");
         }
 
-        // 3. 加入家庭
+        // 3. 加入家庭（更新用户表）
         user.setFamilyId(family.getId());
         user.setFamilyRole("member");
         user.setUpdateTime(LocalDateTime.now());
         userMapper.updateById(user);
 
-        // 4. 更新家庭成员数
+        // 4. 创建family_member记录
+        FamilyMember familyMember = new FamilyMember();
+        familyMember.setUserId(userId);
+        familyMember.setFamilyId(family.getId());
+        familyMember.setName(user.getNickname() != null ? user.getNickname() : "家庭成员");
+        familyMember.setGender(user.getGender());
+        familyMember.setRelation("other"); // 默认关系，可后续修改
+        familyMember.setRole("member");
+        familyMember.setBirthday(user.getBirthday());
+        familyMember.setAvatar(user.getAvatar());
+        familyMember.setCreateTime(LocalDateTime.now());
+        familyMember.setUpdateTime(LocalDateTime.now());
+        familyMemberMapper.insert(familyMember);
+
+        // 5. 更新家庭成员数
         family.setMemberCount(family.getMemberCount() + 1);
         family.setUpdateTime(LocalDateTime.now());
         familyMapper.updateById(family);
 
         log.info("用户加入家庭成功: userId={}, familyId={}, familyCode={}", userId, family.getId(), family.getFamilyCode());
-
-        // 5. 同步更新家庭成员表的family_id
-        syncFamilyMembersFamilyId(userId, family.getId());
 
         return toFamilyResponse(family, "member");
     }

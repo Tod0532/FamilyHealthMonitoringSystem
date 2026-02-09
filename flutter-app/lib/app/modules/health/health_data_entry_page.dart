@@ -53,10 +53,16 @@ class _HealthDataEntryPageState extends State<HealthDataEntryPage> {
     if (_mode == 'edit' && _editData != null) {
       _initEditData();
     } else {
-      // 默认选中第一个成员
-      if (_controller.members.isNotEmpty) {
-        _selectedMember.value = _controller.members.first;
-      }
+      // 先刷新成员列表，再选中第一个成员
+      _refreshAndSelectMember();
+    }
+  }
+
+  /// 刷新成员列表并选中第一个
+  Future<void> _refreshAndSelectMember() async {
+    await _controller.refreshMembers();
+    if (_controller.members.isNotEmpty) {
+      _selectedMember.value = _controller.members.first;
     }
   }
 
