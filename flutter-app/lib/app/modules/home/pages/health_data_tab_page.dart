@@ -890,12 +890,20 @@ class _HealthDataTabPageState extends State<HealthDataTabPage> {
         return data.value2 != null
             ? '${data.value1.toInt()}/${data.value2!.toInt()}'
             : '${data.value1.toInt()}';
+      case HealthDataType.bloodSugar:
+        // 血糖支持小数，显示1位小数
+        return data.value1 == data.value1.toInt()
+            ? '${data.value1.toInt()}'
+            : '${data.value1.toStringAsFixed(1)}';
       case HealthDataType.temperature:
         return '${data.value1.toStringAsFixed(1)}';
       case HealthDataType.weight:
         return '${data.value1.toStringAsFixed(1)}';
       case HealthDataType.sleep:
         return '${data.value1.toStringAsFixed(1)}';
+      case HealthDataType.heartRate:
+      case HealthDataType.height:
+      case HealthDataType.steps:
       default:
         return '${data.value1.toInt()}';
     }
