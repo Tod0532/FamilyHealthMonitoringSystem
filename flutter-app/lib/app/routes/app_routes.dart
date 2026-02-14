@@ -26,6 +26,8 @@ class AppRoutes {
   static const String deviceConnect = '/device/connect';
   static const String deviceData = '/device/data';
   static const String diary = '/diary';
+  // 提醒相关路由
+  static const String reminderSetting = '/reminder/setting';
   // 家庭相关路由
   static const String familyCreate = '/family/create';
   static const String familyQrCode = '/family/qrcode';

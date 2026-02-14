@@ -6,6 +6,7 @@ import 'package:health_center_app/core/network/dio_provider.dart';
 import 'package:health_center_app/app/modules/members/members_controller.dart';
 import 'package:health_center_app/app/modules/alerts/health_alert_controller.dart';
 import 'package:health_center_app/core/utils/logger.dart';
+import 'package:health_center_app/core/utils/data_validator.dart';
 
 /// 健康数据控制器
 class HealthDataController extends GetxController {
@@ -608,11 +609,12 @@ class HealthDataController extends GetxController {
       ..sort((a, b) => b.recordTime.compareTo(a.recordTime));
   }
 
-  /// 获取指定类型的数据
+  /// 获取指定类型的数据（使用筛选后的数据列表）
   List<HealthData> getTypeData(HealthDataType type) {
-    return healthDataList
-        .where((d) => d.type == type)
-        .toList()
+    // 使用已筛选的数据列表
+    var data = filteredDataList.where((d) => d.type == type);
+
+    return data.toList()
       ..sort((a, b) => b.recordTime.compareTo(a.recordTime));
   }
 
@@ -704,21 +706,37 @@ class HealthDataController extends GetxController {
 
       if (response != null && response['code'] == 200) {
         final List dataList = response['data'] as List? ?? [];
-        healthDataList.value = dataList.map((item) {
-          // 安全解析后端返回的数据
-          return HealthData(
-            id: item['id']?.toString() ?? '',
-            memberId: item['memberId']?.toString() ?? '',
-            memberName: item['memberName']?.toString(), // 后端返回的成员名称
-            type: _parseDataType(item['dataType']?.toString()),
-            value1: _parseDouble(item['value1']),
-            value2: _parseDouble(item['value2']),
-            level: _parseLevel(item['level']?.toString()),
-            recordTime: _parseDateTime(item['measureTime']),
-            notes: item['notes']?.toString(),
-            createTime: _parseDateTime(item['createTime']),
-          );
-        }).toList();
+
+        // 使用 DataValidator 安全解析数据
+        final parsedDataList = <HealthData>[];
+        for (final item in dataList) {
+          try {
+            // 安全解析后端返回的数据
+            final data = HealthData(
+              id: item['id']?.toString() ?? '',
+              memberId: item['memberId']?.toString() ?? '',
+              memberName: item['memberName']?.toString(),
+              type: _parseDataType(item['dataType']?.toString()),
+              value1: _parseDouble(item['value1']),
+              value2: _parseDoubleNullable(item['value2']),
+              level: _parseLevel(item['level']?.toString()),
+              recordTime: _parseDateTime(item['measureTime']),
+              notes: item['notes']?.toString(),
+              createTime: _parseDateTime(item['createTime']),
+            );
+
+            // 验证数据有效性
+            if (DataValidator.isValidDouble(data.value1)) {
+              parsedDataList.add(data);
+            } else {
+              AppLogger.w('跳过无效数据: value1 = ${data.value1}');
+            }
+          } catch (e) {
+            AppLogger.e('解析单条健康数据失败: ${item.toString()}', e);
+          }
+        }
+
+        healthDataList.value = parsedDataList;
 
         // 调试日志
         AppLogger.d('API返回数据数量: ${dataList.length}');
@@ -732,6 +750,7 @@ class HealthDataController extends GetxController {
         _applyFilter();
       } else {
         // API调用失败，使用模拟数据
+        AppLogger.w('API调用失败，使用模拟数据');
         _loadMockHealthData();
       }
     } catch (e) {
@@ -744,26 +763,21 @@ class HealthDataController extends GetxController {
   }
 
   /// 安全解析double值
+  /// 使用 DataValidator 统一处理数据验证
   double _parseDouble(dynamic value) {
-    if (value == null) return 0.0;
-    if (value is double) return value;
-    if (value is int) return value.toDouble();
-    if (value is String) return double.tryParse(value) ?? 0.0;
-    return 0.0;
+    return DataValidator.validateDouble(value) ?? 0.0;
+  }
+
+  /// 安全解析double值（可为null）
+  double? _parseDoubleNullable(dynamic value) {
+    if (value == null) return null;
+    return DataValidator.validateDouble(value, defaultValue: null);
   }
 
   /// 安全解析DateTime
+  /// 使用 DataValidator 统一处理日期解析
   DateTime _parseDateTime(dynamic value) {
-    if (value == null) return DateTime.now();
-    if (value is DateTime) return value;
-    if (value is String) {
-      try {
-        return DateTime.parse(value);
-      } catch (e) {
-        return DateTime.now();
-      }
-    }
-    return DateTime.now();
+    return DataValidator.parseDateTimeSafe(value, defaultValue: DateTime.now()) ?? DateTime.now();
   }
 
   /// 获取数据类型字符串

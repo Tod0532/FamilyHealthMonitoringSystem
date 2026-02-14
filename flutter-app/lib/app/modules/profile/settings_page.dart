@@ -19,6 +19,12 @@ class SettingsPage extends GetView<ProfileController> {
         children: [
           // 通知设置
           _buildSectionHeader('通知设置'),
+          _buildNavigationTile(
+            icon: Icons.alarm,
+            title: '测量提醒',
+            subtitle: '设置每日测量时间提醒',
+            onTap: () => Get.toNamed('/reminder/setting'),
+          ),
           _buildSwitchTile(
             icon: Icons.notifications,
             title: '推送通知',

@@ -35,11 +35,15 @@ import 'package:health_center_app/app/modules/device/device_data_page.dart';
 import 'package:health_center_app/core/bluetooth/models/ble_device.dart';
 import 'package:health_center_app/app/modules/diary/diary_binding.dart';
 import 'package:health_center_app/app/modules/diary/diary_page.dart';
+import 'package:health_center_app/app/modules/reminders/reminder_binding.dart';
+import 'package:health_center_app/app/modules/reminders/reminder_setting_page.dart';
 import 'package:health_center_app/app/modules/family/family_binding.dart';
 import 'package:health_center_app/app/modules/family/family_create_page.dart';
 import 'package:health_center_app/app/modules/family/family_qrcode_page.dart';
 import 'package:health_center_app/app/modules/family/family_scan_page.dart';
 import 'package:health_center_app/app/modules/family/family_members_page.dart';
+import 'package:health_center_app/app/modules/health/health_data_controller.dart';
+import 'package:health_center_app/app/modules/members/members_controller.dart';
 
 /// 应用路由配置
 class AppPages {
@@ -100,10 +104,10 @@ class AppPages {
     GetPage(
       name: '/health/stats',
       page: () => const HealthStatsPage(),
-      binding: HealthDataBinding(),
       middlewares: [AuthMiddleware()],
       transition: Transition.rightToLeft,
     ),
+
 
     // 健康预警列表页面
     GetPage(
@@ -241,6 +245,14 @@ class AppPages {
       page: () => const DiaryPage(),
       binding: DiaryBinding(),
       middlewares: [AuthMiddleware()],
+      transition: Transition.rightToLeft,
+    ),
+
+    // 测量提醒设置页面
+    GetPage(
+      name: '/reminder/setting',
+      page: () => const ReminderSettingPage(),
+      binding: ReminderBinding(),
       transition: Transition.rightToLeft,
     ),
 

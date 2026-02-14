@@ -24,10 +24,15 @@ class LoginController extends GetxController {
   final rememberPassword = true.obs;
   final isLoading = false.obs;
 
+  // 是否显示默认账号提示
+  final showDefaultAccountHint = false.obs;
+
   @override
   void onInit() {
     super.onInit();
     _loadSavedCredentials();
+    // 默认显示测试账号提示
+    showDefaultAccountHint.value = true;
   }
 
   @override
@@ -69,6 +74,18 @@ class LoginController extends GetxController {
   /// 切换记住密码
   void toggleRememberPassword(bool? value) {
     rememberPassword.value = value ?? false;
+  }
+
+  /// 切换默认账号提示
+  void toggleDefaultAccountHint() {
+    showDefaultAccountHint.value = !showDefaultAccountHint.value;
+  }
+
+  /// 使用默认测试账号
+  void useDefaultAccount() {
+    phoneController.text = '13888813888';
+    passwordController.text = '123456a';
+    showDefaultAccountHint.value = false;
   }
 
   /// 验证输入

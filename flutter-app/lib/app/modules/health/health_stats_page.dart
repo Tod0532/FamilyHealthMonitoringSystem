@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:health_center_app/app/modules/health/health_data_controller.dart';
 import 'package:health_center_app/core/models/health_data.dart';
+import 'package:health_center_app/core/models/family_member.dart';
 import 'package:fl_chart/fl_chart.dart';
 
 /// 健康数据统计图表页面
@@ -19,6 +20,9 @@ class HealthStatsPage extends GetView<HealthDataController> {
         backgroundColor: const Color(0xFF4CAF50),
         foregroundColor: Colors.white,
         actions: [
+          // 成员选择器
+          Obx(() => _buildMemberSelector(context)),
+          SizedBox(width: 8.w),
           // 类型选择器
           Obx(() => _buildTypeSelector(context)),
         ],
@@ -48,10 +52,97 @@ class HealthStatsPage extends GetView<HealthDataController> {
     );
   }
 
+  /// 成员选择器
+  Widget _buildMemberSelector(BuildContext context) {
+    final members = controller.members;
+    final selectedMemberId = controller.selectedMemberId.value;
+
+    return PopupMenuButton<String>(
+      onSelected: (memberId) {
+        controller.filterByMember(memberId);
+      },
+      itemBuilder: (context) {
+        return [
+          // 全部成员选项
+          PopupMenuItem<String>(
+            value: 'all',
+            child: Row(
+              children: [
+                const Icon(Icons.people, size: 20, color: Color(0xFF4CAF50)),
+                SizedBox(width: 8.w),
+                const Text('全部成员'),
+              ],
+            ),
+          ),
+          const PopupMenuDivider(),
+          // 各成员选项
+          ...members.map((member) {
+            return PopupMenuItem<String>(
+              value: member.id,
+              child: Row(
+                children: [
+                  _buildMemberAvatar(member, 20),
+                  SizedBox(width: 8.w),
+                  Text(member.name),
+                ],
+              ),
+            );
+          }).toList(),
+        ];
+      },
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: 8.w),
+        child: Row(
+          children: [
+            Icon(Icons.people, size: 20),
+            SizedBox(width: 4.w),
+            Text(
+              selectedMemberId == 'all' ? '全部成员' : (controller.getMemberById(selectedMemberId)?.name ?? '未知'),
+              style: TextStyle(fontSize: 14.sp),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 成员头像小图标
+  Widget _buildMemberAvatar(FamilyMember member, double size) {
+    Color avatarColor;
+    switch (member.gender) {
+      case 1:
+        avatarColor = const Color(0xFF64B5F6);
+        break;
+      case 2:
+        avatarColor = const Color(0xFFF06292);
+        break;
+      default:
+        avatarColor = const Color(0xFF4CAF50);
+    }
+
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: avatarColor.withOpacity(0.2),
+        shape: BoxShape.circle,
+      ),
+      child: Center(
+        child: Text(
+          member.name.isNotEmpty ? member.name[0] : '?',
+          style: TextStyle(
+            fontSize: size * 0.5,
+            fontWeight: FontWeight.bold,
+            color: avatarColor,
+          ),
+        ),
+      ),
+    );
+  }
+
   /// 类型选择器
   Widget _buildTypeSelector(BuildContext context) {
     return PopupMenuButton<HealthDataType>(
-      icon: const Icon(Icons.filter_list),
       onSelected: (type) {
         controller.setCurrentDataType(type);
       },
@@ -69,10 +160,13 @@ class HealthStatsPage extends GetView<HealthDataController> {
           );
         }).toList();
       },
+      // 使用 child 而不是 icon，因为 child 包含了自定义内容
       child: Padding(
         padding: EdgeInsets.symmetric(horizontal: 16.w),
         child: Row(
           children: [
+            Icon(Icons.filter_list, size: 20),
+            SizedBox(width: 4.w),
             Icon(controller.currentDataType.value.icon, size: 20),
             SizedBox(width: 4.w),
             Text(controller.currentDataType.value.label),

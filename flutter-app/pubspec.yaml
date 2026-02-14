@@ -1,7 +1,7 @@
 name: health_center_app
 description: 家庭健康中心APP
 publish_to: 'none'
-version: 1.0.1+2
+version: 2.1.0
 
 environment:
   sdk: '>=3.2.0 <4.0.0'
@@ -50,12 +50,24 @@ dependencies:
   # 权限管理
   permission_handler: ^11.1.0
 
+  # 本地通知
+  flutter_local_notifications: ^17.2.3
+
+  # 后台任务管理
+  workmanager: ^0.5.2
+
+  # 时区支持
+  timezone: ^0.9.4
+
   # 蓝牙
   flutter_blue_plus: ^1.31.5
 
   # 二维码扫描
   mobile_scanner: ^4.0.1
   qr_flutter: ^4.1.0
+
+  # Excel导出
+  excel: ^4.0.0
 
   # 图片选择
   image_picker: ^1.0.5

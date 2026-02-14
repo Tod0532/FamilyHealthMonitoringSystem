@@ -74,6 +74,10 @@ class ExportPage extends GetView<ExportController> {
             _buildMemberSelector(),
             SizedBox(height: 16.h),
 
+            // 数据类型选择
+            _buildDataTypeSelector(),
+            SizedBox(height: 16.h),
+
             // 预览区域
             _buildPreviewSection(),
             SizedBox(height: 24.h),
@@ -307,6 +311,71 @@ class ExportPage extends GetView<ExportController> {
     });
   }
 
+  /// 数据类型选择器
+  Widget _buildDataTypeSelector() {
+    return Obx(() {
+      final selectedTypes = controller.selectedTypes;
+      final isAllSelected = controller.isAllTypesSelected;
+
+      return _buildSelectorCard(
+        title: '数据类型',
+        icon: Icons.category_outlined,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // 全选/取消全选按钮
+            Row(
+              children: [
+                Checkbox(
+                  value: isAllSelected,
+                  tristate: true,
+                  onChanged: (_) => controller.toggleAllTypes(),
+                  activeColor: const Color(0xFF4CAF50),
+                ),
+                Text(
+                  isAllSelected ? '已全选' : (selectedTypes.isEmpty ? '全选' : '部分选择'),
+                  style: TextStyle(fontSize: 14.sp),
+                ),
+                const Spacer(),
+                Text(
+                  '已选 ${selectedTypes.length}/${HealthDataType.values.length} 项',
+                  style: TextStyle(fontSize: 12.sp, color: Colors.grey[600]),
+                ),
+              ],
+            ),
+            SizedBox(height: 8.h),
+            Wrap(
+              spacing: 8.w,
+              runSpacing: 8.h,
+              children: HealthDataType.values.map((type) {
+                final isSelected = selectedTypes.contains(type);
+                return FilterChip(
+                  label: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(type.icon, size: 14.sp, color: isSelected ? Colors.white : type.color),
+                      SizedBox(width: 4.w),
+                      Text(type.label, style: TextStyle(fontSize: 12.sp)),
+                    ],
+                  ),
+                  selected: isSelected,
+                  onSelected: (_) => controller.toggleDataType(type),
+                  selectedColor: type.color,
+                  checkmarkColor: Colors.white,
+                  backgroundColor: type.color.withOpacity(0.1),
+                  padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+                  side: BorderSide(
+                    color: isSelected ? type.color : type.color.withOpacity(0.3),
+                  ),
+                );
+              }).toList(),
+            ),
+          ],
+        ),
+      );
+    });
+  }
+
   /// 预览区域
   Widget _buildPreviewSection() {
     return Obx(() {
@@ -331,6 +400,15 @@ class ExportPage extends GetView<ExportController> {
                     fontSize: 16.sp,
                     color: Colors.grey[600],
                   ),
+                ),
+                SizedBox(height: 8.h),
+                Text(
+                  controller.getEmptyDataReason(),
+                  style: TextStyle(
+                    fontSize: 13.sp,
+                    color: Colors.orange[700],
+                  ),
+                  textAlign: TextAlign.center,
                 ),
               ],
             ),
@@ -396,42 +474,85 @@ class ExportPage extends GetView<ExportController> {
       final isExporting = controller.isExporting.value;
       final hasData = (controller.stats.value?.totalRecords ?? 0) > 0;
       final canExport = hasData && !isExporting;
+      final progress = controller.exportProgress.value;
 
-      return PermissionButton(
-        permissionCheck: PermissionUtils.canExportAllData,
-        onPressed: canExport ? () => controller.export() : () {},
-        style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF4CAF50),
-          foregroundColor: Colors.white,
-          disabledBackgroundColor: Colors.grey[300],
-          padding: EdgeInsets.symmetric(vertical: 16.h),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8.r),
-          ),
-        ),
-        child: isExporting
-            ? SizedBox(
-                height: 20.h,
-                width: 20.h,
-                child: const CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                ),
-              )
-            : Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+      return Column(
+        children: [
+          // 进度指示器
+          if (isExporting) ...[
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 16.w),
+              child: Column(
                 children: [
-                  const Icon(Icons.file_download),
-                  SizedBox(width: 8.w),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: LinearProgressIndicator(
+                          value: progress,
+                          backgroundColor: Colors.grey[300],
+                          valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF4CAF50)),
+                          minHeight: 6.h,
+                        ),
+                      ),
+                      SizedBox(width: 12.w),
+                      Text(
+                        '${(progress * 100).toInt()}%',
+                        style: TextStyle(
+                          fontSize: 14.sp,
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFF4CAF50),
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 8.h),
                   Text(
-                    '导出数据',
-                    style: TextStyle(
-                      fontSize: 16.sp,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    progress < 0.3 ? '准备导出...' : progress < 0.9 ? '正在处理数据...' : '即将完成...',
+                    style: TextStyle(fontSize: 12.sp, color: Colors.grey[600]),
                   ),
                 ],
               ),
+            ),
+            SizedBox(height: 12.h),
+          ],
+          // 导出按钮
+          PermissionButton(
+            permissionCheck: PermissionUtils.canExportAllData,
+            onPressed: canExport ? () => controller.export() : () {},
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF4CAF50),
+              foregroundColor: Colors.white,
+              disabledBackgroundColor: Colors.grey[300],
+              padding: EdgeInsets.symmetric(vertical: 16.h),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8.r),
+              ),
+            ),
+            child: isExporting
+                ? SizedBox(
+                    height: 20.h,
+                    width: 20.h,
+                    child: const CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  )
+                : Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.file_download),
+                      SizedBox(width: 8.w),
+                      Text(
+                        '导出数据',
+                        style: TextStyle(
+                          fontSize: 16.sp,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+          ),
+        ],
       );
     });
   }
@@ -485,6 +606,8 @@ class ExportPage extends GetView<ExportController> {
         return '可用Excel打开，方便查看和编辑';
       case ExportFormat.json:
         return '结构化数据，适合程序处理';
+      case ExportFormat.excel:
+        return '.xlsx格式，支持多个Sheet分类显示';
     }
   }
 
@@ -527,14 +650,22 @@ class ExportPage extends GetView<ExportController> {
               SizedBox(height: 8),
               Text('• CSV - 可用Excel/WPS打开，方便查看和打印'),
               Text('• JSON - 结构化数据，适合技术人员使用'),
+              Text('• Excel - .xlsx格式，支持多个Sheet分类显示'),
               SizedBox(height: 16),
               Text('导出步骤：', style: TextStyle(fontWeight: FontWeight.bold)),
               SizedBox(height: 8),
               Text('1. 选择导出格式'),
               Text('2. 选择时间范围'),
               Text('3. 选择要导出的成员（可选）'),
-              Text('4. 查看预览确认无误'),
-              Text('5. 点击导出按钮生成文件'),
+              Text('4. 选择数据类型（可选）'),
+              Text('5. 查看预览确认无误'),
+              Text('6. 点击导出按钮生成文件'),
+              SizedBox(height: 16),
+              Text('提示：', style: TextStyle(fontWeight: FontWeight.bold)),
+              SizedBox(height: 8),
+              Text('• 大数据量导出时会显示进度'),
+              Text('• 文件保存在应用专用目录'),
+              Text('• 支持分享和复制功能'),
             ],
           ),
         ),

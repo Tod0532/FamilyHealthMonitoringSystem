@@ -5,9 +5,9 @@ import 'package:health_center_app/app/modules/health/health_data_controller.dart
 class HealthDataBinding extends Bindings {
   @override
   void dependencies() {
-    // 懒加载控制器
+    // 立即创建控制器（不使用 lazyPut）
     if (!Get.isRegistered<HealthDataController>()) {
-      Get.lazyPut<HealthDataController>(() => HealthDataController());
+      Get.put(HealthDataController());
     }
   }
 }

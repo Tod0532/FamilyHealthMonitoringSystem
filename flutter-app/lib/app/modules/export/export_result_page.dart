@@ -6,6 +6,7 @@ import 'package:get/get.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:health_center_app/core/services/export_service.dart';
+import 'package:device_info_plus/device_info_plus.dart';
 
 /// 导出结果页面
 class ExportResultPage extends StatelessWidget {
@@ -391,7 +392,12 @@ class ExportResultPage extends StatelessWidget {
       // 先保存到临时文件
       final tempDir = await getTemporaryDirectory();
       final file = File('${tempDir.path}/${result.fileName}');
-      await file.writeAsString(result.content ?? '');
+
+      if (result.isBinary) {
+        await file.writeAsBytes(result.content!.codeUnits);
+      } else {
+        await file.writeAsString(result.content ?? '');
+      }
 
       // 分享文件
       await Share.shareXFiles(
@@ -412,12 +418,35 @@ class ExportResultPage extends StatelessWidget {
   /// 保存到本地
   void _saveToLocal() async {
     try {
-      // 获取外部存储目录
-      final directory = await getExternalStorageDirectory();
-      if (directory == null) {
+      Directory? saveDir;
+
+      // 根据Android版本选择不同的保存路径
+      if (Theme.of(Get.context!).platform == TargetPlatform.android) {
+        final info = DeviceInfoPlugin();
+        final androidInfo = await info.androidInfo;
+        final sdkInt = int.tryParse(androidInfo.version.release) ?? 0;
+
+        if (sdkInt >= 29) {
+          // Android 10+ 使用应用专用目录
+          final appDir = await getApplicationDocumentsDirectory();
+          saveDir = Directory('${appDir.path}/Export');
+        } else {
+          // Android 9及以下使用外部存储
+          final externalDir = await getExternalStorageDirectory();
+          if (externalDir != null) {
+            saveDir = Directory('${externalDir.path}/HealthExport');
+          }
+        }
+      } else {
+        // iOS 使用应用文档目录
+        final appDir = await getApplicationDocumentsDirectory();
+        saveDir = Directory('${appDir.path}/Export');
+      }
+
+      if (saveDir == null) {
         Get.snackbar(
           '保存失败',
-          '无法访问外部存储',
+          '无法获取保存目录',
           snackPosition: SnackPosition.TOP,
           backgroundColor: Colors.red.shade100,
         );
@@ -425,21 +454,24 @@ class ExportResultPage extends StatelessWidget {
       }
 
       // 创建导出文件夹
-      final exportDir = Directory('${directory.path}/HealthExport');
-      if (!await exportDir.exists()) {
-        await exportDir.create(recursive: true);
+      if (!await saveDir.exists()) {
+        await saveDir.create(recursive: true);
       }
 
       // 写入文件
-      final file = File('${exportDir.path}/${result.fileName}');
-      await file.writeAsString(result.content ?? '');
+      final file = File('${saveDir.path}/${result.fileName}');
+      if (result.isBinary) {
+        await file.writeAsBytes(result.content!.codeUnits);
+      } else {
+        await file.writeAsString(result.content ?? '');
+      }
 
       Get.snackbar(
         '保存成功',
-        '文件已保存到: ${exportDir.path}',
+        '文件已保存到: ${saveDir.path}\n\n提示: Android 10+文件保存在应用专用目录，可通过文件管理器访问 Android/data/你的应用包名/files/',
         snackPosition: SnackPosition.TOP,
         backgroundColor: Colors.green.shade100,
-        duration: const Duration(seconds: 4),
+        duration: const Duration(seconds: 6),
       );
     } catch (e) {
       Get.snackbar(

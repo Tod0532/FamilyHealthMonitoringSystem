@@ -181,6 +181,19 @@ class _SplashPageState extends State<SplashPage>
               ),
               const SizedBox(height: 64),
 
+              // 版本号显示
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Text(
+                  'v2.1.0',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: const Color(0xFF4CAF50).withOpacity(0.6),
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
+              ),
+
               // 加载指示器
               AnimatedBuilder(
                 animation: _animationController,

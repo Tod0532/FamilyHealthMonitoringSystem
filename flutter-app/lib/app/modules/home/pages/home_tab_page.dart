@@ -44,6 +44,11 @@ class HomeTabPage extends GetView {
 
                   SizedBox(height: 16.h),
 
+                  // 测量提醒入口
+                  _buildReminderCard(),
+
+                  SizedBox(height: 16.h),
+
                   // 快捷功能入口
                   _buildQuickActionsCard(),
 
@@ -415,6 +420,81 @@ class HomeTabPage extends GetView {
     );
   }
 
+  /// 测量提醒入口卡片
+  Widget _buildReminderCard() {
+    return Container(
+      margin: EdgeInsets.only(bottom: 8.h),
+      padding: EdgeInsets.all(16.w),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFFFF9800), Color(0xFFFF5722)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16.r),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFFF9800).withOpacity(0.3),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => Get.toNamed('/reminder/setting'),
+          borderRadius: BorderRadius.circular(16.r),
+          child: Row(
+            children: [
+              Container(
+                width: 48.w,
+                height: 48.w,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(24.r),
+                ),
+                child: Icon(
+                  Icons.access_alarm,
+                  color: Colors.white,
+                  size: 24.sp,
+                ),
+              ),
+              SizedBox(width: 12.w),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '测量提醒',
+                      style: TextStyle(
+                        fontSize: 16.sp,
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      '每日测量提醒，守护健康',
+                      style: TextStyle(
+                        fontSize: 12.sp,
+                        color: Colors.white.withOpacity(0.9),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.arrow_forward_ios,
+                color: Colors.white,
+                size: 16.sp,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   /// 快捷功能入口卡片
   Widget _buildQuickActionsCard() {
     return Container(
@@ -529,7 +609,7 @@ class HomeTabPage extends GetView {
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.warning, color: Color(0xFFFF9800)),
+                leading: const Icon(Icons.warning, color: Color(0xFFFF5722)),
                 title: const Text('预警规则'),
                 onTap: () {
                   Get.back();
@@ -585,6 +665,7 @@ class HomeTabPage extends GetView {
           ],
         ),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
@@ -948,9 +1029,9 @@ class HomeTabPage extends GetView {
 
   /// 家庭状态卡片
   Widget _buildFamilyStatusCard() {
-    // 确保FamilyController已注册
+    // 确保FamilyController已创建，使用 Get.put() 确保存在
     if (!Get.isRegistered<FamilyController>()) {
-      return const SizedBox.shrink();
+      Get.put(FamilyController());
     }
 
     final controller = Get.find<FamilyController>();
@@ -1056,6 +1137,7 @@ class HomeTabPage extends GetView {
           ],
         ),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // 顶部：家庭名称和图标
@@ -1180,7 +1262,7 @@ class HomeTabPage extends GetView {
                   color: Colors.white.withOpacity(0.2),
                 ),
               ),
-              SizedBox(height: 16.h),
+              SizedBox(height: 24.h),
               // 成员头像行
               Row(
                 children: [
@@ -1192,15 +1274,29 @@ class HomeTabPage extends GetView {
                       fontWeight: FontWeight.w500,
                     ),
                   ),
-                  const Spacer(),
-                  GestureDetector(
-                    onTap: () => Get.toNamed('/family/members'),
-                    child: Text(
-                      '查看全部',
-                      style: TextStyle(
-                        fontSize: 12.sp,
-                        color: Colors.white,
-                        fontWeight: FontWeight.w500,
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () => Get.toNamed('/family/members'),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            '查看全部',
+                            style: TextStyle(
+                              fontSize: 12.sp,
+                              color: Colors.white,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          SizedBox(
+                            width: 4.w,
+                          ),
+                          Icon(
+                            Icons.chevron_right_rounded,
+                            size: 18.sp,
+                            color: Colors.white,
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -1214,14 +1310,15 @@ class HomeTabPage extends GetView {
               SizedBox(height: 12.h),
               // 成员头像列表（横向堆叠显示）
               SizedBox(
-                height: 72.h,
+                height: 82.h,
                 child: ListView.separated(
                   scrollDirection: Axis.horizontal,
                   shrinkWrap: true,
                   itemCount: members.length > 6 ? 6 : members.length,
-                  separatorBuilder: (context, index) => SizedBox(width: 12.w),
+                  separatorBuilder: (context, index) => SizedBox(width: 4.w),
                   itemBuilder: (context, index) {
                     final member = members[index];
+                    print('DEBUG: Building member avatar for ${member.nickname} at index $index, total members: ${members.length}');
                     return _buildMemberAvatar(member);
                   },
                 ),
@@ -1263,17 +1360,18 @@ class HomeTabPage extends GetView {
   Widget _buildMemberAvatar(FamilyUser member) {
     return Column(
       mainAxisSize: MainAxisSize.min,
+      mainAxisAlignment: MainAxisAlignment.start,
       children: [
         SizedBox(
-          height: 52.w,
-          width: 52.w,
+          height: 48.w,
+          width: 48.w,
           child: Stack(
             clipBehavior: Clip.none,
             children: [
               Center(
                 child: Container(
-                  width: 48.w,
-                  height: 48.w,
+                  width: 44.w,
+                  height: 44.w,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     border: Border.all(
@@ -1337,20 +1435,25 @@ class HomeTabPage extends GetView {
             ],
           ),
         ),
-        SizedBox(height: 6.h),
-        // 成员昵称
+        const SizedBox(height: 8),
+        // 成员昵称 - 使用固定高度确保文字不被裁剪
         SizedBox(
+          height: 18,
           width: 60.w,
-          child: Text(
-            member.nickname,
-            style: TextStyle(
-              fontSize: 11.sp,
-              color: Colors.white,
-              fontWeight: member.isMe ? FontWeight.bold : FontWeight.normal,
+          child: Align(
+            alignment: Alignment.center,
+            child: Text(
+              member.nickname,
+              style: TextStyle(
+                fontSize: 11.sp,
+                color: Colors.white,
+                fontWeight: member.isMe ? FontWeight.bold : FontWeight.normal,
+                height: 1.2,
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
-            textAlign: TextAlign.center,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
           ),
         ),
       ],

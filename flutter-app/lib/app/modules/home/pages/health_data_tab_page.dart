@@ -103,6 +103,9 @@ class _HealthDataTabPageState extends State<HealthDataTabPage> {
           // 数据类型筛选
           _buildTypeFilter(),
 
+          // 趋势分析入口
+          _buildTrendEntryCards(),
+
           // 数据列表
           Expanded(
             child: Obx(() {
@@ -568,9 +571,123 @@ class _HealthDataTabPageState extends State<HealthDataTabPage> {
                     // 同步到controller
                     _healthDataController.filterByType(selectedType);
                   },
+                  onLongPress: () {
+                    // 长按功能（暂无）
+                  },
                 ),
               );
             }),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 数据分析入口卡片（暂时隐藏）
+  Widget _buildTrendEntryCards() {
+    return const SizedBox.shrink();
+    /*
+    return Container(
+      margin: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+      child: Row(
+        children: [
+          // 血压趋势卡片
+          Expanded(
+            child: _buildTrendCard(
+              '血压趋势',
+              '血压数据分析',
+              Icons.show_chart,
+              const Color(0xFFFF2E63),
+              () => Get.toNamed('/health/blood-pressure-trend'),
+            ),
+          ),
+          SizedBox(width: 12.w),
+          // 血糖趋势卡片
+          Expanded(
+            child: _buildTrendCard(
+              '血糖趋势',
+              '血糖数据分析',
+              Icons.bloodtype,
+              const Color(0xFF9C27B0),
+              () => Get.toNamed('/health/blood-sugar-trend'),
+            ),
+          ),
+        ],
+      ),
+    );
+    */
+  }
+
+  /// 趋势卡片
+  Widget _buildTrendCard(
+    String title,
+    String subtitle,
+    IconData icon,
+    Color color,
+    VoidCallback onTap,
+  ) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12.r),
+      child: Container(
+        padding: EdgeInsets.all(16.w),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              color.withOpacity(0.1),
+              color.withOpacity(0.05),
+            ],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(12.r),
+          border: Border.all(
+            color: color.withOpacity(0.3),
+            width: 1,
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: EdgeInsets.all(8.w),
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(8.r),
+                  ),
+                  child: Icon(
+                    icon,
+                    color: color,
+                    size: 20.sp,
+                  ),
+                ),
+                const Spacer(),
+                Icon(
+                  Icons.arrow_forward_ios,
+                  color: color,
+                  size: 16.sp,
+                ),
+              ],
+            ),
+            SizedBox(height: 12.h),
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 16.sp,
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
+            ),
+            SizedBox(height: 4.h),
+            Text(
+              subtitle,
+              style: TextStyle(
+                fontSize: 12.sp,
+                color: Colors.grey[600],
+              ),
+            ),
           ],
         ),
       ),
@@ -584,9 +701,19 @@ class _HealthDataTabPageState extends State<HealthDataTabPage> {
     IconData? icon,
     int? count,
     VoidCallback? onTap,
+    VoidCallback? onLongPress,
   }) {
+    final hasTrendPage = label == '血压' || label == '血糖';
+
     return GestureDetector(
       onTap: onTap,
+      onLongPress: onLongPress,
+      onLongPressEnd: (_) {
+        // 长按震动反馈
+        if (hasTrendPage) {
+          // 震动反馈（可选）
+        }
+      },
       child: Container(
         padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
         decoration: BoxDecoration(
@@ -616,6 +743,15 @@ class _HealthDataTabPageState extends State<HealthDataTabPage> {
                 fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
               ),
             ),
+            // 血压和血糖添加趋势分析提示图标
+            if (hasTrendPage) ...[
+              SizedBox(width: 4.w),
+              Icon(
+                Icons.show_chart,
+                size: 12.sp,
+                color: isSelected ? const Color(0xFF4CAF50) : Colors.grey[400],
+              ),
+            ],
             if (count != null) ...[
               SizedBox(width: 6.w),
               Container(

@@ -1,12 +1,15 @@
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:intl/intl.dart';
+import 'package:excel/excel.dart';
 import 'package:health_center_app/core/models/health_data.dart';
 import 'package:health_center_app/core/models/family_member.dart';
 
 /// 导出格式枚举
 enum ExportFormat {
   csv('CSV表格', '.csv'),
-  json('JSON数据', '.json');
+  json('JSON数据', '.json'),
+  excel('Excel表格', '.xlsx');
 
   final String label;
   final String extension;
@@ -81,6 +84,15 @@ class ExportService {
           content = _exportToJson(filteredData, members);
           fileName = _generateFileName('json');
           break;
+        case ExportFormat.excel:
+          final excelBytes = _exportToExcel(filteredData, members);
+          return ExportResult(
+            success: true,
+            content: String.fromCharCodes(excelBytes),
+            fileName: _generateFileName('xlsx'),
+            recordCount: filteredData.length,
+            isBinary: true,
+          );
       }
 
       return ExportResult(
@@ -153,6 +165,113 @@ class ExportService {
     return buffer.toString();
   }
 
+  /// 导出为Excel格式
+  Uint8List _exportToExcel(List<HealthData> data, List<FamilyMember> members) {
+    final excel = Excel.createExcel();
+
+    // 删除默认sheet
+    excel.delete('Sheet1');
+
+    // 按数据类型分组
+    final groupedData = <HealthDataType, List<HealthData>>{};
+    for (final item in data) {
+      groupedData.putIfAbsent(item.type, () => []).add(item);
+    }
+
+    // 为每种数据类型创建一个Sheet
+    for (final entry in groupedData.entries) {
+      final type = entry.key;
+      final typeData = entry.value;
+
+      // Sheet名称不能超过31个字符
+      final sheetName = type.label.length > 31
+          ? type.label.substring(0, 31)
+          : type.label;
+
+      final sheet = excel[sheetName];
+
+      // 表头样式
+      final headerCellStyle = CellStyle(
+        bold: true,
+        fontColorHex: ExcelColor.white,
+        backgroundColorHex: ExcelColor.fromHexString('#4CAF50'),
+        horizontalAlign: HorizontalAlign.Center,
+        verticalAlign: VerticalAlign.Center,
+      );
+
+      // 表头
+      final headers = ['记录时间', '成员姓名', '关系', '数值1', '数值2', '单位', '备注'];
+      for (int i = 0; i < headers.length; i++) {
+        final cell = sheet.cell(CellIndex.indexByColumnRow(columnIndex: i, rowIndex: 0));
+        cell.value = TextCellValue(headers[i]);
+        cell.cellStyle = headerCellStyle;
+      }
+
+      // 数据行
+      for (int i = 0; i < typeData.length; i++) {
+        final item = typeData[i];
+        final rowIndex = i + 1;
+
+        final member = members.firstWhere(
+          (m) => m.id == item.memberId,
+          orElse: () => FamilyMember(
+            id: '',
+            name: '未知',
+            gender: 1,
+            relation: MemberRelation.other,
+            role: MemberRole.member,
+            createTime: DateTime.now(),
+          ),
+        );
+
+        sheet.cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: rowIndex))
+            .value = TextCellValue(_dateFormatter.format(item.recordTime));
+        sheet.cell(CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: rowIndex))
+            .value = TextCellValue(member.name);
+        sheet.cell(CellIndex.indexByColumnRow(columnIndex: 2, rowIndex: rowIndex))
+            .value = TextCellValue(member.relation.label);
+        sheet.cell(CellIndex.indexByColumnRow(columnIndex: 3, rowIndex: rowIndex))
+            .value = TextCellValue(item.value1.toString());
+        sheet.cell(CellIndex.indexByColumnRow(columnIndex: 4, rowIndex: rowIndex))
+            .value = TextCellValue(item.value2?.toString() ?? '');
+        sheet.cell(CellIndex.indexByColumnRow(columnIndex: 5, rowIndex: rowIndex))
+            .value = TextCellValue(item.type.unit);
+        sheet.cell(CellIndex.indexByColumnRow(columnIndex: 6, rowIndex: rowIndex))
+            .value = TextCellValue(item.notes ?? '');
+      }
+    }
+
+    // 创建汇总Sheet
+    if (groupedData.length > 1) {
+      final summarySheet = excel['汇总'];
+      final headerCellStyle = CellStyle(
+        bold: true,
+        fontColorHex: ExcelColor.white,
+        backgroundColorHex: ExcelColor.fromHexString('#4CAF50'),
+        horizontalAlign: HorizontalAlign.Center,
+      );
+
+      final headers = ['数据类型', '记录数'];
+      for (int i = 0; i < headers.length; i++) {
+        final cell = summarySheet.cell(CellIndex.indexByColumnRow(columnIndex: i, rowIndex: 0));
+        cell.value = TextCellValue(headers[i]);
+        cell.cellStyle = headerCellStyle;
+      }
+
+      int rowIndex = 1;
+      for (final entry in groupedData.entries) {
+        summarySheet.cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: rowIndex))
+            .value = TextCellValue(entry.key.label);
+        summarySheet.cell(CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: rowIndex))
+            .value = TextCellValue(entry.value.length.toString());
+        rowIndex++;
+      }
+    }
+
+    final bytes = excel.encode();
+    return bytes != null ? Uint8List.fromList(bytes) : Uint8List(0);
+  }
+
   /// 导出为JSON格式
   String _exportToJson(List<HealthData> data, List<FamilyMember> members) {
     final exportData = {
@@ -213,6 +332,9 @@ class ExportService {
         return _exportToCsv(previewData, members);
       case ExportFormat.json:
         return _exportToJson(previewData, members);
+      case ExportFormat.excel:
+        // Excel预览用CSV代替
+        return _exportToCsv(previewData, members);
     }
   }
 
@@ -263,6 +385,7 @@ class ExportResult {
   final String? fileName;
   final int? recordCount;
   final String? errorMessage;
+  final bool isBinary;
 
   ExportResult({
     required this.success,
@@ -270,6 +393,7 @@ class ExportResult {
     this.fileName,
     this.recordCount,
     this.errorMessage,
+    this.isBinary = false,
   });
 }
 

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:health_center_app/core/utils/data_validator.dart';
+import 'package:health_center_app/core/utils/logger.dart' as logger;
 
 /// 健康数据类型枚举
 enum HealthDataType {
@@ -28,10 +30,10 @@ enum HealthDataType {
 
 /// 健康数据级别
 enum HealthDataLevel {
-  normal('正常', const Color(0xFF4CAF50)),
-  warning('偏高', const Color(0xFFFF9800)),
-  high('过高', const Color(0xFFF44336)),
-  low('过低', const Color(0xFF2196F3));
+  normal('正常', Color(0xFF4CAF50)),
+  warning('偏高', Color(0xFFFF9800)),
+  high('过高', Color(0xFFF44336)),
+  low('过低', Color(0xFF2196F3));
 
   final String label;
   final Color color;
@@ -73,62 +75,73 @@ class HealthData {
   });
 
   factory HealthData.fromJson(Map<String, dynamic> json) {
-    // 兼容后端API返回的字段名
-    final String typeStr = json['type'] ?? json['dataType'] ?? 'bloodPressure';
-    final String timeStr = json['recordTime'] ?? json['measureTime'] ?? json['createTime'] ?? DateTime.now().toIso8601String();
+    try {
+      // 兼容后端API返回的字段名
+      final String typeStr = json['type'] ?? json['dataType'] ?? 'bloodPressure';
+      final String? timeStr = json['recordTime'] ?? json['measureTime'] ?? json['createTime'];
 
-    // 调试日志
-    print('HealthData.fromJson: typeStr = $typeStr');
+      // 调试日志
+      logger.AppLogger.d('HealthData.fromJson: typeStr = $typeStr, timeStr = $timeStr');
 
-    // 转换后端dataType格式到前端枚举
-    HealthDataType parsedType;
-    switch (typeStr) {
-      case 'blood_pressure':
-        parsedType = HealthDataType.bloodPressure;
-        break;
-      case 'heart_rate':
-        parsedType = HealthDataType.heartRate;
-        break;
-      case 'blood_sugar':
-        parsedType = HealthDataType.bloodSugar;
-        break;
-      case 'temperature':
-        parsedType = HealthDataType.temperature;
-        break;
-      case 'weight':
-        parsedType = HealthDataType.weight;
-        break;
-      case 'height':
-        parsedType = HealthDataType.height;
-        break;
-      case 'steps':
-        parsedType = HealthDataType.steps;
-        break;
-      case 'sleep':
-        parsedType = HealthDataType.sleep;
-        break;
-      default:
-        parsedType = HealthDataType.fromString(typeStr);
+      // 转换后端dataType格式到前端枚举
+      HealthDataType parsedType;
+      switch (typeStr) {
+        case 'blood_pressure':
+          parsedType = HealthDataType.bloodPressure;
+          break;
+        case 'heart_rate':
+          parsedType = HealthDataType.heartRate;
+          break;
+        case 'blood_sugar':
+          parsedType = HealthDataType.bloodSugar;
+          break;
+        case 'temperature':
+          parsedType = HealthDataType.temperature;
+          break;
+        case 'weight':
+          parsedType = HealthDataType.weight;
+          break;
+        case 'height':
+          parsedType = HealthDataType.height;
+          break;
+        case 'steps':
+          parsedType = HealthDataType.steps;
+          break;
+        case 'sleep':
+          parsedType = HealthDataType.sleep;
+          break;
+        default:
+          parsedType = HealthDataType.fromString(typeStr);
+      }
+
+      logger.AppLogger.d('HealthData.fromJson: parsedType = ${parsedType.name}');
+
+      // 使用 DataValidator 安全解析数值
+      final value1 = DataValidator.validateDouble(json['value1'], defaultValue: 0.0) ?? 0.0;
+      final value2 = DataValidator.validateDouble(json['value2'], defaultValue: null);
+
+      return HealthData(
+        id: json['id']?.toString() ?? '',
+        memberId: json['memberId']?.toString() ?? json['member_id']?.toString() ?? '',
+        memberName: json['memberName']?.toString() ?? json['member_name']?.toString(),
+        type: parsedType,
+        value1: value1,
+        value2: value2,
+        level: HealthDataLevel.fromString(json['level'] ?? 'normal'),
+        recordTime: _safeParseDateTime(timeStr) ?? DateTime.now(),
+        notes: json['notes'],
+        createTime: _safeParseDateTime(json['createTime'] ?? json['created_at']) ?? DateTime.now(),
+      );
+    } catch (e) {
+      logger.AppLogger.e('解析健康数据失败: ${json.toString()}', e);
+      rethrow;
     }
+  }
 
-    print('HealthData.fromJson: parsedType = ${parsedType.name}');
-
-    return HealthData(
-      id: json['id']?.toString() ?? '',
-      memberId: json['memberId']?.toString() ?? json['member_id']?.toString() ?? '',
-      memberName: json['memberName']?.toString() ?? json['member_name']?.toString(),
-      type: parsedType,
-      value1: (json['value1'] ?? 0).toDouble(),
-      value2: json['value2']?.toDouble(),
-      level: HealthDataLevel.fromString(json['level'] ?? 'normal'),
-      recordTime: DateTime.parse(timeStr),
-      notes: json['notes'],
-      createTime: json['createTime'] != null
-          ? DateTime.parse(json['createTime'])
-          : json['created_at'] != null
-              ? DateTime.parse(json['created_at'])
-              : DateTime.now(),
-    );
+  /// 安全解析DateTime，支持多种格式
+  /// 使用 DataValidator 统一处理日期解析
+  static DateTime? _safeParseDateTime(dynamic value) {
+    return DataValidator.parseDateTimeSafe(value);
   }
 
   Map<String, dynamic> toJson() {
@@ -154,13 +167,13 @@ class HealthData {
             ? '${value1.toInt()}/${value2!.toInt()}'
             : '${value1.toInt()}';
       case HealthDataType.temperature:
-        return '${value1.toStringAsFixed(1)}';
+        return value1.toStringAsFixed(1);
       case HealthDataType.weight:
-        return '${value1.toStringAsFixed(1)}';
+        return value1.toStringAsFixed(1);
       case HealthDataType.height:
         return '${value1.toInt()}';
       case HealthDataType.sleep:
-        return '${value1.toStringAsFixed(1)}';
+        return value1.toStringAsFixed(1);
       default:
         return '${value1.toInt()}';
     }

@@ -58,8 +58,7 @@ android {
     buildTypes {
         debug {
             signingConfig signingConfigs.debug
-            applicationIdSuffix ".debug"
-            versionNameSuffix "-debug"
+            // 使用相同的 applicationId，移除后缀避免手机上出现两个同名APP
         }
         release {
             // 如果存在 keystore.properties 则使用 release 签名，否则使用 debug 签名

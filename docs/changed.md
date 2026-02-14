@@ -1,6 +1,353 @@
 # 家庭健康中心APP - 变更记录
 
 > 本文件记录项目开发过程中的所有变更，按时间倒序排列
+> 最后更新时间：2026-02-14
+
+---
+
+## 2026-02-14（健康趋势页面成员筛选功能✅）
+
+### 📝 修改文件
+
+| 文件路径 | 说明 | 作者 |
+|----------|------|------|
+| flutter-app/lib/app/modules/health/health_stats_page.dart | 新增成员选择器，修复PopupMenuButton同时使用icon和child的断言错误 | Claude |
+| flutter-app/lib/app/modules/health/health_data_controller.dart | 修改getTypeData方法使用filteredDataList，支持按成员筛选数据 | Claude |
+
+### 📋 变更内容
+
+#### 类型：feat（新功能）+ fix（Bug修复）
+#### 范围：UI界面 + 数据筛选
+#### 描述：新增按成员筛选健康数据功能，修复PopupMenuButton断言错误
+
+**修复内容**：
+1. **新增成员选择器**
+   - AppBar新增成员筛选按钮，显示当前选中成员
+   - 支持"全部成员"或选择具体成员
+   - 成员列表显示头像图标和名称
+
+2. **数据筛选逻辑修复**
+   - 修改`getTypeData`方法从`filteredDataList`读取数据
+   - 确保成员筛选条件正确应用到统计、图表、记录展示
+
+3. **修复PopupMenuButton断言错误**
+   - 问题：同时使用`icon`参数和`child`参数导致Flutter断言失败
+   - 修复：移除`icon`参数，将图标放入`child`的Row中
+   - 错误信息：`'!(child != null && icon != null)': You can only pass [child] or [icon], not both`
+
+**问题根因分析与解决方案**：
+- **错误现象**：点击类型选择器时应用崩溃，显示断言错误
+- **根本原因**：Flutter的PopupMenuButton不允许同时设置`icon`和`child`参数
+- **排查过程**：
+  1. 查看错误堆栈定位到`popup_menu.dart:1216`
+  2. 检查代码发现第54行设置了`icon: const Icon(Icons.filter_list)`
+  3. 同时第72-81行设置了`child`参数
+  4. Flutter源码断言检测到两者同时存在时抛出异常
+- **解决方案**：移除`icon`参数，将过滤图标和当前类型图标都放入`child`的Row中
+
+**解决的教训**：
+1. 仔细阅读Flutter API文档，了解参数互斥规则
+2. 使用断言错误信息快速定位问题代码
+3. 避免在UI组件中混用互斥的参数
+
+---
+
+## 2026-02-14（健康统计页面数据验证重构✅）
+
+---
+
+## 2026-02-13 晚上（血压/血糖趋势页面路由修复✅）
+
+### 📝 修改文件
+
+| 文件路径 | 说明 | 作者 |
+|----------|------|------|
+| flutter-app/lib/app/routes/app_pages.dart | 修复趋势页面路由名称，添加TrendPageBinding组合绑定 | Claude |
+
+### 📋 变更内容
+
+#### 类型：fix（Bug修复）
+#### 范围：路由配置
+#### 描述：修复血压/血糖趋势页面无法打开的问题
+
+**修复内容**：
+1. **路由名称修正**
+   - 将 `/health/bp-trend` 改为 `/health/blood-pressure-trend`
+   - 将 `/health/bs-trend` 改为 `/health/blood-sugar-trend`
+   - 确保路由定义与调用名称一致
+
+2. **添加组合绑定**
+   - 新增 `TrendPageBinding` 类
+   - 同时注册 `HealthDataController` 和 `MembersController`
+   - 解决趋势页面访问成员控制器时出现的空值错误
+
+---
+
+## 2026-02-13 晚上（血压/血糖趋势图表功能✅）
+
+### 📝 修改文件
+
+| 文件路径 | 说明 | 作者 |
+|----------|------|------|
+| flutter-app/lib/app/modules/health/health_stats_page.dart | 优化血压双折线显示、添加血糖正常范围参考区域、时间范围选择器、图表触摸交互 | Claude |
+| flutter-app/lib/app/modules/health/blood_pressure_trend_page.dart | 新增血压趋势专用分析页面，支持脉压差趋势、数据分布直方图 | Claude |
+| flutter-app/lib/app/modules/health/blood_sugar_trend_page.dart | 新增血糖趋势专用分析页面，支持餐前/餐后筛选、HbA1c估算 | Claude |
+| flutter-app/lib/app/routes/app_routes.dart | 添加血压/血糖趋势页面路由 | Claude |
+| flutter-app/lib/app/routes/app_pages.dart | 添加新页面路由配置 | Claude |
+| flutter-app/lib/app/modules/home/pages/home_tab_page.dart | 首页更多菜单添加趋势页面入口 | Claude |
+
+### 📋 变更内容
+
+#### 类型：feat（新功能）
+#### 范围：健康趋势图表
+#### 描述：实现血压/血糖历史趋势图表功能
+
+**新增功能**：
+
+1. **血压趋势图表优化**
+   - 双折线图同时显示收缩压（绿色）和舒张压（蓝色）
+   - 添加正常血压范围参考线（收缩压90-140，舒张压60-90）
+   - 支持时间范围切换（7天/30天/90天/全部）
+   - 添加触摸交互显示详细数值
+
+2. **血糖趋势图表优化**
+   - 添加血糖正常范围参考区域（空腹3.9-6.1 mmol/L）
+   - 餐后2小时血糖参考范围（<7.8 mmol/L）
+   - 支持时间范围切换
+   - 添加高/低血糖预警标记（颜色区分）
+
+3. **血压趋势专用页面**
+   - 独立的血压趋势分析页面（/health/bp-trend）
+   - 显示多维度统计（平均血压、最高/最低、平均脉压差）
+   - 脉压差趋势图表
+   - 数据分布直方图
+   - 按日/周/月聚合数据
+   - 支持成员筛选
+
+4. **血糖趋势专用页面**
+   - 独立的血糖趋势分析页面（/health/bs-trend）
+   - 分类统计（空腹平均、餐后平均、异常次数）
+   - 餐型筛选（全部/仅空腹/仅餐后）
+   - HbA1c（糖化血红蛋白）估算
+   - 糖尿病风险评估
+   - 血糖参考范围说明
+
+5. **导航入口**
+   - 首页"更多"菜单添加"血压趋势"和"血糖趋势"入口
+   - 统一的路由配置
+
+---
+
+## 2026-02-13 晚上（数据导出功能优化✅）
+
+### 📝 修改文件
+
+| 文件路径 | 说明 | 作者 |
+|----------|------|------|
+| flutter-app/lib/core/services/export_service.dart | 添加Excel格式导出支持，更新ExportFormat枚举，添加isBinary字段 | Claude |
+| flutter-app/lib/app/modules/export/export_controller.dart | 添加数据类型过滤、导出进度指示功能 | Claude |
+| flutter-app/lib/app/modules/export/export_page.dart | 添加数据类型选择器UI，更新导出进度指示显示，更新帮助对话框 | Claude |
+| flutter-app/lib/app/modules/export/export_result_page.dart | 优化文件保存路径适配Android 10+，支持二进制文件保存 | Claude |
+| flutter-app/pubspec.yaml | 添加excel依赖包 | Claude |
+
+### 📋 变更内容
+
+#### 类型：feat（新功能）
+#### 范围：数据导出
+#### 描述：优化数据导出功能
+
+**新增功能**：
+
+1. **数据类型过滤（多选）**
+   - 支持选择要导出的数据类型（血压、心率、血糖、体温、体重、身高、步数、睡眠）
+   - 使用FilterChip组件实现美观的多选界面
+   - 支持全选/取消全选快捷操作
+   - 显示已选数据类型数量
+
+2. **导出进度指示**
+   - 导出时显示进度百分比（0-100%）
+   - 使用线性进度指示器（LinearProgressIndicator）
+   - 显示当前导出状态文本
+   - 避免UI卡顿，提升用户体验
+
+3. **Excel格式支持**
+   - 添加`.xlsx`格式导出选项
+   - 支持多个Sheet分类显示不同数据类型
+   - 自动创建汇总Sheet统计各类型记录数
+   - 使用`excel: ^4.0.0`包实现
+
+4. **优化文件保存路径**
+   - 适配Android 10+ scoped storage
+   - Android 10+使用应用专用目录
+   - 保存成功后显示文件路径提示
+   - 支持二进制文件（Excel）保存
+
+**代码变更**：
+
+```dart
+// ExportFormat枚举添加Excel选项
+enum ExportFormat {
+  csv('CSV表格', '.csv'),
+  json('JSON数据', '.json'),
+  excel('Excel表格', '.xlsx'),  // 新增
+}
+
+// ExportResult添加isBinary字段
+class ExportResult {
+  final bool isBinary;  // 新增，用于区分Excel二进制文件
+  // ...
+}
+
+// 数据类型过滤
+final selectedTypes = <HealthDataType>{}.obs;
+
+// 导出进度
+final exportProgress = 0.0.obs;
+
+// Excel导出方法
+Uint8List _exportToExcel(List<HealthData> data, List<FamilyMember> members) {
+  // 按数据类型分组创建Sheet
+  // 设置表头样式
+  // 写入数据行
+  // 创建汇总Sheet
+}
+```
+
+**更新依赖**：
+```yaml
+dependencies:
+  excel: ^4.0.0  # 新增Excel格式支持
+```
+
+---
+
+## 2026-02-13 下午（首页成员头像名字显示修复✅）
+
+### 📝 修改文件
+
+| 文件路径 | 说明 | 作者 |
+|----------|------|------|
+| flutter-app/lib/app/modules/home/pages/home_tab_page.dart | 修复首页成员头像下方名字被遮挡问题 | Claude |
+
+### 📋 变更内容
+
+#### 类型：fix（修复）
+#### 范围：UI界面
+#### 描述：修复首页家庭状态卡片中成员名字被遮挡的问题
+
+**问题现象**：
+- 首页家庭状态卡片显示成员头像和名字
+- 成员名字在头像下方显示不完整，被裁切遮挡
+
+**问题根因**：
+1. 成员头像列表容器高度 `68.h` 不足以容纳头像+间距+名字
+2. 成员名字文本区域没有固定高度，被 `Column` 的 `mainAxisSize.min` 压缩
+3. 名字区域宽度过大（`100.w`）导致相邻头像重叠
+
+**解决方案**：
+```dart
+// 1. 增加容器高度
+SizedBox(
+  height: 82.h,  // 从 68.h 增加到 82.h
+  child: ListView.separated(...),
+)
+
+// 2. 优化成员名字显示区域
+SizedBox(
+  height: 18,  // 固定高度确保文字不被裁剪
+  width: 60.w,  // 从 100.w 缩小，避免重叠
+  child: Align(
+    alignment: Alignment.center,  // 确保文字垂直居中
+    child: Text(
+      member.nickname,
+      style: TextStyle(
+        fontSize: 11.sp,
+        color: Colors.white,
+        height: 1.2,  // 添加行高让文字更清晰
+      ),
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+    ),
+  ),
+),
+```
+
+**修改明细**：
+| 项目 | 修改前 | 修改后 |
+|------|--------|--------|
+| 容器高度 | 68.h | 82.h |
+| 名字区域宽度 | 100.w | 60.w |
+| 名字区域高度 | 无固定高度 | 固定 18 |
+| 垂直对齐 | 无 | Align(center) |
+| 文字行高 | 默认 | 1.2 |
+| 头像与文字间距 | 6.h | 8 |
+
+### 📱 真机测试结果
+
+| 测试项 | 结果 |
+|--------|------|
+| 成员名字完整显示 | ✅ 通过 |
+| 头像不重叠 | ✅ 通过 |
+| 整体布局美观 | ✅ 通过 |
+
+**APK信息**：
+- 版本：app-debug.apk
+- 编译时间：31.4秒
+- 安装设备：SM02G4061983569
+
+---
+
+## 2026-02-12 下午（健康提醒功能实现✅）
+
+### 📝 修改文件
+
+| 文件路径 | 说明 | 作者 |
+|----------|------|------|
+| flutter-app/lib/app/modules/reminders/reminder_service.dart | 提醒服务：使用定时器每分钟检查实现 | Claude |
+| flutter-app/lib/app/modules/reminders/reminder_setting_page.dart | 提醒设置页：优化测试按钮和调试信息 | Claude |
+
+### 📋 变更内容
+
+#### 类型：feat（新功能）
+#### 范围：UI界面
+#### 描述：实现健康提醒功能，使用定时器每分钟检查时间并发送通知
+
+### ✅ 功能特性
+
+1. **定时器检查机制**
+   - 每分钟检查一次当前时间
+   - 时间匹配时立即发送通知
+   - 记录今天已发送时间，避免重复
+
+2. **提醒设置**
+   - 支持1-3次每日提醒
+   - 可自定义提醒时间
+   - 开关控制
+   - 数据本地持久化
+
+3. **测试功能**
+   - 立即测试通知
+   - 1分钟后测试（使用一次性Timer）
+   - 查看调试信息
+
+4. **权限处理**
+   - 通知权限请求
+   - 精确闹钟权限检查
+   - 电池优化设置引导
+
+### 📱 真机测试结果
+
+| 测试项 | 结果 |
+|--------|------|
+| 立即测试通知 | ✅ 通过 |
+| 1分钟后测试 | ✅ 通过 |
+| 保存后定时提醒 | ✅ 通过 |
+
+### ⚠️ 注意事项
+
+- 应用需要保持运行才能收到提醒
+- 手机重启后需要重新打开应用
+- 已配置 BootReceiver 用于开机自启
 
 ---
 
