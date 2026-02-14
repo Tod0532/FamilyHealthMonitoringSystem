@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:health_center_app/app/modules/health/health_data_controller.dart';
 import 'package:health_center_app/core/models/health_data.dart';
 import 'package:health_center_app/core/models/family_member.dart';
+import 'package:health_center_app/core/utils/data_validator.dart';
 import 'package:fl_chart/fl_chart.dart';
 
 /// 健康数据统计图表页面
@@ -371,20 +372,32 @@ class HealthStatsPage extends GetView<HealthDataController> {
 
   /// 折线图
   Widget _buildLineChart(List<HealthData> data, HealthDataType type) {
-    // 生成图表数据点
+    // 生成图表数据点，使用 DataValidator 验证数据有效性
     final spots = <FlSpot>[];
     final bottomTitles = <String>[];
+    int validIndex = 0;
 
     for (int i = 0; i < data.length; i++) {
-      spots.add(FlSpot(i.toDouble(), data[i].value1));
+      final value = data[i].value1;
 
-      // 生成日期标签
-      final date = data[i].recordTime;
-      if (data.length <= 7) {
-        bottomTitles.add('${date.month}/${date.day}');
-      } else {
-        bottomTitles.add('${date.hour}:00');
+      // 验证数值有效性，跳过 NaN 和 Infinity
+      if (DataValidator.isValidDouble(value)) {
+        spots.add(FlSpot(validIndex.toDouble(), value));
+        validIndex++;
+
+        // 生成日期标签
+        final date = data[i].recordTime;
+        if (data.length <= 7) {
+          bottomTitles.add('${date.month}/${date.day}');
+        } else {
+          bottomTitles.add('${date.hour}:00');
+        }
       }
+    }
+
+    // 如果没有有效数据点，显示空图表
+    if (spots.isEmpty) {
+      return _buildEmptyChart();
     }
 
     // 获取颜色
@@ -459,7 +472,7 @@ class HealthStatsPage extends GetView<HealthDataController> {
           border: Border.all(color: const Color(0xff37434d), width: 1),
         ),
         minX: 0,
-        maxX: (data.length - 1).toDouble(),
+        maxX: (spots.length - 1).clamp(0, data.length - 1).toDouble(),
         minY: _calculateMinY(data, type),
         maxY: _calculateMaxY(data, type),
         lineBarsData: [
@@ -728,23 +741,25 @@ class HealthStatsPage extends GetView<HealthDataController> {
     }
   }
 
-  /// 计算平均值
+  /// 计算平均值（使用 DataValidator 自动过滤无效值）
   double _calculateAverage(List<HealthData> data) {
     if (data.isEmpty) return 0;
-    final sum = data.fold<double>(0, (prev, element) => prev + element.value1);
-    return sum / data.length;
+    final values = data.map((d) => d.value1).toList();
+    return DataValidator.calculateAverage(values);
   }
 
-  /// 计算最大值
+  /// 计算最大值（使用 DataValidator 自动过滤无效值）
   double _calculateMax(List<HealthData> data) {
     if (data.isEmpty) return 0;
-    return data.map((d) => d.value1).reduce((a, b) => a > b ? a : b);
+    final values = data.map((d) => d.value1).toList();
+    return DataValidator.calculateMax(values);
   }
 
-  /// 计算最小值
+  /// 计算最小值（使用 DataValidator 自动过滤无效值）
   double _calculateMin(List<HealthData> data) {
     if (data.isEmpty) return 0;
-    return data.map((d) => d.value1).reduce((a, b) => a < b ? a : b);
+    final values = data.map((d) => d.value1).toList();
+    return DataValidator.calculateMin(values);
   }
 
   /// 计算Y轴最小值
@@ -752,6 +767,27 @@ class HealthStatsPage extends GetView<HealthDataController> {
     if (data.isEmpty) return 0;
 
     final min = _calculateMin(data);
+    final max = _calculateMax(data);
+
+    // 如果计算结果为0（全是无效数据），根据类型返回合理的默认值
+    if (min == 0 && max == 0) {
+      switch (type) {
+        case HealthDataType.bloodPressure:
+          return 60;
+        case HealthDataType.heartRate:
+          return 40;
+        case HealthDataType.bloodSugar:
+          return 3;
+        case HealthDataType.temperature:
+          return 35;
+        case HealthDataType.weight:
+          return 40;
+        case HealthDataType.height:
+          return 150;
+        default:
+          return 0;
+      }
+    }
 
     // 根据类型设置合理下限
     switch (type) {
@@ -776,7 +812,28 @@ class HealthStatsPage extends GetView<HealthDataController> {
   double _calculateMaxY(List<HealthData> data, HealthDataType type) {
     if (data.isEmpty) return 100;
 
+    final min = _calculateMin(data);
     final max = _calculateMax(data);
+
+    // 如果计算结果为0（全是无效数据），根据类型返回合理的默认值
+    if (min == 0 && max == 0) {
+      switch (type) {
+        case HealthDataType.bloodPressure:
+          return 180;
+        case HealthDataType.heartRate:
+          return 120;
+        case HealthDataType.bloodSugar:
+          return 12;
+        case HealthDataType.temperature:
+          return 40;
+        case HealthDataType.weight:
+          return 100;
+        case HealthDataType.height:
+          return 190;
+        default:
+          return 100;
+      }
+    }
 
     // 根据类型设置合理上限
     switch (type) {

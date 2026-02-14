@@ -248,24 +248,29 @@ public class FamilyServiceImpl implements FamilyService {
             throw new BusinessException(ErrorCode.FAMILY_NOT_FOUND, "您还未加入家庭");
         }
 
-        // 查询同一家庭的所有用户
-        LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(User::getFamilyId, user.getFamilyId());
-        wrapper.orderByAsc(User::getCreateTime);
-        List<User> users = userMapper.selectList(wrapper);
+        // 查询同一家庭的所有成员（从 family_member 表）
+        LambdaQueryWrapper<FamilyMember> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(FamilyMember::getFamilyId, user.getFamilyId());
+        wrapper.orderByAsc(FamilyMember::getSortOrder);
+        wrapper.orderByAsc(FamilyMember::getCreateTime);
+        List<FamilyMember> members = familyMemberMapper.selectList(wrapper);
 
+        // 查询这些成员对应的用户信息
         List<FamilyMemberUserResponse> responses = new ArrayList<>();
-        for (User u : users) {
+        for (FamilyMember member : members) {
+            User u = userMapper.selectById(member.getUserId());
+            if (u == null) continue; // 跳过无效用户
+
             FamilyMemberUserResponse response = FamilyMemberUserResponse.builder()
-                    .id(u.getId())
+                    .id(member.getId())  // 返回 family_member.id
                     .phone(maskPhone(u.getPhone()))
-                    .nickname(u.getNickname())
+                    .nickname(member.getName())  // 使用 family_member.name
                     .avatar(u.getAvatar())
                     .gender(u.getGender())
                     .birthday(u.getBirthday())
-                    .familyRole(u.getFamilyRole())
-                    .joinTime(u.getUpdateTime())
-                    .isMe(u.getId().equals(userId))
+                    .familyRole(member.getRole())
+                    .joinTime(member.getCreateTime())
+                    .isMe(member.getUserId().equals(userId))
                     .build();
             responses.add(response);
         }

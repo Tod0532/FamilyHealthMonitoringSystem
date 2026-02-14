@@ -9,7 +9,7 @@ import java.time.LocalDateTime;
  * 用户实体
  */
 @Data
-@TableName("user")
+@TableName(value = "[user]")
 public class User {
 
     /**

@@ -46,46 +46,51 @@ class ExportPage extends GetView<ExportController> {
         backgroundColor: const Color(0xFF4CAF50),
         foregroundColor: Colors.white,
         actions: [
-          // 帮助按钮
           IconButton(
             icon: const Icon(Icons.help_outline),
             onPressed: _showHelpDialog,
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: EdgeInsets.all(16.w),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // 统计信息卡片
-            _buildStatsCard(),
-            SizedBox(height: 16.h),
+      body: Column(
+        children: [
+          Expanded(
+            child: SingleChildScrollView(
+              padding: EdgeInsets.all(16.w),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // 统计信息卡片
+                  _buildStatsCard(),
+                  SizedBox(height: 16.h),
 
-            // 格式选择
-            _buildFormatSelector(),
-            SizedBox(height: 16.h),
+                  // 格式选择
+                  _buildFormatSelector(),
+                  SizedBox(height: 16.h),
 
-            // 时间范围选择
-            _buildTimeRangeSelector(),
-            SizedBox(height: 16.h),
+                  // 时间范围选择
+                  _buildTimeRangeSelector(),
+                  SizedBox(height: 16.h),
 
-            // 成员选择
-            _buildMemberSelector(),
-            SizedBox(height: 16.h),
+                  // 成员选择
+                  _buildMemberSelector(),
+                  SizedBox(height: 16.h),
 
-            // 数据类型选择
-            _buildDataTypeSelector(),
-            SizedBox(height: 16.h),
+                  // 数据类型选择
+                  _buildDataTypeSelector(),
+                  SizedBox(height: 16.h),
 
-            // 预览区域
-            _buildPreviewSection(),
-            SizedBox(height: 24.h),
+                  // 预览区域
+                  _buildPreviewSection(),
+                  SizedBox(height: 24.h),
 
-            // 导出按钮
-            _buildExportButton(),
-          ],
-        ),
+                  // 导出按钮
+                  _buildExportButton(),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

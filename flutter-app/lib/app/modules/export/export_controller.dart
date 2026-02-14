@@ -54,6 +54,9 @@ class ExportController extends GetxController {
     return [];
   }
 
+  // 公开的健康数据列表 getter（用于调试显示）
+  List<HealthData> get healthDataList => healthData;
+
   @override
   void onInit() {
     super.onInit();
@@ -61,6 +64,18 @@ class ExportController extends GetxController {
     selectedMemberId.value = null;
     // 默认全选所有数据类型
     selectedTypes.addAll(HealthDataType.values);
+
+    // 调试：打印健康数据信息
+    AppLogger.d('===== ExportController.onInit() 调试信息 =====');
+    AppLogger.d('成员列表 (${members.length} 个):');
+    for (var m in members) {
+      AppLogger.d('  - id="${m.id}", name="${m.name}", id类型=${m.id.runtimeType}');
+    }
+    AppLogger.d('健康数据前5条:');
+    for (int i = 0; i < healthData.length && i < 5; i++) {
+      AppLogger.d('  - memberId="${healthData[i].memberId}"(${healthData[i].memberId.runtimeType}), memberName="${healthData[i].memberName}"');
+    }
+
     // 初始计算统计
     _calculateStats();
   }
@@ -129,9 +144,28 @@ class ExportController extends GetxController {
     AppLogger.d('===== ExportController.getFilteredData() 开始 =====');
     AppLogger.d('总健康数据量: ${healthData.length}');
     AppLogger.d('选择成员ID: ${selectedMemberId.value}');
+    AppLogger.d('选择成员ID类型: ${selectedMemberId.value.runtimeType}');
     AppLogger.d('选择时间范围: ${selectedTimeRange.value.label}');
     AppLogger.d('选择数据类型: ${selectedTypes.map((t) => t.label).join(", ")}');
     AppLogger.d('时间范围开始时间: ${selectedTimeRange.value.getStartTime()}');
+
+    // 详细打印成员列表
+    AppLogger.d('===== 成员列表详情 =====');
+    for (var m in members) {
+      AppLogger.d('成员: id="${m.id}"(${m.id.runtimeType}), name="${m.name}", id长度=${m.id.length}');
+    }
+    AppLogger.d('=====================');
+
+    // 详细打印健康数据的 memberId 和 memberName
+    AppLogger.d('===== 健康数据详情（前5条）=====');
+    for (int i = 0; i < healthData.length && i < 5; i++) {
+      final d = healthData[i];
+      AppLogger.d('数据[$i]: memberId="${d.memberId}"(${d.memberId.runtimeType}), 长度=${d.memberId.length}, memberName="${d.memberName}"');
+      // 检查这个 memberId 是否等于任何成员的 id
+      bool directMatch = members.any((m) => m.id == d.memberId);
+      AppLogger.d('  -> 直接匹配成员ID: $directMatch');
+    }
+    AppLogger.d('===========================');
 
     final startTime = selectedTimeRange.value.getStartTime();
     final filtered = healthData.where((d) {
@@ -139,9 +173,78 @@ class ExportController extends GetxController {
       if (d.recordTime.isBefore(startTime)) {
         return false;
       }
-      // 成员过滤
+
+      // 成员过滤 - 支持 memberId 和 memberName 匹配（与 HealthDataController 逻辑保持一致）
       if (selectedMemberId.value != null && selectedMemberId.value!.isNotEmpty) {
-        if (d.memberId != selectedMemberId.value) {
+        bool matches = false;
+
+        // 优先按 memberId 匹配
+        if (d.memberId == selectedMemberId.value) {
+          matches = true;
+          AppLogger.d('✓ memberId 匹配成功: d.memberId="${d.memberId}" == selected="${selectedMemberId.value}"');
+        }
+
+        // 如果 memberId 为空（家庭用户），则按 memberName 匹配
+        if (!matches && d.memberId.isEmpty && d.memberName != null && d.memberName!.isNotEmpty) {
+          // 获取选中的成员
+          final member = members.firstWhereOrNull((m) => m.id == selectedMemberId.value);
+          if (member != null) {
+            final dName = d.memberName ?? '';
+            final mName = member.name;
+
+            // 1. 优先精确匹配
+            if (dName == mName) {
+              matches = true;
+              AppLogger.d('✓ memberName 精确匹配成功: $dName == $mName');
+            } else {
+              // 2. 模糊匹配：数据的 memberName 包含在成员 name 中，或成员 name 包含在数据的 memberName 中
+              // 这解决了后端数据不一致问题（如 "胖" vs "胖子"）
+              if (dName.contains(mName) || mName.contains(dName)) {
+                matches = true;
+                AppLogger.d('✓ memberName 模糊匹配成功: d.memberName="$dName" 包含于 member.name="$mName"');
+              } else {
+                AppLogger.d('✗ memberName 匹配失败: d.memberName="$dName" vs member.name="$mName"');
+              }
+            }
+          } else {
+            AppLogger.d('✗ 找不到选中的成员: selectedMemberId="${selectedMemberId.value}"');
+          }
+        }
+
+        if (!matches) {
+          AppLogger.d('✗ 成员匹配失败: d.memberId="${d.memberId}", d.memberName="${d.memberName}", selected="${selectedMemberId.value}"');
+          return false;
+        }
+      }
+      if (selectedMemberId.value != null && selectedMemberId.value!.isNotEmpty) {
+        bool matches = false;
+
+        // 优先按 memberId 匹配
+        if (d.memberId == selectedMemberId.value) {
+          matches = true;
+          AppLogger.d('✓ memberId 匹配成功: d.memberId="${d.memberId}" == selected="${selectedMemberId.value}"');
+        }
+
+        // 如果 memberId 为空（家庭用户），则按 memberName 匹配
+        if (!matches && d.memberId.isEmpty && d.memberName != null && d.memberName!.isNotEmpty) {
+          // 获取选中的成员
+          final member = members.firstWhereOrNull((m) => m.id == selectedMemberId.value);
+          if (member != null) {
+            // 精确匹配成员名称
+            if (d.memberName == member.name) {
+              matches = true;
+              AppLogger.d('✓ memberName 精确匹配成功: d.memberName="${d.memberName}" == member.name="${member.name}"');
+            } else {
+              // 如果精确匹配失败，尝试模糊匹配（包含关系）
+              AppLogger.d('memberName 精确匹配失败: d.memberName="${d.memberName}" vs member.name="${member.name}"');
+            }
+          } else {
+            AppLogger.d('✗ 找不到选中的成员: selectedMemberId="${selectedMemberId.value}"');
+          }
+        }
+
+        if (!matches) {
+          AppLogger.d('✗ 成员匹配失败: d.memberId="${d.memberId}", d.memberName="${d.memberName}", selected="${selectedMemberId.value}"');
           return false;
         }
       }
@@ -171,6 +274,7 @@ class ExportController extends GetxController {
       memberId: selectedMemberId.value,
       startTime: selectedTimeRange.value.getStartTime(),
       endTime: DateTime.now(),
+      members: members,
     );
 
     AppLogger.d('统计结果 - 总记录数: ${stats.value?.totalRecords ?? 0}');

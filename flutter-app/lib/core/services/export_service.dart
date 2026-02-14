@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:typed_data';
+import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:excel/excel.dart';
 import 'package:health_center_app/core/models/health_data.dart';
@@ -59,10 +60,32 @@ class ExportService {
     required ExportFormat format,
     String? memberId,
   }) {
-    // 过滤数据
+    // 过滤数据 - 支持 memberId 和 memberName 匹配
     final filteredData = memberId == null || memberId.isEmpty
         ? data
-        : data.where((d) => d.memberId == memberId).toList();
+        : data.where((d) {
+            // 优先按 memberId 匹配
+            if (d.memberId == memberId) {
+              return true;
+            }
+            // 如果 memberId 为空（家庭用户），则按 memberName 匹配
+            if (d.memberId.isEmpty && d.memberName != null && d.memberName!.isNotEmpty) {
+              final member = members.firstWhereOrNull((m) => m.id == memberId);
+              if (member != null) {
+                final dName = d.memberName!;
+                final mName = member.name;
+                // 1. 精确匹配
+                if (dName == mName) {
+                  return true;
+                }
+                // 2. 模糊匹配（解决数据不一致问题）
+                if (dName.contains(mName) || mName.contains(dName)) {
+                  return true;
+                }
+              }
+            }
+            return false;
+          }).toList();
 
     if (filteredData.isEmpty) {
       return ExportResult(
@@ -344,19 +367,44 @@ class ExportService {
     required String? memberId,
     required DateTime? startTime,
     required DateTime? endTime,
+    List<FamilyMember>? members,
   }) {
     var filtered = data;
 
     if (memberId != null && memberId.isNotEmpty) {
-      filtered = filtered.where((d) => d.memberId == memberId).toList();
+      // 成员过滤 - 支持 memberId 和 memberName 匹配（与 HealthDataController 逻辑保持一致）
+      filtered = filtered.where((d) {
+        bool matches = false;
+        // 优先按 memberId 匹配
+        if (d.memberId == memberId) {
+          matches = true;
+        }
+        // 如果 memberId 为空（家庭用户），则按 memberName 匹配
+        if (!matches && d.memberId.isEmpty && d.memberName != null && d.memberName!.isNotEmpty && members != null) {
+          final member = members.firstWhereOrNull((m) => m.id == memberId);
+          if (member != null) {
+            final dName = d.memberName!;
+            final mName = member.name;
+            // 1. 精确匹配
+            if (dName == mName) {
+              matches = true;
+            }
+            // 2. 模糊匹配（解决数据不一致问题）
+            if (!matches && (dName.contains(mName) || mName.contains(dName))) {
+              matches = true;
+            }
+          }
+        }
+        return matches;
+      }).toList();
     }
 
     if (startTime != null) {
-      filtered = filtered.where((d) => d.recordTime.isAfter(startTime)).toList();
+      filtered = filtered.where((d) => !d.recordTime.isBefore(startTime)).toList();
     }
 
     if (endTime != null) {
-      filtered = filtered.where((d) => d.recordTime.isBefore(endTime)).toList();
+      filtered = filtered.where((d) => !d.recordTime.isAfter(endTime)).toList();
     }
 
     // 按类型统计

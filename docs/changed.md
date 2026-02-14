@@ -5,20 +5,28 @@
 
 ---
 
-## 2026-02-14（健康趋势页面成员筛选功能✅）
+## 2026-02-14（成员筛选功能修复 + 数据导出调试信息移除）
 
 ### 📝 修改文件
 
 | 文件路径 | 说明 | 作者 |
 |----------|------|------|
+| spring-boot-backend/src/main/java/com/health/service/impl/FamilyServiceImpl.java | 修复 getFamilyMembers API 返回成员 ID 不一致问题 | Claude |
+| spring-boot-backend/src/main/java/com/health/service/impl/HealthDataServiceImpl.java | 修复成员名称获取：getNickname() 改为 getName() | Claude |
+
+| 文件路径 | 说明 | 作者 |
+|----------|------|------|
+| spring-boot-backend/src/main/java/com/health/service/impl/FamilyServiceImpl.java | 修复 getFamilyMembers API 返回成员 ID 不一致问题 | Claude |
+| spring-boot-backend/src/main/java/com/health/service/impl/HealthDataServiceImpl.java | 修复成员名称获取：getNickname() 改为 getName() | Claude |
+| flutter-app/lib/app/modules/export/export_page.dart | 移除数据导出页面调试信息区域 | Claude |
 | flutter-app/lib/app/modules/health/health_stats_page.dart | 新增成员选择器，修复PopupMenuButton同时使用icon和child的断言错误 | Claude |
 | flutter-app/lib/app/modules/health/health_data_controller.dart | 修改getTypeData方法使用filteredDataList，支持按成员筛选数据 | Claude |
 
 ### 📋 变更内容
 
 #### 类型：feat（新功能）+ fix（Bug修复）
-#### 范围：UI界面 + 数据筛选
-#### 描述：新增按成员筛选健康数据功能，修复PopupMenuButton断言错误
+#### 范围：UI界面 + 数据筛选 + API接口
+#### 描述：新增按成员筛选健康数据功能，修复PopupMenuButton断言错误，修复成员ID不一致问题
 
 **修复内容**：
 1. **新增成员选择器**
@@ -34,6 +42,38 @@
    - 问题：同时使用`icon`参数和`child`参数导致Flutter断言失败
    - 修复：移除`icon`参数，将图标放入`child`的Row中
    - 错误信息：`'!(child != null && icon != null)': You can only pass [child] or [icon], not both`
+
+4. **修复 getFamilyMembers API 成员ID不一致问题** ⭐
+   - **问题现象**：添加健康数据时提示"成员不存在"
+   - **根本原因**：
+     - `getFamilyMembers()` API 返回 `user.id`（用户表ID）
+     - 但健康数据验证使用 `family_member.id`（成员表ID）
+     - 两个表的ID不一致导致验证失败
+   - **排查过程**：
+     1. 发现 API 返回的成员包含 id=1 的"测试用户"
+     2. 但 `family_member` 表中没有 id=1 的记录
+     3. 检查代码发现 `getFamilyMembers()` 从 `user` 表查询
+     4. 而健康数据的 `validateMember()` 检查 `family_member` 表
+   - **解决方案**：
+     - 修改 `FamilyServiceImpl.getFamilyMembers()` 方法
+     - 从 `family_member` 表查询并返回 `family_member.id`
+     - 同时关联 `user` 表获取用户的 phone、avatar、gender 等信息
+   - **影响文件**：`FamilyServiceImpl.java` 第245-274行
+
+5. **修复成员名称获取错误**
+   - **问题**：`HealthDataServiceImpl.toResponse()` 调用 `member.getNickname()`
+   - **原因**：`FamilyMember` 实体字段是 `name` 不是 `nickname`
+   - **修复**：改为 `member.getName()`
+   - **影响文件**：`HealthDataServiceImpl.java` 第329行
+
+6. **移除数据导出页面调试信息**
+   - **问题**：数据导出页面显示临时调试信息区域
+   - **修复**：删除 `_buildDebugSection()` 方法及调用
+   - **影响文件**：`export_page.dart` 第57-58行（调用）、第99-141行（方法定义）
+   - **问题**：`HealthDataServiceImpl.toResponse()` 调用 `member.getNickname()`
+   - **原因**：`FamilyMember` 实体字段是 `name` 不是 `nickname`
+   - **修复**：改为 `member.getName()`
+   - **影响文件**：`HealthDataServiceImpl.java` 第329行
 
 **问题根因分析与解决方案**：
 - **错误现象**：点击类型选择器时应用崩溃，显示断言错误
