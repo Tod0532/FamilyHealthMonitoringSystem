@@ -1,13 +1,23 @@
 # ============================================================================
 # 家庭健康中心APP - 生产环境配置
 # ============================================================================
+# 说明：数据源一律走环境变量（由 systemd unit 注入），不在文件中硬编码。
+#   systemd 已设置：SPRING_PROFILES_ACTIVE=prod, DB_HOST, DB_PORT, DB_NAME,
+#                   DB_USERNAME, DB_PASSWORD, JWT_SECRET, SERVER_PORT
+# 这样既避免把凭据写进版本库，也避免更换部署环境时漏改配置。
+# ============================================================================
 
 spring:
-  # 数据源配置 - 阿里云MySQL
+  # 数据源配置（默认值仅用于未注入环境变量时的兜底，与线上实际值一致）
   datasource:
-    url: jdbc:mysql://localhost:3306/health_center_db?useSSL=false&serverTimezone=Asia/Shanghai
-    username: health_app
-    password: HealthApp2024!
+    # allowPublicKeyRetrieval=true 是必需的：
+    #   health_app@localhost 使用 caching_sha2_password 认证，缺少该参数时
+    #   会抛 "Public Key Retrieval is not allowed" 导致应用完全无法连接数据库。
+    #   此前本文件缺少该参数，直接部署会导致登录接口全线 500。
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:health_center_db}?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: ${DB_USERNAME:health_app}
+    password: ${DB_PASSWORD:}
+    driver-class-name: com.mysql.cj.jdbc.Driver
 
 # 日志配置
 logging:

@@ -83,6 +83,11 @@ public class FamilyServiceImpl implements FamilyService {
         familyMember.setUpdateTime(LocalDateTime.now());
         familyMemberMapper.insert(familyMember);
 
+        // 6. 校正该用户在其他家庭遗留的成员行归属（原为空方法，导致孤儿行）
+        syncFamilyMembersFamilyId(userId, family.getId());
+        // 7. 以实际行数重算成员数，避免手工累加造成漂移
+        recalcMemberCount(family.getId());
+
         log.info("用户创建家庭成功: userId={}, familyId={}, familyCode={}", userId, family.getId(), familyCode);
 
         return toFamilyResponse(family, "admin");
@@ -186,14 +191,16 @@ public class FamilyServiceImpl implements FamilyService {
         familyMember.setUpdateTime(LocalDateTime.now());
         familyMemberMapper.insert(familyMember);
 
-        // 5. 更新家庭成员数
-        family.setMemberCount(family.getMemberCount() + 1);
-        family.setUpdateTime(LocalDateTime.now());
-        familyMapper.updateById(family);
+        // 5. 校正该用户遗留在其他家庭的成员行，并按实际行数重算成员数
+        //    （原先手工 memberCount+1 会与实际行数漂移，线上已出现计数字段=1 而实际行数=0）
+        syncFamilyMembersFamilyId(userId, family.getId());
+        recalcMemberCount(family.getId());
+        // 重新读回，保证返回给客户端的 memberCount 是最新值
+        Family latest = familyMapper.selectById(family.getId());
 
         log.info("用户加入家庭成功: userId={}, familyId={}, familyCode={}", userId, family.getId(), family.getFamilyCode());
 
-        return toFamilyResponse(family, "member");
+        return toFamilyResponse(latest != null ? latest : family, "member");
     }
 
     @Override
@@ -215,30 +222,36 @@ public class FamilyServiceImpl implements FamilyService {
 
         // 管理员不能直接退出，需要先转让管理员或解散家庭
         if (family.getAdminId().equals(userId) && family.getMemberCount() > 1) {
-            throw new BusinessException(ErrorCode.NOT_FAMILY_ADMIN, "管理员不能退出，请先转让管理员或解散家庭");
+            // 语义修正：原用 NOT_FAMILY_ADMIN（"您不是家庭管理员"）表达
+            // "管理员不能退出"，与事实相反，改用 CANNOT_REMOVE_ADMIN
+            throw new BusinessException(ErrorCode.CANNOT_REMOVE_ADMIN, "管理员不能退出，请先转让管理员或解散家庭");
         }
 
-        // 清除用户的家庭信息
+        // 清除用户在 family_member 中的归属（原为空方法 ⇒ 孤儿行）
         Long familyId = user.getFamilyId();
         user.setFamilyId(null);
         user.setFamilyRole("member");
         user.setUpdateTime(LocalDateTime.now());
         userMapper.updateById(user);
 
-        // 清除家庭成员的family_id
-        clearFamilyMembersFamilyId(userId);
+        int cleared = clearFamilyMembersFamilyId(userId);
 
-        // 更新家庭成员数
-        family.setMemberCount(Math.max(1, family.getMemberCount() - 1));
-        family.setUpdateTime(LocalDateTime.now());
-        familyMapper.updateById(family);
+        // 以剩余实际行数判定家庭是否已空，而不是依赖会漂移的 memberCount 手工加减
+        LambdaQueryWrapper<FamilyMember> remain = new LambdaQueryWrapper<>();
+        remain.eq(FamilyMember::getFamilyId, familyId);
+        Long remaining = familyMemberMapper.selectCount(remain);
+        boolean familyEmpty = (remaining == null || remaining == 0);
 
-        // 如果是最后一个成员，删除家庭
-        if (family.getMemberCount() <= 1) {
-            familyMapper.deleteById(family.getId());
+        if (familyEmpty) {
+            // 已无任何成员，删除家庭（逻辑删除）
+            familyMapper.deleteById(familyId);
+            log.info("家庭已无成员，已删除: familyId={}", familyId);
+        } else {
+            recalcMemberCount(familyId);
         }
 
-        log.info("用户退出家庭成功: userId={}, familyId={}", userId, familyId);
+        log.info("用户退出家庭成功: userId={}, familyId={}, 清理成员行={}, 家庭剩余成员={}",
+                userId, familyId, cleared, remaining);
     }
 
     @Override
@@ -308,16 +321,14 @@ public class FamilyServiceImpl implements FamilyService {
         targetUser.setUpdateTime(LocalDateTime.now());
         userMapper.updateById(targetUser);
 
-        // 清除家庭成员的family_id
-        clearFamilyMembersFamilyId(targetUserId);
+        // 清除该用户在 family_member 中的归属（原为空方法 ⇒ 孤儿行）
+        int cleared = clearFamilyMembersFamilyId(targetUserId);
 
-        // 5. 更新家庭成员数
-        Family family = familyMapper.selectById(familyId);
-        if (family != null) {
-            family.setMemberCount(Math.max(1, family.getMemberCount() - 1));
-            family.setUpdateTime(LocalDateTime.now());
-            familyMapper.updateById(family);
-        }
+        // 5. 以实际行数重算成员数（替代原先会漂移的手工累减）
+        recalcMemberCount(familyId);
+
+        log.info("管理员移除成员成功: adminId={}, targetUserId={}, familyId={}, 清理成员行={}",
+                adminId, targetUserId, familyId, cleared);
 
         log.info("管理员移除成员成功: adminId={}, targetUserId={}, familyId={}", adminId, targetUserId, familyId);
     }
@@ -378,19 +389,84 @@ public class FamilyServiceImpl implements FamilyService {
     }
 
     /**
-     * 同步更新家庭成员表的family_id
+     * 把指定用户的家庭成员行归属到目标家庭。
+     *
+     * <p><b>实现说明</b>：原实现为空方法（仅一行 log.debug），导致 family_member
+     * 表长期存在 family_id 为空的孤儿行 —— 这些行在按 family_id 查询成员时
+     * 不可见，于是 App 出现"家庭有 N 人但成员列表为空"的现象。</p>
+     *
+     * <p>这里不做"补建缺失行"，因为一个用户可能同时作为多个家庭的成员被登记
+     * （历史数据即如此），盲目补建会造出错误归属。加入/创建家庭时已会插入
+     * 正确归属的行，本方法只负责把该用户<b>遗留在其他家庭</b>的行校正过来。</p>
      */
     private void syncFamilyMembersFamilyId(Long userId, Long familyId) {
-        // 这里需要注入 FamilyMemberMapper 来更新，但为简化先跳过
-        // 实际使用时应该注入 FamilyMemberMapper 并执行更新
-        log.debug("同步家庭成员familyId: userId={}, familyId={}", userId, familyId);
+        LambdaQueryWrapper<FamilyMember> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(FamilyMember::getUserId, userId);
+        List<FamilyMember> members = familyMemberMapper.selectList(wrapper);
+        for (FamilyMember m : members) {
+            if (!familyId.equals(m.getFamilyId())) {
+                m.setFamilyId(familyId);
+                m.setUpdateTime(LocalDateTime.now());
+                familyMemberMapper.updateById(m);
+                log.info("已校正家庭成员归属: memberId={}, userId={}, -> familyId={}",
+                        m.getId(), userId, familyId);
+            }
+        }
     }
 
     /**
-     * 清除家庭成员的family_id
+     * 把指定用户在 family_member 中的归属清空。
+     *
+     * <p>退出 / 被移除家庭时调用。<b>不是删除行</b>，而是把 family_id 置空 ——
+     * 因为同一张 family_member 表可能同时保存该用户在其他家庭的记录，
+     * 直接删除会误伤。置空后这些行不再出现在任何家庭的成员列表中。</p>
+     *
+     * <p>原实现为空方法，是本项目"成员列表为空""member_count 与实际行数
+     * 不一致"等数据漂移问题的根因。</p>
+     *
+     * @return 实际被清空归属的行数
      */
-    private void clearFamilyMembersFamilyId(Long userId) {
-        log.debug("清除家庭成员familyId: userId={}", userId);
+    private int clearFamilyMembersFamilyId(Long userId) {
+        LambdaQueryWrapper<FamilyMember> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(FamilyMember::getUserId, userId);
+        wrapper.isNotNull(FamilyMember::getFamilyId);
+        List<FamilyMember> members = familyMemberMapper.selectList(wrapper);
+        int affected = 0;
+        for (FamilyMember m : members) {
+            m.setFamilyId(null);
+            m.setUpdateTime(LocalDateTime.now());
+            familyMemberMapper.updateById(m);
+            affected++;
+        }
+        if (affected > 0) {
+            log.info("已清空家庭成员归属: userId={}, 影响 {} 行", userId, affected);
+        } else {
+            log.debug("无需要清空的家庭成员归属: userId={}", userId);
+        }
+        return affected;
+    }
+
+    /**
+     * 按 family_member 表的实际行数重算并写回 family.member_count。
+     *
+     * <p>原实现以 `memberCount + 1` / `- 1` 手工累加，一旦出现并发或异常路径
+     * 就会与实际行数永久漂移（线上已出现计数字段=1 而实际行数=0 的情况）。
+     * 改为以实际行数为唯一真相来源。</p>
+     */
+    private void recalcMemberCount(Long familyId) {
+        if (familyId == null) return;
+        LambdaQueryWrapper<FamilyMember> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(FamilyMember::getFamilyId, familyId);
+        Long actual = familyMemberMapper.selectCount(wrapper);
+        Family family = familyMapper.selectById(familyId);
+        if (family == null) return;
+        int count = actual == null ? 0 : actual.intValue();
+        if (family.getMemberCount() == null || family.getMemberCount() != count) {
+            log.info("重算家庭成员数: familyId={}, {} -> {}", familyId, family.getMemberCount(), count);
+            family.setMemberCount(count);
+            family.setUpdateTime(LocalDateTime.now());
+            familyMapper.updateById(family);
+        }
     }
 
     /**

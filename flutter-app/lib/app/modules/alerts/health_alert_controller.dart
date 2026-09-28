@@ -196,7 +196,10 @@ class HealthAlertController extends GetxController {
     errorMessage.value = '';
 
     try {
-      final response = await _dioProvider.get('/api/alerts');
+      // 后端实际映射是 /api/alert-records（AlertRecordController）。
+      // 此前这里写的是 /api/alerts —— 该路径在后端不存在，请求恒定 404，
+      // 预警记录列表因此永远为空。
+      final response = await _dioProvider.get('/api/alert-records');
 
       final List dataList = response['data'] as List? ?? [];
       alertRecords.value = dataList
