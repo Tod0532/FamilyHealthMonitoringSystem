@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:health_center_app/core/models/health_alert.dart';
+import 'package:health_center_app/core/widgets/demo_mode_banner.dart';
 
 /// 预警数据模型（UI展示用）
 class AlertItem {
@@ -46,6 +47,11 @@ class _WarningsTabPageState extends State<WarningsTabPage> {
       backgroundColor: const Color(0xFFF5F5F5),
       body: Column(
         children: [
+          // 演示模式提示（真实模式下不渲染任何内容）
+          const DemoModeBanner(
+            detail: '下列预警规则与记录均为内置示例，不是您的真实预警',
+          ),
+
           // 顶部统计头部
           _buildStatsHeader(),
 

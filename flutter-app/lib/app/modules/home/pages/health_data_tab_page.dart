@@ -5,6 +5,7 @@ import 'package:health_center_app/app/modules/members/members_controller.dart';
 import 'package:health_center_app/app/modules/health/health_data_controller.dart';
 import 'package:health_center_app/core/models/family_member.dart';
 import 'package:health_center_app/core/models/health_data.dart';
+import 'package:health_center_app/core/widgets/demo_mode_banner.dart';
 
 /// 健康数据Tab页 - 使用真实API数据
 class HealthDataTabPage extends StatefulWidget {
@@ -94,6 +95,11 @@ class _HealthDataTabPageState extends State<HealthDataTabPage> {
       backgroundColor: const Color(0xFFF5F5F5),
       body: Column(
         children: [
+          // 演示模式提示（真实模式下不渲染任何内容）
+          const DemoModeBanner(
+            detail: '下列血压、心率等记录均为内置示例，不是您的真实测量数据',
+          ),
+
           // 顶部统计卡片
           _buildStatsHeader(),
 

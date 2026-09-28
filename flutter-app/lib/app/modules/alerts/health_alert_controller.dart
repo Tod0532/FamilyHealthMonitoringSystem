@@ -6,6 +6,7 @@ import 'package:health_center_app/core/models/family_member.dart';
 import 'package:health_center_app/core/network/dio_provider.dart';
 import 'package:health_center_app/app/modules/members/members_controller.dart';
 import 'package:health_center_app/core/utils/permission_utils.dart';
+import 'package:health_center_app/core/mode/app_mode.dart';
 
 /// 健康预警控制器
 ///
@@ -41,11 +42,21 @@ class HealthAlertController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    _loadMockData();
+    // 演示模式：使用内置示例规则与记录
+    // 真实模式：从后端拉取，失败即为空 + 错误提示，绝不注入伪造预警
+    if (AppModeController.isDemoNow) {
+      _loadMockData();
+    } else {
+      fetchAlertRules();
+      fetchAlertRecords();
+    }
     _checkUnreadAlerts();
   }
 
-  /// 加载模拟数据（用于演示）
+  /// 加载模拟数据（仅用于演示模式）
+  ///
+  /// 仅在 [AppMode.demo] 下调用。真实模式下绝不可调用本方法 ——
+  /// 伪造的预警规则会让用户误以为自己的阈值已被配置。
   void _loadMockData() {
     final now = DateTime.now();
 

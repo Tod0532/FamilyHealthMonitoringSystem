@@ -5,6 +5,7 @@ import 'package:health_center_app/core/models/auth_response.dart';
 import 'package:health_center_app/core/models/user.dart';
 import 'package:health_center_app/core/network/dio_provider.dart';
 import 'package:health_center_app/core/storage/storage_service.dart';
+import 'package:health_center_app/core/mode/app_mode.dart';
 
 /// 登录控制器
 class LoginController extends GetxController {
@@ -223,8 +224,14 @@ class LoginController extends GetxController {
     Get.toNamed('/register');
   }
 
-  /// 进入体验模式
+  /// 进入体验（演示）模式
   void onEnterDemoMode() async {
+    // 标记为演示模式：各业务 Controller 据此使用内置示例数据，
+    // 并在界面顶部显示醒目提示，避免与真实数据混淆。
+    if (Get.isRegistered<AppModeController>()) {
+      await Get.find<AppModeController>().enterDemo();
+    }
+
     // 保存体验模式标记
     await _storage.saveAccessToken('demo_token');
     await _storage.saveUserId('demo_user');
@@ -234,7 +241,7 @@ class LoginController extends GetxController {
 
     Get.snackbar(
       '体验模式',
-      '已进入体验模式，可以体验所有功能',
+      '已进入体验模式，将展示示例数据',
       snackPosition: SnackPosition.TOP,
       backgroundColor: Colors.orange.shade100,
       duration: const Duration(seconds: 2),

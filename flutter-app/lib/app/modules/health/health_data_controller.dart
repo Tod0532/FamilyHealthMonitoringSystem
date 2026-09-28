@@ -7,6 +7,7 @@ import 'package:health_center_app/app/modules/members/members_controller.dart';
 import 'package:health_center_app/app/modules/alerts/health_alert_controller.dart';
 import 'package:health_center_app/core/utils/logger.dart';
 import 'package:health_center_app/core/utils/data_validator.dart';
+import 'package:health_center_app/core/mode/app_mode.dart';
 
 /// 健康数据控制器
 class HealthDataController extends GetxController {
@@ -33,11 +34,19 @@ class HealthDataController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    // 尝试从后端获取数据，失败则使用模拟数据
-    fetchHealthDataFromApi();
+    // 真实模式下尝试从后端获取数据；演示模式下直接加载示例数据。
+    // 注意：真实模式接口失败时**不会**回退到示例数据，而是显示错误，
+    // 否则用户会把伪造的血压值当成自己的真实记录。
+    if (AppModeController.isDemoNow) {
+      _loadMockHealthData();
+    } else {
+      fetchHealthDataFromApi();
+    }
   }
 
-  /// 加载模拟健康数据（用于演示）
+  /// 加载模拟健康数据（用于演示模式）
+  ///
+  /// 仅在 [AppMode.demo] 下调用。真实模式下绝不可调用本方法。
   void _loadMockHealthData() {
     final now = DateTime.now();
     healthDataList.value = [
@@ -749,14 +758,29 @@ class HealthDataController extends GetxController {
 
         _applyFilter();
       } else {
-        // API调用失败，使用模拟数据
-        AppLogger.w('API调用失败，使用模拟数据');
-        _loadMockHealthData();
+        // 返回码非 200
+        if (AppModeController.isDemoNow) {
+          AppLogger.w('演示模式：接口返回非 200，使用示例数据');
+          _loadMockHealthData();
+        } else {
+          // 真实模式：绝不伪造数据，如实报错
+          AppLogger.w('获取健康数据失败：接口返回 code=${response?['code']}');
+          errorMessage.value = '加载失败，请下拉重试';
+          healthDataList.value = [];
+          _applyFilter();
+        }
       }
     } catch (e) {
-      // 网络错误，使用模拟数据
-      AppLogger.e('获取健康数据失败: $e');
-      _loadMockHealthData();
+      if (AppModeController.isDemoNow) {
+        AppLogger.w('演示模式：网络异常，使用示例数据（$e）');
+        _loadMockHealthData();
+      } else {
+        // 真实模式：绝不伪造数据
+        AppLogger.e('获取健康数据失败: $e');
+        errorMessage.value = '网络异常，加载失败，请重试';
+        healthDataList.value = [];
+        _applyFilter();
+      }
     } finally {
       isLoading.value = false;
     }

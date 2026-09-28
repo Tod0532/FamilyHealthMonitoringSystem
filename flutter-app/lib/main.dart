@@ -9,6 +9,8 @@ import 'package:health_center_app/core/theme/theme_controller.dart';
 import 'package:health_center_app/core/utils/logger.dart';
 import 'package:health_center_app/core/storage/storage_service.dart';
 import 'package:health_center_app/core/network/dio_provider.dart';
+import 'package:health_center_app/core/mode/app_mode.dart';
+import 'package:health_center_app/core/ocr/ocr_preloader.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -30,6 +32,14 @@ void main() async {
 
   // 注册主题控制器
   Get.put(ThemeController());
+
+  // 注册应用模式控制器（真实模式 / 演示模式）
+  // 必须在各业务 Controller 之前注册：业务 Controller 依据它决定
+  // 是否使用本地示例数据，避免真实用户看到伪造数据。
+  Get.put(AppModeController(), permanent: true);
+
+  // 预加载中文 OCR 模型（异步，不阻塞启动）
+  OcrPreloader.instance.preload();
 
   runApp(const HealthCenterApp());
 }
