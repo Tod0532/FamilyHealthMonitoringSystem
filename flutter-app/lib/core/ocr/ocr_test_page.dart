@@ -4,7 +4,6 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 import 'package:image_picker/image_picker.dart';
 import 'parsers/health_value_parser.dart';
-import 'models/ocr_result.dart';
 
 /// OCR 测试页面
 /// 用于测试血压计照片的识别效果

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'user.dart';
 
 /// 家庭角色枚举
 enum FamilyRole {

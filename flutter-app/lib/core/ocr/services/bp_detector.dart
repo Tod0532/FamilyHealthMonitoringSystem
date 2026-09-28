@@ -7,7 +7,6 @@
 library;
 
 import 'dart:io';
-import 'dart:math' as math;
 import 'package:image/image.dart' as img;
 import '../models/segment_pattern.dart';
 

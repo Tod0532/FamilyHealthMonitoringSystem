@@ -390,7 +390,11 @@ class ReminderService {
     print('DEBUG: Cleared today sent notifications');
   }
 
-  @override
+  /// 停止定时检查器。
+  ///
+  /// 注意：本类不实现任何 dispose 协议（既非 GetxService 也非 ChangeNotifier），
+  /// 原先标注的 @override 是无效的——没有任何基类方法可覆盖。
+  /// 该服务是 app 级单例（见 _instance），生命周期与应用一致，故正常流程无需调用。
   void dispose() {
     _checkTimer?.cancel();
   }

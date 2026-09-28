@@ -1,4 +1,3 @@
-import 'dart:typed_data';
 import 'package:image/image.dart' as img;
 
 import '../models/segment_pattern.dart';

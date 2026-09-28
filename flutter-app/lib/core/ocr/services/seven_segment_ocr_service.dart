@@ -9,7 +9,6 @@ import 'bp_tflite_detector.dart';
 import 'digit_detector.dart';
 import 'fully_adaptive_detector.dart';
 import 'hybrid_digit_detector.dart';
-import 'image_preprocessor.dart';
 import 'omron_digit_detector.dart';
 // import 'opencv_digit_detector.dart';  // 暂时禁用opencv_dart
 import 'smart_digit_detector.dart';

@@ -1,8 +1,6 @@
 import 'dart:io';
 import 'package:image/image.dart' as img;
 import 'lib/core/ocr/services/smart_digit_detector_v2.dart';
-import 'lib/core/ocr/services/image_preprocessor_v2.dart';
-import 'lib/core/ocr/models/segment_pattern.dart';
 
 void main() async {
   print('========================================');

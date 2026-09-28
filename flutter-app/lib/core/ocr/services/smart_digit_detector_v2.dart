@@ -11,7 +11,6 @@ library;
 import 'dart:math' as math;
 import 'package:image/image.dart' as img;
 import '../models/segment_pattern.dart';
-import '../models/adaptive_threshold.dart';
 import 'image_preprocessor_v2.dart';
 import 'projection_analyzer.dart';
 import 'digit_localizer.dart';
