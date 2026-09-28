@@ -46,3 +46,6 @@ app.*.map.json
 /android/app/release.keystore
 /android/app/*.keystore
 /android/app/keystore.properties
+
+# Archived test files - 临时调试脚本归档
+archived_tests/

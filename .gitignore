@@ -47,6 +47,17 @@ Thumbs.db
 # Screenshots
 *.png
 screenshot*.png
+# 例外：应用图标必须入库。
+# flutter_launcher_icons 依据 pubspec 的 image_path 指向这两个 PNG 重新生成
+# Android/iOS/Windows/macOS 图标；若被 *.png 规则吞掉，干净克隆将无法重建图标。
+!flutter-app/assets/icons/app_icon.png
+!flutter-app/assets/icons/app_icon_foreground.png
+
+# ============================================================================
+# 图标生成工具的 npm 依赖（1577 个文件 / 约 45MB，不应入库）
+# 需要时在该目录执行 npm install 还原。
+# ============================================================================
+flutter-app/assets/icons/node_modules/
 
 # ============================================================================
 # 本地运维工具 —— 含明文生产库密码，禁止提交
