@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:health_center_app/app/modules/content/health_content_controller.dart';
 import 'package:health_center_app/core/models/health_content.dart';
+import 'package:health_center_app/core/widgets/demo_mode_banner.dart';
 
 /// 健康内容文章列表页面
 class HealthArticlesPage extends GetView<HealthContentController> {
@@ -32,6 +33,11 @@ class HealthArticlesPage extends GetView<HealthContentController> {
       ),
       body: Column(
         children: [
+          // 演示模式提示：本页示例文章必须显式声明，避免与真实资讯混淆
+          const DemoModeBanner(
+            detail: '当前展示的是内置示例文章，非真实资讯',
+          ),
+
           // 分类筛选栏
           _buildCategoryFilter(),
 
@@ -391,21 +397,47 @@ class HealthArticlesPage extends GetView<HealthContentController> {
   }
 
   /// 空状态
+  ///
+  /// 真实模式下后端尚未提供内容接口，这里用专门的文案说明，
+  /// 避免用户误以为只是「没搜到」。
   Widget _buildEmptyState() {
+    final unavailable = controller.isServiceUnavailable.value;
+
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.article_outlined, size: 64.sp, color: Colors.grey[300]),
-          SizedBox(height: 16.h),
-          Text(
-            '暂无相关文章',
-            style: TextStyle(
-              fontSize: 16.sp,
-              color: Colors.grey[600],
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: 32.w),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              unavailable ? Icons.cloud_off_outlined : Icons.article_outlined,
+              size: 64.sp,
+              color: Colors.grey[300],
             ),
-          ),
-        ],
+            SizedBox(height: 16.h),
+            Text(
+              unavailable ? '内容服务暂未接入' : '暂无相关文章',
+              style: TextStyle(
+                fontSize: 16.sp,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey[700],
+              ),
+            ),
+            if (unavailable) ...[
+              SizedBox(height: 8.h),
+              Text(
+                '真实模式下不再展示示例文章，以免与真实资讯混淆。\n'
+                '如需预览内容样式，可返回登录页进入「体验模式」。',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 12.sp,
+                  color: Colors.grey[500],
+                  height: 1.5,
+                ),
+              ),
+            ],
+          ],
+        ),
       ),
     );
   }

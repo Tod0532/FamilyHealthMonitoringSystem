@@ -29,12 +29,6 @@ class MembersController extends GetxController {
     AppLogger.d('MembersController: 成员列表长度 = ${members.length}');
   }
 
-  /// 加载模拟成员数据（用于演示）
-  void _loadMockMembers() {
-    // 新用户从空列表开始，由用户自行添加家庭成员
-    members.value = [];
-  }
-
   /// 获取成员列表
   Future<void> fetchMembers() async {
     isLoading.value = true;

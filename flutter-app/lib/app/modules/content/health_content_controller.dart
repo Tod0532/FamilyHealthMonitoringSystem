@@ -1,5 +1,6 @@
 import 'package:get/get.dart';
 import 'package:health_center_app/core/models/health_content.dart';
+import 'package:health_center_app/core/mode/app_mode.dart';
 import 'package:health_center_app/app/modules/health/health_data_controller.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -23,20 +24,56 @@ class HealthContentController extends GetxController {
   // 加载状态
   final isLoading = false.obs;
 
+  /// 真实模式下「内容服务尚未接入」的标记。
+  ///
+  /// 背景：后端目前没有任何内容接口（Java 侧不存在 /api/content 或
+  /// HealthContentController），而本模块此前**无条件**展示内置示例文章，
+  /// 导致真实模式下用户也会看到伪造的「健康资讯」。
+  /// 现在真实模式置空列表并给出明确说明，与健康数据模块遵循同一原则：
+  /// 宁可为空并说明，也不伪造数据。
+  final isServiceUnavailable = false.obs;
+
+  /// 模式切换监听：退出演示模式后需要重新加载。
+  Worker? _modeWorker;
+
   @override
   void onInit() {
     super.onInit();
     _loadArticles();
     _loadBookmarks();
     _generateRecommendations();
+
+    // 模式切换（例如从横幅点击「退出」回到真实模式）后重新加载，
+    // 否则退出演示模式仍会停留在示例文章上。
+    if (Get.isRegistered<AppModeController>()) {
+      _modeWorker = ever(Get.find<AppModeController>().mode, (_) {
+        _loadArticles();
+        _generateRecommendations();
+      });
+    }
+  }
+
+  @override
+  void onClose() {
+    _modeWorker?.dispose();
+    super.onClose();
   }
 
   /// 加载文章数据
+  ///
+  /// - 演示模式：使用内置示例文章（页面顶部有醒目提示条）。
+  /// - 真实模式：后端没有内容接口，因此不展示任何文章，
+  ///   只置空列表并标记 [isServiceUnavailable]，由页面给出明确说明。
   void _loadArticles() {
     isLoading.value = true;
 
-    // 模拟文章数据
-    allArticles.value = _getMockArticles();
+    if (AppModeController.isDemoNow) {
+      allArticles.value = _getMockArticles();
+      isServiceUnavailable.value = false;
+    } else {
+      allArticles.value = [];
+      isServiceUnavailable.value = true;
+    }
 
     isLoading.value = false;
   }
