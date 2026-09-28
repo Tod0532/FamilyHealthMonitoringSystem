@@ -45,6 +45,21 @@
 -keep class com.google.mlkit.vision.** { *; }
 -keep class com.google.android.gms.internal.** { *; }
 
+# ML Kit Text Recognition 专用规则
+-keep class com.google.mlkit.vision.text.** { *; }
+-keep class com.google.mlkit.vision.text.chinese.** { *; }
+-keep class com.google.mlkit.vision.text.devanagari.** { *; }
+-keep class com.google.mlkit.vision.text.japanese.** { *; }
+-keep class com.google.mlkit.vision.text.korean.** { *; }
+-dontwarn com.google.mlkit.vision.text.**
+
+# ML Kit Common 模块（防止闪退）
+-keep class com.google.mlkit.common.** { *; }
+-keep class com.google.android.gms.internal.vision.** { *; }
+-keep class com.google.android.gms.vision.** { *; }
+-dontwarn com.google.mlkit.common.**
+-dontwarn com.google.android.gms.internal.vision.**
+
 # 蓝牙相关
 -keep class com.lib.flutter_blue_plus.** { *; }
 

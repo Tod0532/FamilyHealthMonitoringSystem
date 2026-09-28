@@ -5,6 +5,8 @@ allprojects {
         maven { url 'https://maven.aliyun.com/repository/gradle-plugin' }
         google()
         mavenCentral()
+        // 添加 Google Maven 仓库直接访问（用于 ML Kit）
+        maven { url 'https://dl.google.com/dl/android/maven2' }
     }
 }
 

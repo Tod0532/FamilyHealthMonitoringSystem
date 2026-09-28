@@ -25,13 +25,22 @@ plugins {
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
     repositories {
-        // 使用 Flutter 镜像源
-        maven { url 'https://storage.flutter-io.cn/download.flutter.io' }
+        // 使用阿里云镜像
         maven { url 'https://maven.aliyun.com/repository/google' }
         maven { url 'https://maven.aliyun.com/repository/public' }
         maven { url 'https://maven.aliyun.com/repository/central' }
+        // 官方 Flutter 引擎仓库。
+        // 原先用清华镜像 mirrors.tuna.tsinghua.edu.cn/flutter/download.flutter.io，
+        // 该镜像已失效：找不到 flutter_embedding_release 等产物，
+        // 报 "Could not find flutter_embedding_release-...jar"。
+        // 已改用官方地址（本机走 gradle.properties 中配置的代理访问）。
+        maven { url 'https://storage.googleapis.com/download.flutter.io' }
+        // 添加 Google Maven 仓库（用于 ML Kit）
+        maven { url 'https://dl.google.com/dl/android/maven2' }
         google()
         mavenCentral()
+        // 添加 JitPack 仓库（用于 tesseract4android）
+        maven { url 'https://jitpack.io' }
         // 添加 Flutter 本地 Maven 仓库
         def flutterSdkPath = {
             def properties = new Properties()
