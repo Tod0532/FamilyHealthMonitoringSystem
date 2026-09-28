@@ -40,6 +40,10 @@ Thumbs.db
 
 # Claude Code
 .claude/settings.local.json
+# .claude/projects/ 是 AI 工具的会话状态与记忆文件，不属于项目源码
+.claude/projects/
+# Playwright MCP 的页面快照与控制台日志
+.playwright-mcp/
 
 # APK files
 *.apk
@@ -66,6 +70,12 @@ flutter-app/assets/icons/node_modules/
 # scripts/test-auth-fix/ 内含本地测试库的 schema 与种子数据。
 scripts/dbviewer/
 scripts/test-auth-fix/
+# 以下接口审计脚本内置了生产库真实测试账号的手机号+明文口令（13800138000），
+# 公开仓库不得包含可用的账号口令组合。
+scripts/api_audit.py
+scripts/api_audit2.py
+scripts/api_audit3.py
+scripts/security_verify.py
 
 # ============================================================================
 # 凭据与密钥兜底（防止误提交敏感文件）

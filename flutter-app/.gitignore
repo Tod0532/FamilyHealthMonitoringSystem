@@ -49,3 +49,32 @@ app.*.map.json
 
 # Archived test files - 临时调试脚本归档
 archived_tests/
+
+# ============================================================================
+# AI 训练与调试本地产物（合计约 900MB，不进版本库）
+# 注意：这里一律用前导 / 锚定到 flutter-app/ 根目录，
+# 否则 models/ 会连带匹配 assets/models/，把要发布的模型一起忽略掉。
+# ============================================================================
+# 数据集与训练权重
+/dataset/
+/models/
+/runs/
+/oxford_bp_detector/
+
+# 裁剪/检测中间结果
+/auto_crops/
+/lcd_crops/
+/lcd_crops_preprocessed/
+/lcd_detection_output/
+/yolo_crops/
+/digit_display/
+/digit_regions/
+/debug_output/
+/debug_slices/
+
+# 调试中间图像与数组
+# 说明：本项目 jpg 仅用于训练/调试输出，assets/ 下没有任何 jpg 资源，
+# 所以整体忽略 jpg，只对 assets/ 开例外，避免以后新增图片资源被误吞。
+*.jpg
+!assets/**/*.jpg
+*.npy
