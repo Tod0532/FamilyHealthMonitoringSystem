@@ -100,11 +100,12 @@ class BleDevice {
   bool get isHuaweiBand => BluetoothUtils.isHuaweiBand(name);
 
   /// 设备品牌图标路径
-  String? get brandIcon {
-    if (isXiaomiBand) return 'assets/icons/xiaomi.png';
-    if (isHuaweiBand) return 'assets/icons/huawei.png';
-    return null;
-  }
+  ///
+  /// 说明：assets/icons/ 下实际并不存在 xiaomi.png / huawei.png，
+  /// 原先返回这两个路径会让 Image.asset 在运行时加载失败（资源缺失）。
+  /// 这里统一返回 null，由调用方决定降级展示（如使用 Material 图标）。
+  /// 若后续补充品牌图标资源，在此处恢复返回对应路径即可。
+  String? get brandIcon => null;
 
   @override
   bool operator ==(Object other) =>

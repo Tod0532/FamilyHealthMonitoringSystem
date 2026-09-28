@@ -23,6 +23,7 @@ public class AuthResponse {
     private String refreshToken;
 
     @Schema(description = "令牌类型（Bearer）")
+    @Builder.Default
     private String tokenType = "Bearer";
 
     @Schema(description = "过期时间（秒）")
