@@ -9,6 +9,13 @@
 # packages, and plugins designed to encourage good coding practices.
 include: package:flutter_lints/flutter.yaml
 
+analyzer:
+  exclude:
+    # 临时调试脚本归档（同时已在 .gitignore 中忽略，不属于产品代码）。
+    # 这些脚本依赖早期已被移除的 OCR API，永远无法编译；
+    # 若纳入分析会向 flutter analyze 注入 600+ 条无意义错误。
+    - archived_tests/**
+
 linter:
   # The lint rules applied to this project can be customized in the
   # section below to disable rules from the `package:flutter_lints/flutter.yaml`
