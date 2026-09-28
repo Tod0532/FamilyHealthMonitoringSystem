@@ -5,28 +5,40 @@
 -- ============================================================================
 -- 测试用户（密码：123456）
 -- ============================================================================
-INSERT INTO sys_user (id, phone, password, nickname, gender, status)
-VALUES (1, '13800138000', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iKTVKIUi', '测试用户', 'male', 1);
+-- 注意：表名必须是 `user`（User 实体 @TableName("`user`")），
+-- 早期写作 sys_user 会导致登录接口 SQL 报 Table "USER" not found。
+-- role/family_id/family_role 三列是 User 实体要求的，缺一列登录即报
+-- "Column ROLE not found"。
+INSERT INTO `user` (id, phone, password, nickname, gender, status, role, family_id, family_role)
+VALUES (1, '13800138000', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iKTVKIUi', '测试用户', 'male', 1, 'ADMIN', 1, 'admin');
+
+-- ============================================================================
+-- 测试家庭
+-- ============================================================================
+INSERT INTO family (id, family_name, family_code, admin_id, member_count, status)
+VALUES (1, '测试家庭', 'TEST01', 1, 3, 1);
 
 -- ============================================================================
 -- 测试家庭成员
 -- ============================================================================
-INSERT INTO family_member (id, user_id, name, gender, birthday, relation, role, sort_order)
+INSERT INTO family_member (id, user_id, family_id, name, gender, birthday, relation, role, sort_order)
 VALUES
-    (1, 1, '张三', 'male', '1990-01-01', 'other', 'admin', 1),
-    (2, 1, '李四', 'female', '1992-05-15', 'spouse', 'member', 2),
-    (3, 1, '小明', 'male', '2020-06-01', 'child', 'member', 3);
+    (1, 1, 1, '张三', 'male', '1990-01-01', 'other', 'admin', 1),
+    (2, 1, 1, '李四', 'female', '1992-05-15', 'spouse', 'member', 2),
+    (3, 1, 1, '小明', 'male', '2020-06-01', 'child', 'member', 3);
 
 -- ============================================================================
 -- 测试健康数据
 -- ============================================================================
-INSERT INTO health_data (id, user_id, member_id, data_type, value1, value2, unit, measure_time, data_source)
+-- 注意：必须带上 family_id，否则按家庭维度过滤的接口查不到这些种子数据
+-- （健康数据列表走家庭过滤，family_id 为空时列表会显示为空）。
+INSERT INTO health_data (id, user_id, family_id, member_id, data_type, value1, value2, unit, measure_time, data_source)
 VALUES
-    (1, 1, 1, 'blood_pressure', 120.0, 80.0, 'mmHg', CURRENT_TIMESTAMP, 'manual'),
-    (2, 1, 1, 'heart_rate', 75.0, NULL, '次/分', CURRENT_TIMESTAMP, 'manual'),
-    (3, 1, 1, 'blood_sugar', 5.5, NULL, 'mmol/L', CURRENT_TIMESTAMP, 'manual'),
-    (4, 1, 1, 'temperature', 36.5, NULL, '℃', CURRENT_TIMESTAMP, 'manual'),
-    (5, 1, 1, 'weight', 70.0, NULL, 'kg', CURRENT_TIMESTAMP, 'manual');
+    (1, 1, 1, 1, 'blood_pressure', 120.0, 80.0, 'mmHg', CURRENT_TIMESTAMP, 'manual'),
+    (2, 1, 1, 1, 'heart_rate', 75.0, NULL, '次/分', CURRENT_TIMESTAMP, 'manual'),
+    (3, 1, 1, 1, 'blood_sugar', 5.5, NULL, 'mmol/L', CURRENT_TIMESTAMP, 'manual'),
+    (4, 1, 1, 1, 'temperature', 36.5, NULL, '℃', CURRENT_TIMESTAMP, 'manual'),
+    (5, 1, 1, 1, 'weight', 70.0, NULL, 'kg', CURRENT_TIMESTAMP, 'manual');
 
 -- ============================================================================
 -- 默认预警规则（系统预设）

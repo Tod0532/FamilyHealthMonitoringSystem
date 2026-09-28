@@ -63,7 +63,11 @@ mybatis-plus:
   global-config:
     db-config:
       id-type: ASSIGN_ID
-      logic-delete-field: isDeleted
+      # 修正：原值为 isDeleted，与实体不一致。
+      # 实体（User/Family/FamilyMember/HealthData/AlertRule/AlertRecord）
+      # 统一使用 @TableLogic private Integer deleted，注解优先于全局配置，
+      # 因此这里的 isDeleted 只会误导人并把 H2 表结构带偏（表里建了 is_deleted）。
+      logic-delete-field: deleted
       logic-delete-value: 1
       logic-not-delete-value: 0
 

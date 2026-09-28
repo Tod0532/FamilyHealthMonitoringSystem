@@ -18,15 +18,38 @@ CREATE TABLE IF NOT EXISTS `user` (
     `gender` VARCHAR(10) DEFAULT NULL COMMENT '性别：male-男，female-女',
     `birthday` DATE DEFAULT NULL COMMENT '生日',
     `status` TINYINT DEFAULT 1 COMMENT '状态：0-禁用，1-正常',
+    `role` VARCHAR(20) DEFAULT 'USER' COMMENT '用户角色：ADMIN-管理员，USER-普通用户，GUEST-访客',
+    `family_id` BIGINT DEFAULT NULL COMMENT '所属家庭ID',
+    `family_role` VARCHAR(20) DEFAULT 'member' COMMENT '家庭角色：admin-管理员，member-普通成员',
     `last_login_time` DATETIME DEFAULT NULL COMMENT '最后登录时间',
+    `last_login_ip` VARCHAR(50) DEFAULT NULL COMMENT '最后登录IP',
     `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     `deleted` TINYINT DEFAULT 0 COMMENT '逻辑删除：0-未删除，1-已删除',
     PRIMARY KEY (`id`),
     UNIQUE KEY `uk_phone` (`phone`),
     KEY `idx_status` (`status`),
-    KEY `idx_create_time` (`create_time`)
+    KEY `idx_create_time` (`create_time`),
+    KEY `idx_family_id` (`family_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户表';
+
+-- ============================================================================
+-- 家庭表
+-- ============================================================================
+CREATE TABLE IF NOT EXISTS `family` (
+    `id` BIGINT NOT NULL COMMENT '家庭ID',
+    `family_name` VARCHAR(100) NOT NULL COMMENT '家庭名称',
+    `family_code` VARCHAR(20) NOT NULL COMMENT '家庭邀请码（6位）',
+    `admin_id` BIGINT NOT NULL COMMENT '管理员用户ID',
+    `member_count` INT DEFAULT 1 COMMENT '成员数量',
+    `status` TINYINT DEFAULT 1 COMMENT '状态：0-禁用，1-正常',
+    `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    `deleted` TINYINT DEFAULT 0 COMMENT '逻辑删除：0-未删除，1-已删除',
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uk_family_code` (`family_code`),
+    KEY `idx_admin_id` (`admin_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='家庭表';
 
 -- ============================================================================
 -- 家庭成员表
@@ -34,18 +57,21 @@ CREATE TABLE IF NOT EXISTS `user` (
 CREATE TABLE IF NOT EXISTS `family_member` (
     `id` BIGINT NOT NULL COMMENT '成员ID',
     `user_id` BIGINT NOT NULL COMMENT '所属用户ID',
+    `family_id` BIGINT DEFAULT NULL COMMENT '所属家庭ID',
     `name` VARCHAR(50) NOT NULL COMMENT '成员姓名',
     `gender` VARCHAR(10) DEFAULT NULL COMMENT '性别：male-男，female-女',
     `birthday` DATE DEFAULT NULL COMMENT '出生日期',
     `relation` VARCHAR(20) DEFAULT NULL COMMENT '关系：father-父亲，mother-母亲，spouse-配偶，child-子女，other-其他',
     `role` VARCHAR(20) DEFAULT 'member' COMMENT '角色：admin-管理员，member-普通成员',
     `avatar` VARCHAR(500) DEFAULT NULL COMMENT '头像URL',
+    `notes` VARCHAR(500) DEFAULT NULL COMMENT '备注',
     `sort_order` INT DEFAULT 0 COMMENT '排序序号',
     `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     `deleted` TINYINT DEFAULT 0 COMMENT '逻辑删除：0-未删除，1-已删除',
     PRIMARY KEY (`id`),
     KEY `idx_user_id` (`user_id`),
+    KEY `idx_family_id` (`family_id`),
     KEY `idx_sort_order` (`sort_order`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='家庭成员表';
 
@@ -55,6 +81,7 @@ CREATE TABLE IF NOT EXISTS `family_member` (
 CREATE TABLE IF NOT EXISTS `health_data` (
     `id` BIGINT NOT NULL COMMENT '数据ID',
     `user_id` BIGINT NOT NULL COMMENT '用户ID',
+    `family_id` BIGINT DEFAULT NULL COMMENT '所属家庭ID',
     `member_id` BIGINT DEFAULT NULL COMMENT '成员ID',
     `data_type` VARCHAR(50) NOT NULL COMMENT '数据类型：blood_pressure-血压，heart_rate-心率，blood_sugar-血糖，temperature-体温，weight-体重，height-身高，steps-步数，sleep-睡眠',
     `value1` DECIMAL(10,2) DEFAULT NULL COMMENT '数值1（收缩压/心率/血糖/体温/体重/身高/步数/睡眠时长）',
@@ -63,12 +90,14 @@ CREATE TABLE IF NOT EXISTS `health_data` (
     `unit` VARCHAR(20) DEFAULT NULL COMMENT '单位',
     `measure_time` DATETIME NOT NULL COMMENT '测量时间',
     `data_source` VARCHAR(20) DEFAULT 'manual' COMMENT '数据来源：manual-手动，device-设备，sync-同步',
+    `device_name` VARCHAR(100) DEFAULT NULL COMMENT '设备名称',
     `notes` VARCHAR(500) DEFAULT NULL COMMENT '备注',
     `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     `deleted` TINYINT DEFAULT 0 COMMENT '逻辑删除：0-未删除，1-已删除',
     PRIMARY KEY (`id`),
     KEY `idx_user_id` (`user_id`),
+    KEY `idx_family_id` (`family_id`),
     KEY `idx_member_id` (`member_id`),
     KEY `idx_data_type` (`data_type`),
     KEY `idx_measure_time` (`measure_time`),
@@ -152,25 +181,30 @@ CREATE TABLE IF NOT EXISTS `health_content` (
 -- 测试数据（可选）
 -- ============================================================================
 
+-- 插入测试家庭
+INSERT INTO `family` (`id`, `family_name`, `family_code`, `admin_id`, `member_count`, `status`)
+VALUES (1, '测试家庭', 'TEST01', 1, 3, 1)
+ON DUPLICATE KEY UPDATE `family_name` = `family_name`;
+
 -- 插入测试用户（密码：123456）
-INSERT INTO `user` (`id`, `phone`, `password`, `nickname`, `gender`, `status`)
-VALUES (1, '13800138000', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iKTVKIUi', '测试用户', 'male', 1)
+INSERT INTO `user` (`id`, `phone`, `password`, `nickname`, `gender`, `status`, `role`, `family_id`, `family_role`)
+VALUES (1, '13800138000', '$2a$10$N.zmdr9k7uOCQb376NoUnuTJ8iAt6Z5EHsM8lE9lBOsl7iKTVKIUi', '测试用户', 'male', 1, 'ADMIN', 1, 'admin')
 ON DUPLICATE KEY UPDATE `phone` = `phone`;
 
 -- 插入测试家庭成员
-INSERT INTO `family_member` (`id`, `user_id`, `name`, `gender`, `birthday`, `relation`, `role`, `sort_order`)
+INSERT INTO `family_member` (`id`, `user_id`, `family_id`, `name`, `gender`, `birthday`, `relation`, `role`, `sort_order`)
 VALUES
-    (1, 1, '张三', 'male', '1990-01-01', 'other', 'admin', 1),
-    (2, 1, '李四', 'female', '1992-05-15', 'spouse', 'member', 2),
-    (3, 1, '小明', 'male', '2020-06-01', 'child', 'member', 3)
+    (1, 1, 1, '张三', 'male', '1990-01-01', 'other', 'admin', 1),
+    (2, 1, 1, '李四', 'female', '1992-05-15', 'spouse', 'member', 2),
+    (3, 1, 1, '小明', 'male', '2020-06-01', 'child', 'member', 3)
 ON DUPLICATE KEY UPDATE `user_id` = `user_id`;
 
--- 插入测试健康数据
-INSERT INTO `health_data` (`id`, `user_id`, `member_id`, `data_type`, `value1`, `value2`, `unit`, `measure_time`, `data_source`)
+-- 插入测试健康数据（带 family_id，否则按家庭过滤的列表接口查不到）
+INSERT INTO `health_data` (`id`, `user_id`, `family_id`, `member_id`, `data_type`, `value1`, `value2`, `unit`, `measure_time`, `data_source`)
 VALUES
-    (1, 1, 1, 'blood_pressure', 120.0, 80.0, 'mmHg', NOW(), 'manual'),
-    (2, 1, 1, 'heart_rate', 75.0, NULL, '次/分', NOW(), 'manual'),
-    (3, 1, 1, 'blood_sugar', 5.5, NULL, 'mmol/L', NOW(), 'manual'),
-    (4, 1, 1, 'temperature', 36.5, NULL, '℃', NOW(), 'manual'),
-    (5, 1, 1, 'weight', 70.0, NULL, 'kg', NOW(), 'manual')
+    (1, 1, 1, 1, 'blood_pressure', 120.0, 80.0, 'mmHg', NOW(), 'manual'),
+    (2, 1, 1, 1, 'heart_rate', 75.0, NULL, '次/分', NOW(), 'manual'),
+    (3, 1, 1, 1, 'blood_sugar', 5.5, NULL, 'mmol/L', NOW(), 'manual'),
+    (4, 1, 1, 1, 'temperature', 36.5, NULL, '℃', NOW(), 'manual'),
+    (5, 1, 1, 1, 'weight', 70.0, NULL, 'kg', NOW(), 'manual')
 ON DUPLICATE KEY UPDATE `user_id` = `user_id`;
