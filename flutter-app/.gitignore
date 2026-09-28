@@ -78,3 +78,9 @@ archived_tests/
 *.jpg
 !assets/**/*.jpg
 *.npy
+
+# 预训练权重、数据集压缩包与调试文本输出
+/yolov8n.pt
+/oxford_dataset.zip
+/*_stats.txt
+/template_match_test.txt
