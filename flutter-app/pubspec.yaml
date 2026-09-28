@@ -106,16 +106,30 @@ flutter:
   uses-material-design: true
 
   assets:
+    # ---------------------------------------------------------------------
+    # 只声明 App 运行时真正加载的资源。这里刻意逐文件登记而不用目录声明：
+    # 目录声明会把整个目录（含训练产物、测试图片、说明文档）全部打进 APK。
+    # ---------------------------------------------------------------------
     # tessdata_config.json 必须位于 assets/ 根目录：tesseract_ocr 插件内部
     # 硬编码了 rootBundle.loadString('assets/tessdata_config.json')，
     # 该文件列出需要从 assets/tessdata/ 复制到应用文档目录的模型文件。
     # 缺少它会导致 TesseractOcr.extractText 直接抛异常，OCR 永远失败。
     - assets/tessdata_config.json
-    - assets/images/
-    - assets/icons/
-    - assets/fonts/
-    - assets/tessdata/
-    - assets/models/
+    # Tesseract 语言数据：由 tesseract_ocr 插件从 bundle 复制到应用文档目录后
+    # 交给 Tesseract 引擎使用。
+    - assets/tessdata/eng.traineddata
+    # 血压数字识别模型：bp_tflite_detector.dart 通过 tflite_flutter 加载。
+    - assets/models/bpressure_multihead.tflite
+    #
+    # 以下资源刻意不打包（原先用目录声明时被全量打进 APK，约 18MB 无效体积）：
+    #   assets/models/lcd_detector.onnx       训练产物，Dart 侧从不加载（YOLOv8n 导出）
+    #   assets/models/lcd_detector.pt         训练产物，同上
+    #   assets/models/bpressure_model.tflite  旧版单头模型，已被 multihead 取代
+    #   assets/tessdata/bp_test_photo.png     调试用测试照片
+    #   assets/tessdata/tessdata_config.json  冗余副本，插件只读 assets/ 根目录那份
+    #   assets/icons/**  assets/images/**  assets/fonts/**  lib/ 内无任何引用
+    #
+    # 注意：新增需要打包的资源必须在此显式登记，否则运行时读取会失败。
 
 # 应用图标配置
 # 运行命令生成图标: flutter pub run flutter_launcher_icons
