@@ -100,3 +100,20 @@ app:
   file:
     upload-path: ./uploads
     allowed-types: jpg,jpeg,png,gif,pdf
+
+  # ==========================================================================
+  # 调试用认证开关（仅本地开发，切勿在生产环境开启）
+  # ==========================================================================
+  # 历史问题：JwtAuthenticationFilter 中「无 JWT 时信任 X-User-Id 请求头」的
+  # 降级逻辑原先没有任何环境判断，导致生产环境同样生效 —— 任何人构造一个
+  # X-User-Id 头即可冒充任意用户、读写全部健康数据。
+  #
+  # 现在该能力被收紧为：仅 dev profile + 显式打开此开关时生效。
+  #   - 生产环境 application-prod.yml 中不存在 app.debug 配置，
+  #     且 DebugAuthProperties 带 @Profile("dev")，Bean 根本不会创建；
+  #   - 本地默认关闭（false）。开启后日志会以 WARN 级别提示「调试开关已开启」。
+  #
+  # 调试建议：优先直接调用 /api/auth/login 获取 JWT，
+  # 用 Authorization: Bearer <token> 访问接口，无需打开此开关。
+  debug:
+    trust-user-id-header: false

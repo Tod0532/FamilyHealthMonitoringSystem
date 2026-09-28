@@ -55,7 +55,6 @@ public class SecurityConfig {
                         .antMatchers(
                                 "/api/auth/**",
                                 "/api/test",
-                                "/api/health-data",
                                 "/knife4j/**",
                                 "/doc.html",
                                 "/swagger-ui/**",

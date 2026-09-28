@@ -33,15 +33,10 @@ public class SecurityUtil {
             return userId;
         }
 
-        // 开发环境：允许从header获取用于测试
-        String userIdHeader = request.getHeader("X-User-Id");
-        if (userIdHeader != null) {
-            try {
-                return Long.valueOf(userIdHeader);
-            } catch (NumberFormatException e) {
-                // 忽略
-            }
-        }
+        // 注意：此处曾存在「开发环境允许从 X-User-Id 请求头获取用户ID」的兜底逻辑。
+        // 该逻辑与 JwtAuthenticationFilter 中的同类分支共同构成了认证绕过漏洞
+        // （无凭证即可冒充任意用户），已移除。调试请使用 dev profile 下的
+        // app.debug.trust-user-id-header 开关，或正常登录获取 JWT。
 
         throw new BusinessException(ErrorCode.UNAUTHORIZED, "用户未登录或令牌已过期");
     }

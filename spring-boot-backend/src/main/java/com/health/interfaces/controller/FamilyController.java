@@ -32,7 +32,7 @@ public class FamilyController {
     @Operation(summary = "创建家庭", description = "创建新家庭，当前用户自动成为管理员")
     public ApiResponse<FamilyResponse> createFamily(
             @Parameter(description = "用户ID", required = true)
-            @RequestHeader("X-User-Id") Long userId,
+            @RequestAttribute("userId") Long userId,
             @Valid @RequestBody FamilyCreateRequest request) {
         log.info("创建家庭: userId={}, familyName={}", userId, request.getFamilyName());
         FamilyResponse response = familyService.createFamily(userId, request);
@@ -46,7 +46,7 @@ public class FamilyController {
     @Operation(summary = "获取我的家庭", description = "获取当前用户所在的家庭信息")
     public ApiResponse<FamilyResponse> getMyFamily(
             @Parameter(description = "用户ID", required = true)
-            @RequestHeader("X-User-Id") Long userId) {
+            @RequestAttribute("userId") Long userId) {
         log.info("获取我的家庭: userId={}", userId);
         FamilyResponse response = familyService.getMyFamily(userId);
         return ApiResponse.success(response);
@@ -59,7 +59,7 @@ public class FamilyController {
     @Operation(summary = "获取家庭二维码", description = "获取家庭邀请二维码（仅管理员）")
     public ApiResponse<FamilyQrCodeResponse> getQrCode(
             @Parameter(description = "用户ID", required = true)
-            @RequestHeader("X-User-Id") Long userId) {
+            @RequestAttribute("userId") Long userId) {
         log.info("获取家庭二维码: userId={}", userId);
         FamilyQrCodeResponse response = familyService.getQrCode(userId);
         return ApiResponse.success(response);
@@ -85,7 +85,7 @@ public class FamilyController {
     @Operation(summary = "加入家庭", description = "通过邀请码加入家庭")
     public ApiResponse<FamilyResponse> joinFamily(
             @Parameter(description = "用户ID", required = true)
-            @RequestHeader("X-User-Id") Long userId,
+            @RequestAttribute("userId") Long userId,
             @Valid @RequestBody FamilyJoinRequest request) {
         log.info("加入家庭: userId={}, inviteCode={}", userId, request.getInviteCode());
         FamilyResponse response = familyService.joinFamily(userId, request);
@@ -99,7 +99,7 @@ public class FamilyController {
     @Operation(summary = "退出家庭", description = "退出当前所在的家庭")
     public ApiResponse<Void> leaveFamily(
             @Parameter(description = "用户ID", required = true)
-            @RequestHeader("X-User-Id") Long userId) {
+            @RequestAttribute("userId") Long userId) {
         log.info("退出家庭: userId={}", userId);
         familyService.leaveFamily(userId);
         return ApiResponse.success("已退出家庭", null);
@@ -112,7 +112,7 @@ public class FamilyController {
     @Operation(summary = "获取家庭成员", description = "获取当前家庭的所有成员列表")
     public ApiResponse<List<FamilyMemberUserResponse>> getFamilyMembers(
             @Parameter(description = "用户ID", required = true)
-            @RequestHeader("X-User-Id") Long userId) {
+            @RequestAttribute("userId") Long userId) {
         log.info("获取家庭成员列表: userId={}", userId);
         List<FamilyMemberUserResponse> response = familyService.getFamilyMembers(userId);
         return ApiResponse.success(response);
@@ -125,7 +125,7 @@ public class FamilyController {
     @Operation(summary = "移除家庭成员", description = "管理员移除指定成员")
     public ApiResponse<Void> removeMember(
             @Parameter(description = "管理员用户ID", required = true)
-            @RequestHeader("X-User-Id") Long adminId,
+            @RequestAttribute("userId") Long adminId,
             @Parameter(description = "要移除的用户ID", required = true)
             @PathVariable Long targetUserId) {
         log.info("移除家庭成员: adminId={}, targetUserId={}", adminId, targetUserId);
@@ -140,7 +140,7 @@ public class FamilyController {
     @Operation(summary = "更新家庭名称", description = "管理员更新家庭名称")
     public ApiResponse<Void> updateFamilyName(
             @Parameter(description = "用户ID", required = true)
-            @RequestHeader("X-User-Id") Long userId,
+            @RequestAttribute("userId") Long userId,
             @org.springframework.web.bind.annotation.RequestBody @Valid FamilyUpdateNameRequest request) {
         log.info("更新家庭名称: userId={}, familyName={}", userId, request.getFamilyName());
         familyService.updateFamilyName(userId, request.getFamilyName());
@@ -154,7 +154,7 @@ public class FamilyController {
     @Operation(summary = "更新家庭名称", description = "管理员更新家庭名称（备用接口）")
     public ApiResponse<Void> updateFamilyNameV2(
             @Parameter(description = "用户ID", required = true)
-            @RequestHeader("X-User-Id") Long userId,
+            @RequestAttribute("userId") Long userId,
             @Parameter(description = "新家庭名称", required = true)
             @RequestParam(name = "familyName") String familyName) {
         log.info("更新家庭名称V2: userId={}, familyName={}", userId, familyName);

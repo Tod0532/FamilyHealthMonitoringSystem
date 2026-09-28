@@ -28,7 +28,7 @@ public class UserController {
     @Operation(summary = "获取当前用户信息", description = "获取当前登录用户的详细信息")
     public ApiResponse<UserVO> getCurrentUser(
             @Parameter(description = "用户ID", required = true)
-            @RequestHeader("X-User-Id") Long userId) {
+            @RequestAttribute("userId") Long userId) {
         log.info("获取用户信息: userId={}", userId);
         UserVO userVO = userService.getUserById(userId);
         return ApiResponse.success(userVO);
