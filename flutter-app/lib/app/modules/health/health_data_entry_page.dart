@@ -4,6 +4,8 @@ import 'package:get/get.dart';
 import 'package:health_center_app/app/modules/health/health_data_controller.dart';
 import 'package:health_center_app/core/models/health_data.dart';
 import 'package:health_center_app/core/models/family_member.dart';
+import 'package:health_center_app/core/widgets/ocr_button.dart';
+import 'package:health_center_app/core/ocr/models/ocr_result.dart';
 
 /// 健康数据录入页面
 class HealthDataEntryPage extends StatefulWidget {
@@ -98,7 +100,13 @@ class _HealthDataEntryPageState extends State<HealthDataEntryPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(_mode == 'edit' ? '编辑记录' : '添加记录'),
+        title: GestureDetector(
+          onLongPress: () {
+            // 长按标题进入 OCR 测试页面（开发调试用）
+            Get.toNamed('/debug/ocr-test');
+          },
+          child: Text(_mode == 'edit' ? '编辑记录' : '添加记录'),
+        ),
         elevation: 0,
         backgroundColor: const Color(0xFF4CAF50),
         foregroundColor: Colors.white,
@@ -319,7 +327,7 @@ class _HealthDataEntryPageState extends State<HealthDataEntryPage> {
       case HealthDataType.bloodPressure:
         return _buildBloodPressureInput();
       case HealthDataType.heartRate:
-        return _buildSingleValueInput('心率', 'bpm', Icons.monitor_heart, 30, 200);
+        return _buildHeartRateInput();
       case HealthDataType.bloodSugar:
         return _buildSingleValueInput('血糖', 'mmol/L', Icons.water_drop, 1.0, 30.0);
       case HealthDataType.temperature:
@@ -337,30 +345,40 @@ class _HealthDataEntryPageState extends State<HealthDataEntryPage> {
 
   /// 血压输入
   Widget _buildBloodPressureInput() {
-    return Row(
+    return Column(
       children: [
-        Expanded(
-          child: _buildInputCard(
-            label: '收缩压',
-            unit: 'mmHg',
-            icon: Icons.arrow_upward,
-            controller: _systolicController,
-            hint: '高压',
-            min: 60,
-            max: 250,
-          ),
+        Row(
+          children: [
+            Expanded(
+              child: _buildInputCard(
+                label: '收缩压',
+                unit: 'mmHg',
+                icon: Icons.arrow_upward,
+                controller: _systolicController,
+                hint: '高压',
+                min: 60,
+                max: 250,
+              ),
+            ),
+            SizedBox(width: 12.w),
+            Expanded(
+              child: _buildInputCard(
+                label: '舒张压',
+                unit: 'mmHg',
+                icon: Icons.arrow_downward,
+                controller: _diastolicController,
+                hint: '低压',
+                min: 30,
+                max: 150,
+              ),
+            ),
+          ],
         ),
-        SizedBox(width: 12.w),
-        Expanded(
-          child: _buildInputCard(
-            label: '舒张压',
-            unit: 'mmHg',
-            icon: Icons.arrow_downward,
-            controller: _diastolicController,
-            hint: '低压',
-            min: 30,
-            max: 150,
-          ),
+        SizedBox(height: 12.h),
+        // OCR识别按钮
+        OcrButton(
+          buttonText: '📷 拍照识别血压',
+          onResult: _handleBloodPressureOcrResult,
         ),
       ],
     );
@@ -382,6 +400,21 @@ class _HealthDataEntryPageState extends State<HealthDataEntryPage> {
       hint: "请输入$label",
       min: min,
       max: max,
+    );
+  }
+
+  /// 心率输入（带OCR功能）
+  Widget _buildHeartRateInput() {
+    return Column(
+      children: [
+        _buildSingleValueInput('心率', 'bpm', Icons.monitor_heart, 30, 200),
+        SizedBox(height: 12.h),
+        // OCR识别按钮
+        OcrButton(
+          buttonText: '📷 拍照识别心率',
+          onResult: _handleHeartRateOcrResult,
+        ),
+      ],
     );
   }
 
@@ -660,6 +693,34 @@ class _HealthDataEntryPageState extends State<HealthDataEntryPage> {
     }
 
     _saveData(data);
+  }
+
+  /// 处理血压OCR识别结果
+  void _handleBloodPressureOcrResult(OcrResult result) {
+    if (result.systolic != null) {
+      _systolicController.text = result.systolic!.toInt().toString();
+    }
+    if (result.diastolic != null) {
+      _diastolicController.text = result.diastolic!.toInt().toString();
+    }
+    // 如果同时识别到心率，也填充到输入框（方便后续切换类型）
+    if (result.heartRate != null) {
+      _value1Controller.text = result.heartRate!.toInt().toString();
+    }
+  }
+
+  /// 处理心率OCR识别结果
+  void _handleHeartRateOcrResult(OcrResult result) {
+    if (result.heartRate != null) {
+      _value1Controller.text = result.heartRate!.toInt().toString();
+    }
+    // 如果同时识别到血压，也填充到输入框（方便后续切换类型）
+    if (result.systolic != null) {
+      _systolicController.text = result.systolic!.toInt().toString();
+    }
+    if (result.diastolic != null) {
+      _diastolicController.text = result.diastolic!.toInt().toString();
+    }
   }
 
   /// 保存数据

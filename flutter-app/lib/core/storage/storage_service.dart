@@ -568,4 +568,54 @@ class StorageService extends GetxService {
   void clearCheckInDates() {
     _storage.remove(_checkInKey);
   }
+
+  // ==================== 今日任务管理 ====================
+
+  static const String _todayTasksKey = 'today_tasks_list';
+  static const String _tasksLastUpdateKey = 'tasks_last_update';
+
+  /// 获取今日任务列表
+  List<Map<String, dynamic>> getTodayTasksJson() {
+    return _storage.read(_todayTasksKey) ?? [];
+  }
+
+  /// 保存今日任务列表
+  void saveTodayTasksJson(List<Map<String, dynamic>> tasksJson) {
+    _storage.write(_todayTasksKey, tasksJson);
+    _saveTasksLastUpdateTime();
+  }
+
+  /// 保存任务最后更新时间
+  void _saveTasksLastUpdateTime() {
+    _storage.write(_tasksLastUpdateKey, DateTime.now().toIso8601String());
+  }
+
+  /// 获取任务最后更新时间
+  DateTime? getTasksLastUpdateTime() {
+    final timeStr = _storage.read(_tasksLastUpdateKey);
+    if (timeStr != null) {
+      try {
+        return DateTime.parse(timeStr);
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
+  }
+
+  /// 清除今日任务数据
+  void clearTodayTasks() {
+    _storage.remove(_todayTasksKey);
+    _storage.remove(_tasksLastUpdateKey);
+  }
+
+  /// 检查任务缓存是否有效（24小时内）
+  bool isTasksCacheValid() {
+    final lastUpdate = getTasksLastUpdateTime();
+    if (lastUpdate == null) return false;
+
+    final now = DateTime.now();
+    final difference = now.difference(lastUpdate);
+    return difference.inHours < 24;
+  }
 }

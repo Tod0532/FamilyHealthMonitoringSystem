@@ -33,4 +33,10 @@ class AppRoutes {
   static const String familyQrCode = '/family/qrcode';
   static const String familyScan = '/family/scan';
   static const String familyMembers = '/family/members';
+  // 今日待办任务相关路由
+  static const String todayTasks = '/tasks/today';
+  // OCR测试路由（开发调试用）
+  static const String ocrTest = '/debug/ocr-test';
+  // OCR可视化调试路由
+  static const String ocrDebugVisual = '/debug/ocr-visual';
 }

@@ -5,8 +5,10 @@ import 'package:health_center_app/app/modules/members/members_controller.dart';
 import 'package:health_center_app/app/modules/family/family_controller.dart';
 import 'package:health_center_app/app/modules/health/health_data_controller.dart';
 import 'package:health_center_app/app/modules/alerts/health_alert_controller.dart';
+import 'package:health_center_app/app/modules/tasks/today_task_controller.dart';
 import 'package:health_center_app/core/storage/storage_service.dart';
 import 'package:health_center_app/core/models/family.dart';
+import 'package:health_center_app/core/models/today_task.dart';
 
 /// 首页Tab - 主页内容
 class HomeTabPage extends GetView {
@@ -333,90 +335,339 @@ class HomeTabPage extends GetView {
 
   /// 今日待办卡片
   Widget _buildTodayTasksCard() {
-    return Container(
-      padding: EdgeInsets.all(16.w),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16.r),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                '今日待办',
-                style: TextStyle(
-                  fontSize: 16.sp,
-                  fontWeight: FontWeight.bold,
-                  color: const Color(0xFF1A1A1A),
+    final controller = Get.find<TodayTaskController>();
+
+    return Obx(() {
+      final tasks = controller.todayTasks;
+      // 只显示未完成的任务
+      final pendingTasks = tasks.where((t) => t.status != TaskStatus.completed).toList();
+
+      return Container(
+        padding: EdgeInsets.all(16.w),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16.r),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      '今日待办',
+                      style: TextStyle(
+                        fontSize: 16.sp,
+                        fontWeight: FontWeight.bold,
+                        color: const Color(0xFF1A1A1A),
+                      ),
+                    ),
+                    if (tasks.isNotEmpty) ...[
+                      SizedBox(width: 8.w),
+                      Container(
+                        padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 2.h),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF4CAF50).withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(10.r),
+                        ),
+                        child: Text(
+                          '${controller.pendingCount}/${tasks.length}',
+                          style: TextStyle(
+                            fontSize: 11.sp,
+                            color: const Color(0xFF4CAF50),
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
-              ),
-              Text(
-                '查看全部',
-                style: TextStyle(
-                  fontSize: 12.sp,
-                  color: const Color(0xFF4CAF50),
+                GestureDetector(
+                  onTap: () => Get.toNamed('/tasks/today'),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        '查看全部',
+                        style: TextStyle(
+                          fontSize: 12.sp,
+                          color: const Color(0xFF4CAF50),
+                        ),
+                      ),
+                      SizedBox(width: 2.w),
+                      Icon(
+                        Icons.chevron_right,
+                        size: 14.sp,
+                        color: const Color(0xFF4CAF50),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 12.h),
+            if (pendingTasks.isEmpty)
+              _buildEmptyTasksState()
+            else
+              ...pendingTasks.take(5).map((task) => Padding(
+                padding: EdgeInsets.only(bottom: 8.h),
+                child: _buildTaskItemFromModel(task, controller),
+              )),
+            if (pendingTasks.length > 5) ...[
+              SizedBox(height: 4.h),
+              Center(
+                child: Text(
+                  '还有 ${pendingTasks.length - 5} 项待办...',
+                  style: TextStyle(
+                    fontSize: 12.sp,
+                    color: Colors.grey.shade500,
+                  ),
                 ),
               ),
             ],
+          ],
+        ),
+      );
+    });
+  }
+
+  /// 从任务模型构建任务项
+  Widget _buildTaskItemFromModel(TodayTask task, TodayTaskController controller) {
+    final statusColor = task.status.color;
+    final statusText = task.status.label;
+    final taskIcon = _getTaskIcon(task.type);
+    final priorityIndicator = task.priority == TaskPriority.high
+        ? Container(
+            width: 4.w,
+            height: 4.w,
+            decoration: const BoxDecoration(
+              color: Colors.red,
+              shape: BoxShape.circle,
+            ),
+          )
+        : const SizedBox.shrink();
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => _handleTaskTap(task),
+        onLongPress: () => _handleTaskLongPress(task, controller),
+        borderRadius: BorderRadius.circular(8.r),
+        child: Container(
+          padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+          decoration: BoxDecoration(
+            color: task.status == TaskStatus.completed
+                ? Colors.grey.shade50
+                : Colors.white,
+            borderRadius: BorderRadius.circular(8.r),
+            border: Border.all(
+              color: task.status == TaskStatus.completed
+                  ? Colors.grey.shade200
+                  : task.priority.color.withOpacity(0.3),
+              width: 1,
+            ),
+          ),
+          child: Row(
+            children: [
+              // 任务类型图标
+              Container(
+                width: 32.w,
+                height: 32.w,
+                decoration: BoxDecoration(
+                  color: task.type.color.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8.r),
+                ),
+                child: Icon(
+                  taskIcon,
+                  size: 16.sp,
+                  color: task.status == TaskStatus.completed
+                      ? Colors.grey.shade400
+                      : task.type.color,
+                ),
+              ),
+              SizedBox(width: 12.w),
+
+              // 任务信息
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      task.title,
+                      style: TextStyle(
+                        fontSize: 14.sp,
+                        fontWeight: FontWeight.w500,
+                        color: task.status == TaskStatus.completed
+                            ? Colors.grey.shade500
+                            : const Color(0xFF1A1A1A),
+                        decoration: task.status == TaskStatus.completed
+                            ? TextDecoration.lineThrough
+                            : null,
+                      ),
+                    ),
+                    if (task.memberName.isNotEmpty) ...[
+                      SizedBox(height: 2.h),
+                      Text(
+                        task.memberName,
+                        style: TextStyle(
+                          fontSize: 12.sp,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+
+              // 高优先级指示器
+              if (task.priority == TaskPriority.high) ...[
+                priorityIndicator,
+                SizedBox(width: 8.w),
+              ],
+
+              // 状态标签
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+                decoration: BoxDecoration(
+                  color: statusColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10.r),
+                ),
+                child: Text(
+                  statusText,
+                  style: TextStyle(
+                    fontSize: 11.sp,
+                    color: statusColor,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+
+              SizedBox(width: 8.w),
+
+              // 完成状态图标
+              Icon(
+                task.status == TaskStatus.completed
+                    ? Icons.check_circle
+                    : Icons.chevron_right,
+                color: task.status == TaskStatus.completed
+                    ? statusColor
+                    : Colors.grey.shade400,
+                size: 18.sp,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// 空任务状态
+  Widget _buildEmptyTasksState() {
+    return Container(
+      padding: EdgeInsets.symmetric(vertical: 32.h),
+      child: Column(
+        children: [
+          Icon(
+            Icons.task_alt,
+            size: 48.sp,
+            color: Colors.grey.shade300,
           ),
           SizedBox(height: 12.h),
-          _buildTaskItem('血压测量', '爸爸', '未完成', Colors.orange),
+          Text(
+            '今日暂无待办任务',
+            style: TextStyle(
+              fontSize: 14.sp,
+              color: Colors.grey.shade500,
+            ),
+          ),
           SizedBox(height: 8.h),
-          _buildTaskItem('血糖记录', '妈妈', '未完成', Colors.orange),
-          SizedBox(height: 8.h),
-          _buildTaskItem('体重打卡', '我', '已完成', Colors.green),
+          Text(
+            '所有健康指标已正常记录',
+            style: TextStyle(
+              fontSize: 12.sp,
+              color: Colors.grey.shade400,
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildTaskItem(String task, String person, String status, Color statusColor) {
-    return Row(
-      children: [
-        Container(
-          width: 8.w,
-          height: 8.w,
-          decoration: BoxDecoration(
-            color: statusColor,
-            shape: BoxShape.circle,
+  /// 获取任务类型图标
+  IconData _getTaskIcon(TaskType type) {
+    switch (type) {
+      case TaskType.measurement:
+        return Icons.monitor_heart;
+      case TaskType.checkIn:
+        return Icons.check_circle_outline;
+      case TaskType.warning:
+        return Icons.warning;
+      case TaskType.reminder:
+        return Icons.notifications;
+      case TaskType.custom:
+        return Icons.edit_note;
+    }
+  }
+
+  /// 处理任务点击
+  void _handleTaskTap(TodayTask task) {
+    if (task.targetRoute != null) {
+      Get.toNamed(task.targetRoute!, arguments: task.routeArgs);
+    } else {
+      // 默认行为：标记为完成
+      final controller = Get.find<TodayTaskController>();
+      controller.toggleTaskStatus(task.id);
+    }
+  }
+
+  /// 处理任务长按（切换完成状态）
+  void _handleTaskLongPress(TodayTask task, TodayTaskController controller) {
+    Get.bottomSheet(
+      Container(
+        padding: EdgeInsets.all(20.w),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
+        ),
+        child: SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: Icon(
+                  task.status == TaskStatus.completed
+                      ? Icons.check_circle_outline
+                      : Icons.check_circle,
+                  color: const Color(0xFF4CAF50),
+                ),
+                title: Text(task.status == TaskStatus.completed ? '标记为未完成' : '标记为已完成'),
+                onTap: () {
+                  controller.toggleTaskStatus(task.id);
+                  Get.back();
+                },
+              ),
+              if (task.targetRoute != null)
+                ListTile(
+                  leading: const Icon(Icons.open_in_new, color: Color(0xFF2196F3)),
+                  title: const Text('查看详情'),
+                  onTap: () {
+                    Get.back();
+                    _handleTaskTap(task);
+                  },
+                ),
+            ],
           ),
         ),
-        SizedBox(width: 12.w),
-        Expanded(
-          child: Text(
-            task,
-            style: TextStyle(
-              fontSize: 14.sp,
-              color: const Color(0xFF1A1A1A),
-            ),
-          ),
-        ),
-        Text(
-          person,
-          style: TextStyle(
-            fontSize: 12.sp,
-            color: Colors.grey[600],
-          ),
-        ),
-        SizedBox(width: 8.w),
-        Text(
-          status,
-          style: TextStyle(
-            fontSize: 12.sp,
-            color: statusColor,
-          ),
-        ),
-      ],
+      ),
     );
   }
 
@@ -1191,7 +1442,7 @@ class HomeTabPage extends GetView {
                                 ),
                                 SizedBox(width: 4.w),
                                 Text(
-                                  '${members.length > 0 ? members.length : family?.memberCount ?? 1} 位成员',
+                                  '${members.isNotEmpty ? members.length : family?.memberCount ?? 1} 位成员',
                                   style: TextStyle(
                                     fontSize: 12.sp,
                                     color: Colors.white,
@@ -1318,7 +1569,6 @@ class HomeTabPage extends GetView {
                   separatorBuilder: (context, index) => SizedBox(width: 4.w),
                   itemBuilder: (context, index) {
                     final member = members[index];
-                    print('DEBUG: Building member avatar for ${member.nickname} at index $index, total members: ${members.length}');
                     return _buildMemberAvatar(member);
                   },
                 ),

@@ -42,8 +42,11 @@ import 'package:health_center_app/app/modules/family/family_create_page.dart';
 import 'package:health_center_app/app/modules/family/family_qrcode_page.dart';
 import 'package:health_center_app/app/modules/family/family_scan_page.dart';
 import 'package:health_center_app/app/modules/family/family_members_page.dart';
-import 'package:health_center_app/app/modules/health/health_data_controller.dart';
-import 'package:health_center_app/app/modules/members/members_controller.dart';
+import 'package:health_center_app/app/modules/tasks/today_task_binding.dart';
+import 'package:health_center_app/app/modules/tasks/today_tasks_page.dart';
+// OCR测试页面（仅开发环境）
+import 'package:health_center_app/core/ocr/ocr_test_page.dart';
+// import 'package:health_center_app/core/ocr/ocr_debug_visual_page.dart';  // 暂时禁用
 
 /// 应用路由配置
 class AppPages {
@@ -291,5 +294,28 @@ class AppPages {
       middlewares: [AuthMiddleware()],
       transition: Transition.rightToLeft,
     ),
+
+    // 今日待办任务列表页面
+    GetPage(
+      name: '/tasks/today',
+      page: () => const TodayTasksPage(),
+      binding: TodayTaskBinding(),
+      middlewares: [AuthMiddleware()],
+      transition: Transition.rightToLeft,
+    ),
+
+    // OCR测试页面（仅开发调试用）
+    GetPage(
+      name: '/debug/ocr-test',
+      page: () => const OcrTestPage(),
+      transition: Transition.rightToLeft,
+    ),
+
+    // OCR可视化调试页面（OpenCV调试用）- 暂时禁用
+    // GetPage(
+    //   name: '/debug/ocr-visual',
+    //   page: () => const OcrDebugVisualPage(),
+    //   transition: Transition.rightToLeft,
+    // ),
   ];
 }

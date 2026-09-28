@@ -103,6 +103,18 @@ class SettingsPage extends GetView<ProfileController> {
           // 关于
           _buildSectionHeader('其他'),
           _buildNavigationTile(
+            icon: Icons.science,
+            title: 'OpenCV 调试',
+            subtitle: '可视化调试OCR识别过程',
+            onTap: () => Get.toNamed('/debug/ocr-visual'),
+          ),
+          _buildNavigationTile(
+            icon: Icons.camera_alt,
+            title: 'OCR 测试',
+            subtitle: '测试血压计识别功能',
+            onTap: () => Get.toNamed('/debug/ocr-test'),
+          ),
+          _buildNavigationTile(
             icon: Icons.info,
             title: '关于我们',
             subtitle: '版本信息',
