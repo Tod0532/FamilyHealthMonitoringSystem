@@ -213,9 +213,27 @@ class ProfileController extends GetxController {
   }
 
   /// 清除缓存
+  ///
+  /// 【缺陷修复】原先实现只有 `await Future.delayed(1s)` + 弹「缓存已清除」，
+  /// 什么都没清理，属于「假实现 + 成功提示」。而 StorageService.clearCache()
+  /// 早已实现（清理本地健康数据 / 日记 / 打卡 / 内容 / 预警记录 / 设备缓存，
+  /// 并返回清理条数），只是一直没被调用。
   Future<void> clearCache() async {
-    await Future.delayed(const Duration(seconds: 1));
-    Get.snackbar('成功', '缓存已清除', snackPosition: SnackPosition.BOTTOM);
+    try {
+      final cleared = await _storage.clearCache();
+      Get.snackbar(
+        '成功',
+        '缓存已清除（清理 $cleared 项本地数据）',
+        snackPosition: SnackPosition.BOTTOM,
+      );
+    } catch (e) {
+      Get.snackbar(
+        '失败',
+        '清除缓存失败：$e',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red.shade100,
+      );
+    }
   }
 
   /// 退出登录
