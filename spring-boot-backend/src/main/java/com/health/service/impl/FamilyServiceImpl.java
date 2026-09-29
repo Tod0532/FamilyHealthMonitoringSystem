@@ -1,6 +1,7 @@
 package com.health.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.health.domain.entity.Family;
 import com.health.domain.entity.FamilyMember;
 import com.health.domain.entity.User;
@@ -177,23 +178,60 @@ public class FamilyServiceImpl implements FamilyService {
         user.setUpdateTime(LocalDateTime.now());
         userMapper.updateById(user);
 
-        // 4. 创建family_member记录
-        FamilyMember familyMember = new FamilyMember();
-        familyMember.setUserId(userId);
-        familyMember.setFamilyId(family.getId());
-        familyMember.setName(user.getNickname() != null ? user.getNickname() : "家庭成员");
-        familyMember.setGender(user.getGender());
-        familyMember.setRelation("other"); // 默认关系，可后续修改
-        familyMember.setRole("member");
-        familyMember.setBirthday(user.getBirthday());
-        familyMember.setAvatar(user.getAvatar());
-        familyMember.setCreateTime(LocalDateTime.now());
-        familyMember.setUpdateTime(LocalDateTime.now());
-        familyMemberMapper.insert(familyMember);
+        // 4. 复用该用户已有的成员行，没有才新建
+        //
+        // 原实现无条件 insert 一行，紧接着又调用 syncFamilyMembersFamilyId
+        // 把该用户"遗留在其他家庭"的所有行一并改指向本家庭，结果同一个人
+        // 在同一家庭里出现两条成员记录、memberCount 虚高。
+        // （实测：2 个用户的家庭 memberCount=3，成员列表里 TestC 出现两次。）
+        FamilyMember reused = familyMemberMapper.selectOne(new LambdaQueryWrapper<FamilyMember>()
+                .eq(FamilyMember::getUserId, userId)
+                .orderByAsc(FamilyMember::getCreateTime)
+                .last("LIMIT 1"));
 
-        // 5. 校正该用户遗留在其他家庭的成员行，并按实际行数重算成员数
+        Long keptMemberId;
+        if (reused != null) {
+            familyMemberMapper.update(null, new LambdaUpdateWrapper<FamilyMember>()
+                    .eq(FamilyMember::getId, reused.getId())
+                    .set(FamilyMember::getFamilyId, family.getId())
+                    .set(FamilyMember::getName,
+                            user.getNickname() != null ? user.getNickname() : reused.getName())
+                    .set(FamilyMember::getGender, user.getGender())
+                    .set(FamilyMember::getRole, "member")
+                    .set(FamilyMember::getBirthday, user.getBirthday())
+                    .set(FamilyMember::getAvatar, user.getAvatar())
+                    .set(FamilyMember::getUpdateTime, LocalDateTime.now()));
+            keptMemberId = reused.getId();
+        } else {
+            FamilyMember familyMember = new FamilyMember();
+            familyMember.setUserId(userId);
+            familyMember.setFamilyId(family.getId());
+            familyMember.setName(user.getNickname() != null ? user.getNickname() : "家庭成员");
+            familyMember.setGender(user.getGender());
+            familyMember.setRelation("other"); // 默认关系，可后续修改
+            familyMember.setRole("member");
+            familyMember.setBirthday(user.getBirthday());
+            familyMember.setAvatar(user.getAvatar());
+            familyMember.setCreateTime(LocalDateTime.now());
+            familyMember.setUpdateTime(LocalDateTime.now());
+            familyMemberMapper.insert(familyMember);
+            keptMemberId = familyMember.getId();
+        }
+
+        // 5. 清理该用户其余历史行：置空归属，而不是像原先那样搬进本家庭。
+        //    搬进来正是重复成员的来源；置空后这些行不再出现在任何家庭的成员列表里。
+        int cleaned = familyMemberMapper.update(null, new LambdaUpdateWrapper<FamilyMember>()
+                .eq(FamilyMember::getUserId, userId)
+                .ne(FamilyMember::getId, keptMemberId)
+                .isNotNull(FamilyMember::getFamilyId)
+                .set(FamilyMember::getFamilyId, null)
+                .set(FamilyMember::getUpdateTime, LocalDateTime.now()));
+        if (cleaned > 0) {
+            log.info("加入家庭时清理该用户历史成员行: userId={}, 清理 {} 行", userId, cleaned);
+        }
+
+        // 6. 按实际行数重算成员数
         //    （原先手工 memberCount+1 会与实际行数漂移，线上已出现计数字段=1 而实际行数=0）
-        syncFamilyMembersFamilyId(userId, family.getId());
         recalcMemberCount(family.getId());
         // 重新读回，保证返回给客户端的 memberCount 是最新值
         Family latest = familyMapper.selectById(family.getId());
@@ -229,10 +267,13 @@ public class FamilyServiceImpl implements FamilyService {
 
         // 清除用户在 family_member 中的归属（原为空方法 ⇒ 孤儿行）
         Long familyId = user.getFamilyId();
-        user.setFamilyId(null);
-        user.setFamilyRole("member");
-        user.setUpdateTime(LocalDateTime.now());
-        userMapper.updateById(user);
+
+        // 同上：必须显式 set(null)，否则 updateById 忽略 null，family_id 不会被清除
+        userMapper.update(null, new LambdaUpdateWrapper<User>()
+                .eq(User::getId, userId)
+                .set(User::getFamilyId, null)
+                .set(User::getFamilyRole, "member")
+                .set(User::getUpdateTime, LocalDateTime.now()));
 
         int cleared = clearFamilyMembersFamilyId(userId);
 
@@ -298,7 +339,7 @@ public class FamilyServiceImpl implements FamilyService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void removeMember(Long adminId, Long targetUserId) {
+    public void removeMember(Long adminId, Long targetId) {
         // 1. 验证管理员权限
         User admin = userMapper.selectById(adminId);
         if (admin == null || admin.getFamilyId() == null) {
@@ -306,6 +347,27 @@ public class FamilyServiceImpl implements FamilyService {
         }
         if (!"admin".equals(admin.getFamilyRole())) {
             throw new BusinessException(ErrorCode.NOT_FAMILY_ADMIN, "只有家庭管理员可以移除成员");
+        }
+
+        // 1.5 解析目标：兼容两种 id 语义
+        //
+        // App 的成员列表调用 GET /api/family/members，该接口返回的 id 是
+        // family_member.id（见 getFamilyMembers 里 .id(member.getId())），
+        // 而本方法历史上按 user.id 查找，导致 App 上「移除成员」必然失败：
+        //   DELETE /api/family/members/{成员行id} → 404 目标用户不在您的家庭中
+        // 这里先按 family_member.id 解析，解析不到再按 user.id，保持向后兼容。
+        Long targetUserId = null;
+        FamilyMember targetRow = familyMemberMapper.selectById(targetId);
+        if (targetRow != null && admin.getFamilyId().equals(targetRow.getFamilyId())) {
+            targetUserId = targetRow.getUserId();
+        } else {
+            User byUserId = userMapper.selectById(targetId);
+            if (byUserId != null && admin.getFamilyId().equals(byUserId.getFamilyId())) {
+                targetUserId = byUserId.getId();
+            }
+        }
+        if (targetUserId == null) {
+            throw new BusinessException(ErrorCode.FAMILY_NOT_FOUND, "目标用户不在您的家庭中");
         }
 
         // 2. 不能移除自己
@@ -320,11 +382,13 @@ public class FamilyServiceImpl implements FamilyService {
         }
 
         // 4. 移除成员
+        // 同样必须显式 set(null)：updateById 会忽略 null 字段
         Long familyId = admin.getFamilyId();
-        targetUser.setFamilyId(null);
-        targetUser.setFamilyRole("member");
-        targetUser.setUpdateTime(LocalDateTime.now());
-        userMapper.updateById(targetUser);
+        userMapper.update(null, new LambdaUpdateWrapper<User>()
+                .eq(User::getId, targetUserId)
+                .set(User::getFamilyId, null)
+                .set(User::getFamilyRole, "member")
+                .set(User::getUpdateTime, LocalDateTime.now()));
 
         // 清除该用户在 family_member 中的归属（原为空方法 ⇒ 孤儿行）
         int cleared = clearFamilyMembersFamilyId(targetUserId);
@@ -432,17 +496,17 @@ public class FamilyServiceImpl implements FamilyService {
      * @return 实际被清空归属的行数
      */
     private int clearFamilyMembersFamilyId(Long userId) {
-        LambdaQueryWrapper<FamilyMember> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(FamilyMember::getUserId, userId);
-        wrapper.isNotNull(FamilyMember::getFamilyId);
-        List<FamilyMember> members = familyMemberMapper.selectList(wrapper);
-        int affected = 0;
-        for (FamilyMember m : members) {
-            m.setFamilyId(null);
-            m.setUpdateTime(LocalDateTime.now());
-            familyMemberMapper.updateById(m);
-            affected++;
-        }
+        // 必须用 UpdateWrapper 显式 set(null)。
+        // MyBatis-Plus 的 updateById 默认忽略 null 字段（FieldStrategy.NOT_NULL），
+        // 原先 m.setFamilyId(null) + updateById(m) 根本不会把 family_id 写成 NULL，
+        // 于是「退出家庭 / 移除成员」看起来成功、实际毫无变化（实测：
+        // 退出后用户 familyId 仍在、成员行仍挂在该家庭、memberCount 也不减）。
+        // update(...) 返回真实受影响行数，也顺便替掉了原先那个恒增的假计数。
+        int affected = familyMemberMapper.update(null, new LambdaUpdateWrapper<FamilyMember>()
+                .eq(FamilyMember::getUserId, userId)
+                .isNotNull(FamilyMember::getFamilyId)
+                .set(FamilyMember::getFamilyId, null)
+                .set(FamilyMember::getUpdateTime, LocalDateTime.now()));
         if (affected > 0) {
             log.info("已清空家庭成员归属: userId={}, 影响 {} 行", userId, affected);
         } else {
