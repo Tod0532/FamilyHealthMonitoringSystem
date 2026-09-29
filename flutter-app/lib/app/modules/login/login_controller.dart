@@ -207,7 +207,16 @@ class LoginController extends GetxController {
     }
 
     // 默认错误
-    return '登录失败，请稍后重试';
+    //
+    // 这里曾经一律返回「登录失败，请稍后重试」，把真实异常完全吞掉：
+    // 真机测试中出现过一次「后端日志显示登录成功、但界面只提示请稍后重试」
+    // 的情况，因为看不到真实原因而无法定位。未预期异常时至少把原始信息带上。
+    final raw = errorStr.trim();
+    if (raw.isEmpty) {
+      return '登录失败，请稍后重试';
+    }
+    final short = raw.length > 120 ? '${raw.substring(0, 120)}…' : raw;
+    return '登录失败：$short';
   }
 
   /// 忘记密码
