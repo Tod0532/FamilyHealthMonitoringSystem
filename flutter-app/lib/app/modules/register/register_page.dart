@@ -82,7 +82,10 @@ class RegisterPage extends GetView<RegisterController> {
 
   /// 手机号输入框
   Widget _buildPhoneField() {
-    return TextField(
+    // 必须包 Obx：errorText 读的是 phoneError（Rx），不包的话只在首帧求值一次，
+    // 之后再赋值也不会重建 —— 与登录页 phoneError 是同一处缺陷，
+    // 表现为手机号留空/格式错误时点「获取验证码」「注册」完全无反馈。
+    return Obx(() => TextField(
       controller: controller.phoneController,
       keyboardType: TextInputType.phone,
       maxLength: 11,
@@ -106,7 +109,7 @@ class RegisterPage extends GetView<RegisterController> {
         errorText: controller.phoneError.value.isEmpty ? null : controller.phoneError.value,
       ),
       onChanged: controller.onPhoneChanged,
-    );
+    ));
   }
 
   /// 验证码输入框
@@ -114,7 +117,8 @@ class RegisterPage extends GetView<RegisterController> {
     return Row(
       children: [
         Expanded(
-          child: TextField(
+          // 同手机号字段：必须包 Obx，否则 smsCodeError 永远不显示（验证码错误无反馈）
+          child: Obx(() => TextField(
             controller: controller.smsCodeController,
             keyboardType: TextInputType.number,
             maxLength: 6,
@@ -138,7 +142,7 @@ class RegisterPage extends GetView<RegisterController> {
               errorText: controller.smsCodeError.value.isEmpty ? null : controller.smsCodeError.value,
             ),
             onChanged: controller.onSmsCodeChanged,
-          ),
+          )),
         ),
         SizedBox(width: 12.w),
         Obx(() => SizedBox(
