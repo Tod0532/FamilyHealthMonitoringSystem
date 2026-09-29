@@ -21,6 +21,18 @@ class _PasswordChangePageState extends State<PasswordChangePage> {
   final RxBool obscureNewPassword = true.obs;
   final RxBool obscureConfirmPassword = true.obs;
 
+  /// 新密码正文（供密码强度提示做响应式读取）
+  ///
+  /// 【缺陷修复】强度提示原先写成
+  ///   Obx(() { final password = _newPasswordController.text; ... })
+  /// 但 TextEditingController 只是 Listenable、不是 Rx，这个 Obx 内部
+  /// 没有注册任何可观察对象；GetX 在后续任意 Rx 变化通知到它时会直接抛
+  ///   [Get] the improper use of a GetX has been detected.
+  /// 结果是整个页面 body 构建失败（只剩 AppBar，白屏），用户根本无法提交修改密码。
+  /// 真机实测：进入页面后 body 消失、找不到「确认修改」按钮。
+  /// 这里用 RxString 承载正文，Obx 读取它即可正常响应。
+  final RxString newPasswordText = ''.obs;
+
   @override
   void initState() {
     super.initState();
@@ -110,6 +122,7 @@ class _PasswordChangePageState extends State<PasswordChangePage> {
               obscure: obscureNewPassword.value,
               hint: '请输入新密码（至少6位）',
               onToggle: () => obscureNewPassword.value = !obscureNewPassword.value,
+              onChanged: (value) => newPasswordText.value = value,
             )),
 
             SizedBox(height: 16.h),
@@ -133,8 +146,11 @@ class _PasswordChangePageState extends State<PasswordChangePage> {
             SizedBox(height: 8.h),
 
             // 密码强度提示
+            // 必须读取 Rx（newPasswordText）—— 原先读 _newPasswordController.text，
+            // 该 Obx 内没有任何可观察对象，GetX 会抛
+            // 「[Get] the improper use of a GetX has been detected」并让页面崩掉。
             Obx(() {
-              final password = _newPasswordController.text;
+              final password = newPasswordText.value;
               if (password.isEmpty) {
                 return const SizedBox.shrink();
               }
@@ -178,6 +194,7 @@ class _PasswordChangePageState extends State<PasswordChangePage> {
     required bool obscure,
     required String hint,
     required VoidCallback onToggle,
+    ValueChanged<String>? onChanged,
   }) {
     return Container(
       decoration: BoxDecoration(
@@ -188,6 +205,7 @@ class _PasswordChangePageState extends State<PasswordChangePage> {
       child: TextField(
         controller: controller,
         obscureText: obscure,
+        onChanged: onChanged,
         decoration: InputDecoration(
           hintText: hint,
           border: InputBorder.none,
