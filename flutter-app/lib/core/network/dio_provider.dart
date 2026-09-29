@@ -80,14 +80,14 @@ class DioProvider {
 
         // 处理 401 未授权（Token 过期）
         //
-        // 必须排除鉴权接口本身：登录密码错误、注册、刷新令牌失败时后端同样返回
-        // 401。若一并按「Token 过期」处理，会清空本地数据并重建登录页，
-        // 后果是错误提示被页面重建冲掉、用户刚输入的手机号也被清空。
-        // 实测：输错密码后界面毫无提示，且手机号输入框内容消失。
+        // 必须排除鉴权接口自身：登录密码错误、注册失败、刷新令牌失效、
+        // 修改密码时原密码错误等，后端都返回 401。若一并按「Token 过期」处理，
+        // 会清空本地数据并把用户踢回登录页，错误提示也被页面重建冲掉。
+        // 实测：登录密码错误时界面毫无提示且手机号被清空；
+        //       改密码时原密码错误（HTTP 401 原密码错误）同样会把人踢下线。
+        // 所以这里对 /api/auth/** 整段排除，它们各自负责报错。
         final path = error.requestOptions.path;
-        final isAuthEndpoint = path.contains('/api/auth/login') ||
-            path.contains('/api/auth/register') ||
-            path.contains('/api/auth/refresh');
+        final isAuthEndpoint = path.contains('/api/auth/');
         if (error.response?.statusCode == 401 && !isAuthEndpoint) {
           _handleUnauthorized();
         }
