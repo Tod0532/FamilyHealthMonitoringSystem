@@ -78,7 +78,12 @@ class MembersController extends GetxController {
           id: item['id']?.toString() ?? '',
           name: item['nickname']?.toString() ?? item['phone']?.toString() ?? '未命名',
           avatar: item['avatar']?.toString(),
-          relation: MemberRelation.other, // 家庭用户默认为other
+          // 关系必须取后端返回的 relation。
+          // 此前硬编码成 MemberRelation.other，导致所有人一律显示「其他」；
+          // 同时后端 FamilyMemberUserResponse 原先也没有 relation 字段，现已补齐。
+          relation: MemberRelation.fromString(
+            item['relation']?.toString() ?? 'other',
+          ),
           role: memberRole,
           gender: genderValue,
           birthday: item['birthday'] != null ? DateTime.tryParse(item['birthday'].toString()) : null,
@@ -86,7 +91,8 @@ class MembersController extends GetxController {
           createTime: DateTime.tryParse(item['joinTime']?.toString() ?? '') ?? DateTime.now(),
         );
 
-        AppLogger.d('MembersController: 解析成员 - id=${member.id}, name=${member.name}, role=${member.role.name}');
+        AppLogger.d('MembersController: 解析成员 - id=${member.id}, name=${member.name}, '
+            'role=${member.role.name}, relation=${member.relation.name}, gender=${member.gender}');
         return member;
       }).toList();
 

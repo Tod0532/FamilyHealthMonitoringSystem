@@ -4,6 +4,7 @@ import 'package:health_center_app/main.dart';
 import 'package:health_center_app/core/storage/storage_service.dart';
 import 'package:health_center_app/core/network/api_exception.dart';
 import 'package:health_center_app/core/utils/logger.dart';
+import 'package:health_center_app/core/app_version.dart';
 
 /// Dio 网络请求提供者
 ///
@@ -61,7 +62,7 @@ class DioProvider {
 
         // 添加设备信息
         options.headers['X-Device-Id'] = 'device_${DateTime.now().millisecondsSinceEpoch}';
-        options.headers['X-App-Version'] = '1.0.0';
+        options.headers['X-App-Version'] = AppVersion.name;
 
         // 打印请求日志
         _printRequestLog(options);
@@ -78,7 +79,16 @@ class DioProvider {
         _printErrorLog(error);
 
         // 处理 401 未授权（Token 过期）
-        if (error.response?.statusCode == 401) {
+        //
+        // 必须排除鉴权接口本身：登录密码错误、注册、刷新令牌失败时后端同样返回
+        // 401。若一并按「Token 过期」处理，会清空本地数据并重建登录页，
+        // 后果是错误提示被页面重建冲掉、用户刚输入的手机号也被清空。
+        // 实测：输错密码后界面毫无提示，且手机号输入框内容消失。
+        final path = error.requestOptions.path;
+        final isAuthEndpoint = path.contains('/api/auth/login') ||
+            path.contains('/api/auth/register') ||
+            path.contains('/api/auth/refresh');
+        if (error.response?.statusCode == 401 && !isAuthEndpoint) {
           _handleUnauthorized();
         }
 

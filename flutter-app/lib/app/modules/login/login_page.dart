@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:health_center_app/app/modules/login/login_controller.dart';
+import 'package:health_center_app/core/app_version.dart';
 
 /// 登录页面
 class LoginPage extends GetView<LoginController> {
@@ -89,9 +90,11 @@ class LoginPage extends GetView<LoginController> {
   }
 
   /// 版本信息
+  ///
+  /// 原先写死「版本 1.0.0」，与实际版本（2.2.0）不符；统一取 AppVersion。
   Widget _buildVersionInfo() {
     return Text(
-      '版本 1.0.0',
+      '版本 ${AppVersion.name}',
       style: TextStyle(
         fontSize: 12,
         color: Colors.grey[400],
@@ -100,8 +103,12 @@ class LoginPage extends GetView<LoginController> {
   }
 
   /// 手机号输入框
+  ///
+  /// 必须包 Obx：errorText 读的是 phoneError（Rx），不包的话只在首帧求值一次，
+  /// 之后再赋值也不会重建 —— 表现为手机号留空或格式错误时点「登录」完全无反馈
+  /// （密码合法时静默失败），而密码框因为包了 Obx 能正常提示。
   Widget _buildPhoneField() {
-    return TextField(
+    return Obx(() => TextField(
       controller: controller.phoneController,
       keyboardType: TextInputType.phone,
       maxLength: 11,
@@ -129,7 +136,7 @@ class LoginPage extends GetView<LoginController> {
         errorText: controller.phoneError.value.isEmpty ? null : controller.phoneError.value,
       ),
       onChanged: controller.onPhoneChanged,
-    );
+    ));
   }
 
   /// 密码输入框

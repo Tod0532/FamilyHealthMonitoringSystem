@@ -20,9 +20,19 @@ enum MemberRole {
 }
 
 /// 成员关系枚举
+///
+/// 注意：必须包含后端契约使用的取值。数据库 schema 注释约定的关系是
+/// `father-父亲，mother-母亲，spouse-配偶，child-子女，other-其他`，
+/// 而本枚举此前只有 husband/wife/son/daughter 这类具体称谓，
+/// 没有 spouse / child，导致 fromString('spouse') 匹配不到而回落成「其他」——
+/// 表现为后端明明返回了 spouse，界面上所有成员仍显示「其他」。
 enum MemberRelation {
   father('父亲'),
   mother('母亲'),
+  // 与后端契约对齐的通用取值
+  spouse('配偶'),
+  child('子女'),
+  // 更具体的称谓（保留兼容：历史数据里可能存的是这些）
   husband('丈夫'),
   wife('妻子'),
   son('儿子'),

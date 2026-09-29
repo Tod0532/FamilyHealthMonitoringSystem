@@ -4,6 +4,7 @@ import 'package:health_center_app/core/network/dio_provider.dart';
 import 'package:health_center_app/core/storage/storage_service.dart';
 import 'package:health_center_app/core/theme/theme_controller.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:health_center_app/core/app_version.dart';
 
 /// 个人中心控制器
 class ProfileController extends GetxController {
@@ -13,8 +14,10 @@ class ProfileController extends GetxController {
   PackageInfo _packageInfo = PackageInfo(
     appName: '家庭健康中心',
     packageName: 'com.healthcenter.health_center_app',
-    version: '1.0.0',
-    buildNumber: '1',
+    // 原先兜底写死 version: '1.0.0' / buildNumber: '1'，
+    // 与真实版本无关；统一走 AppVersion（启动时由 PackageInfo 读取）。
+    version: AppVersion.name,
+    buildNumber: AppVersion.buildNumber,
   );
 
   // 用户信息

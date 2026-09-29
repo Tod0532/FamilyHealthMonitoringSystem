@@ -10,6 +10,7 @@ import 'package:health_center_app/core/utils/logger.dart';
 import 'package:health_center_app/core/storage/storage_service.dart';
 import 'package:health_center_app/core/network/dio_provider.dart';
 import 'package:health_center_app/core/mode/app_mode.dart';
+import 'package:health_center_app/core/app_version.dart';
 import 'package:health_center_app/core/ocr/ocr_preloader.dart';
 
 void main() async {
@@ -17,6 +18,10 @@ void main() async {
 
   // 初始化日志
   AppLogger.init();
+
+  // 读取真实版本号（pubspec 的 version），供登录页/关于我们/请求头统一使用。
+  // 必须在 DioProvider 与各 Controller 之前完成，否则会用到兜底值。
+  await AppVersion.load();
 
   // 初始化 GetStorage（必须在使用前初始化）
   await GetStorage.init();
