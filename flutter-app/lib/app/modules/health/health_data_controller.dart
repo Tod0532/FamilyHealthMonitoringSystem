@@ -31,15 +31,44 @@ class HealthDataController extends GetxController {
   // 选中的数据类型
   final currentDataType = HealthDataType.bloodPressure.obs;
 
+  /// 模式切换监听
+  ///
+  /// 必需：退出演示模式时必须清掉示例数据并改拉后端。
+  /// 否则演示期间灌入的记录会在横幅消失后继续显示 —— 界面已经是
+  /// 「真实模式」的样子，却还在展示伪造的血压/心率值，比不做演示模式更危险。
+  Worker? _modeWorker;
+
   @override
   void onInit() {
     super.onInit();
-    // 真实模式下尝试从后端获取数据；演示模式下直接加载示例数据。
-    // 注意：真实模式接口失败时**不会**回退到示例数据，而是显示错误，
-    // 否则用户会把伪造的血压值当成自己的真实记录。
+    _applyModeData();
+
+    if (Get.isRegistered<AppModeController>()) {
+      _modeWorker = ever(
+        Get.find<AppModeController>().mode,
+        (_) => _applyModeData(),
+      );
+    }
+  }
+
+  @override
+  void onClose() {
+    _modeWorker?.dispose();
+    super.onClose();
+  }
+
+  /// 按当前模式装载数据
+  ///
+  /// 真实模式下接口失败时**不会**回退到示例数据，而是显示错误，
+  /// 否则用户会把伪造的血压值当成自己的真实记录。
+  void _applyModeData() {
     if (AppModeController.isDemoNow) {
       _loadMockHealthData();
     } else {
+      // 先清空示例数据，避免切回真实模式后伪造记录残留
+      healthDataList.clear();
+      filteredDataList.clear();
+      errorMessage.value = '';
       fetchHealthDataFromApi();
     }
   }

@@ -39,18 +39,50 @@ class HealthAlertController extends GetxController {
   // 未读预警数量
   final unreadCount = 0.obs;
 
+  /// 模式切换监听
+  ///
+  /// 必需：退出演示模式时必须清掉示例规则与记录并改拉后端。
+  /// 否则演示期间灌入的伪造预警会以「真实模式」的界面继续显示 ——
+  /// 用户会误以为自己的预警阈值已被配置、预警记录是真实的。
+  Worker? _modeWorker;
+
   @override
   void onInit() {
     super.onInit();
-    // 演示模式：使用内置示例规则与记录
-    // 真实模式：从后端拉取，失败即为空 + 错误提示，绝不注入伪造预警
+    _applyModeData();
+    _checkUnreadAlerts();
+
+    if (Get.isRegistered<AppModeController>()) {
+      _modeWorker = ever(
+        Get.find<AppModeController>().mode,
+        (_) => _applyModeData(),
+      );
+    }
+  }
+
+  @override
+  void onClose() {
+    _modeWorker?.dispose();
+    super.onClose();
+  }
+
+  /// 按当前模式装载数据
+  ///
+  /// - 演示模式：内置示例规则与记录（页面顶部有醒目提示条）
+  /// - 真实模式：先清空示例数据再拉后端，失败即为空 + 错误提示，
+  ///   绝不注入伪造预警
+  void _applyModeData() {
     if (AppModeController.isDemoNow) {
       _loadMockData();
     } else {
+      alertRules.clear();
+      filteredRules.clear();
+      alertRecords.clear();
+      unreadCount.value = 0;
+      errorMessage.value = '';
       fetchAlertRules();
       fetchAlertRecords();
     }
-    _checkUnreadAlerts();
   }
 
   /// 加载模拟数据（仅用于演示模式）

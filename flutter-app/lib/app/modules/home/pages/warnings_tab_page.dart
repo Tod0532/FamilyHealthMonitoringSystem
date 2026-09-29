@@ -50,6 +50,8 @@ class _WarningsTabPageState extends State<WarningsTabPage> {
           // 演示模式提示（真实模式下不渲染任何内容）
           const DemoModeBanner(
             detail: '下列预警规则与记录均为内置示例，不是您的真实预警',
+            // 本页无 AppBar，横幅必须让出状态栏，否则「退出」按钮点不到
+            respectStatusBar: true,
           ),
 
           // 顶部统计头部

@@ -98,6 +98,8 @@ class _HealthDataTabPageState extends State<HealthDataTabPage> {
           // 演示模式提示（真实模式下不渲染任何内容）
           const DemoModeBanner(
             detail: '下列血压、心率等记录均为内置示例，不是您的真实测量数据',
+            // 本页无 AppBar，横幅必须让出状态栏，否则「退出」按钮点不到
+            respectStatusBar: true,
           ),
 
           // 顶部统计卡片
@@ -107,7 +109,11 @@ class _HealthDataTabPageState extends State<HealthDataTabPage> {
           _buildMemberFilter(),
 
           // 数据类型筛选
-          _buildTypeFilter(),
+          //
+          // 必须包一层 Obx：芯片上的计数读的是 healthDataList（RxList），
+          // 而本页 build() 不是响应式的。此前切换模式清空列表后，
+          // 列表已显示「暂无健康数据」而芯片仍停留在「全部 40」。
+          Obx(() => _buildTypeFilter()),
 
           // 趋势分析入口
           _buildTrendEntryCards(),

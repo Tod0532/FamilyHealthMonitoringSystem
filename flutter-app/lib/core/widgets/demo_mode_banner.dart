@@ -19,10 +19,20 @@ class DemoModeBanner extends StatelessWidget {
   /// 是否允许用户直接点击退出演示模式
   final bool allowExit;
 
+  /// 是否需要让出状态栏高度
+  ///
+  /// 当横幅位于**没有 AppBar 的页面**顶部时（首页的「健康」「预警」两个 tab）
+  /// 必须置为 true：否则横幅会被系统状态栏压住，实测「退出」按钮的
+  /// bounds 是 [992,61][1120,115]，而状态栏是 [0,0][1200,110]，
+  /// 按钮中心落在状态栏区域内点不到，用户几乎无法退出演示模式。
+  /// 页面已有 AppBar 时（如健康知识页）保持 false，避免多出一段空白。
+  final bool respectStatusBar;
+
   const DemoModeBanner({
     super.key,
     this.detail,
     this.allowExit = true,
+    this.respectStatusBar = false,
   });
 
   @override
@@ -32,13 +42,16 @@ class DemoModeBanner extends StatelessWidget {
     }
 
     final modeController = Get.find<AppModeController>();
+    final topInset = respectStatusBar
+        ? MediaQuery.of(context).padding.top
+        : 0.0;
 
     return Obx(() {
       if (!modeController.isDemo) return const SizedBox.shrink();
 
       return Container(
         width: double.infinity,
-        margin: EdgeInsets.fromLTRB(12.w, 8.h, 12.w, 4.h),
+        margin: EdgeInsets.fromLTRB(12.w, 8.h + topInset, 12.w, 4.h),
         padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
         decoration: BoxDecoration(
           color: const Color(0xFFFFF3E0),
