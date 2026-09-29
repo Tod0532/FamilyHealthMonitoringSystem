@@ -370,6 +370,20 @@ public class FamilyServiceImpl implements FamilyService {
             throw new BusinessException(ErrorCode.FAMILY_NOT_FOUND, "目标用户不在您的家庭中");
         }
 
+        // 1.6 若目标行属于管理员自己，语义是「删除这条成员档案」而非「把某个账号移出家庭」
+        //
+        // App 的「添加成员」创建的 family_member 行，其 user_id 恒为创建者本人
+        // （FamilyMemberServiceImpl.create 里 member.setUserId(userId)）。
+        // 因此家庭页用列表里的 id 调本接口时，会被下面的「不能移除自己」挡成 403。
+        // 这里对"自己的成员档案行"直接删行，保留"不能移除自己账号"的原有保护
+        //（传自己的 user.id 时 targetRow 解析不到，仍会走到下面的判断）。
+        if (adminId.equals(targetUserId) && targetRow != null) {
+            familyMemberMapper.deleteById(targetRow.getId());
+            recalcMemberCount(admin.getFamilyId());
+            log.info("已删除成员档案行: adminId={}, memberRowId={}", adminId, targetRow.getId());
+            return;
+        }
+
         // 2. 不能移除自己
         if (adminId.equals(targetUserId)) {
             throw new BusinessException(ErrorCode.CANNOT_REMOVE_ADMIN, "不能移除自己，请使用退出家庭功能");
