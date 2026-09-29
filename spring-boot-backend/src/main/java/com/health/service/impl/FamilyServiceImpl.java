@@ -279,9 +279,14 @@ public class FamilyServiceImpl implements FamilyService {
                     .phone(maskPhone(u.getPhone()))
                     .nickname(member.getName())  // 使用 family_member.name
                     .avatar(u.getAvatar())
-                    .gender(u.getGender())
-                    .birthday(u.getBirthday())
+                    // 注意：性别与生日必须取 family_member 自己的字段。
+                    // 此前取的是 u.getGender()/u.getBirthday()（账号主人的），
+                    // 导致同一家庭下所有成员永远显示成账号主人的性别和生日
+                    // （实测：种子里李四是 female，界面上却显示「男」）。
+                    .gender(member.getGender())
+                    .birthday(member.getBirthday())
                     .familyRole(member.getRole())
+                    .relation(member.getRelation())
                     .joinTime(member.getCreateTime())
                     .isMe(member.getUserId().equals(userId))
                     .build();

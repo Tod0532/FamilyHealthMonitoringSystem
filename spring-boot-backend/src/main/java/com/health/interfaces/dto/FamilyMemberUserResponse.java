@@ -62,6 +62,15 @@ public class FamilyMemberUserResponse {
     private String familyRole;
 
     /**
+     * 与家庭管理员/户主的关系：father/mother/spouse/child/other
+     *
+     * 补充原因：App 的成员列表与筛选需要展示关系，此前该字段缺失，
+     * 客户端只能硬编码成 other，导致所有成员一律显示「其他」。
+     */
+    @Schema(description = "成员关系")
+    private String relation;
+
+    /**
      * 加入时间
      */
     @Schema(description = "加入时间")
