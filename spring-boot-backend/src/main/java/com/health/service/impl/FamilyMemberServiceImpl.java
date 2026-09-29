@@ -14,6 +14,7 @@ import com.health.interfaces.dto.FamilyMemberRequest;
 import com.health.interfaces.dto.FamilyMemberResponse;
 import com.health.service.FamilyMemberService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,6 +27,7 @@ import java.util.stream.Collectors;
  * 家庭成员服务实现
  */
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class FamilyMemberServiceImpl implements FamilyMemberService {
 
@@ -79,6 +81,11 @@ public class FamilyMemberServiceImpl implements FamilyMemberService {
         member.setRole(request.getRole() != null ? request.getRole() : "member");
         member.setSortOrder(getNextSortOrder(userId));
 
+        // birthday：请求里是 String（yyyy-MM-dd），实体是 LocalDate，
+        // BeanUtils.copyProperties 遇到类型不一致会直接跳过，导致生日永远存不进去
+        // （实测：POST /api/members 带 birthday 返回 200，但生日字段为空）。
+        member.setBirthday(parseBirthday(request.getBirthday()));
+
         // 必须写入 family_id，否则新成员不属于任何家庭。
         // 「家庭成员」列表（/api/family/members）按 family_id 过滤，会看不到该成员，
         // 家庭 memberCount 也不计；而按用户维度查询（/api/members）又能看到，
@@ -97,6 +104,26 @@ public class FamilyMemberServiceImpl implements FamilyMemberService {
         return toResponse(member);
     }
 
+    /**
+     * 解析生日字符串（yyyy-MM-dd）；空值或格式非法时返回 null。
+     */
+    private java.time.LocalDate parseBirthday(String birthday) {
+        if (birthday == null || birthday.trim().isEmpty()) {
+            return null;
+        }
+        try {
+            // 兼容前端可能传来的 ISO8601（含时间部分）
+            String v = birthday.trim();
+            if (v.length() > 10) {
+                v = v.substring(0, 10);
+            }
+            return java.time.LocalDate.parse(v, DATE_FORMATTER);
+        } catch (Exception e) {
+            log.warn("生日格式无法解析，已忽略: {}", birthday);
+            return null;
+        }
+    }
+
     @Override
     @Transactional(rollbackFor = Exception.class)
     public FamilyMemberResponse update(Long id, Long userId, FamilyMemberRequest request) {
@@ -105,6 +132,8 @@ public class FamilyMemberServiceImpl implements FamilyMemberService {
             throw new BusinessException(ErrorCode.MEMBER_NOT_FOUND, "成员不存在");
         }
         BeanUtils.copyProperties(request, member, "id");
+        // 同 create：String -> LocalDate 不会被 BeanUtils 拷贝，必须显式解析
+        member.setBirthday(parseBirthday(request.getBirthday()));
         familyMemberMapper.updateById(member);
         return toResponse(member);
     }

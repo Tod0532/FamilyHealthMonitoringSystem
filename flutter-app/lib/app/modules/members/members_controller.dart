@@ -124,21 +124,48 @@ class MembersController extends GetxController {
     }
   }
 
+  /// 构造后端契约载荷（FamilyMemberRequest）
+  ///
+  /// 注意与本地模型 FamilyMember.toJson() 的区别——本地缓存用的是
+  /// gender int(1/2) + birthday ISO8601，而接口要求 gender 为 "male"/"female"、
+  /// birthday 为 "yyyy-MM-dd"。本地 fromJson 依赖原格式，所以不能改模型，
+  /// 这里单独构造接口载荷。
+  Map<String, dynamic> _toApiPayload(FamilyMember m) {
+    String genderStr = 'male';
+    if (m.gender == 2) {
+      genderStr = 'female';
+    } else if (m.gender == 1) {
+      genderStr = 'male';
+    }
+
+    final payload = <String, dynamic>{
+      'name': m.name,
+      'gender': genderStr, // 后端 @NotBlank 必填
+      'relation': m.relation.name,
+      'role': m.role.name,
+    };
+
+    if (m.birthday != null) {
+      final d = m.birthday!;
+      payload['birthday'] =
+          '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+    }
+    return payload;
+  }
+
   /// 添加成员
+  ///
+  /// 【严重缺陷修复】原先这里是「模拟添加（实际应调用API）」：
+  /// 只把成员加进内存列表并提示「成功」，服务端从未收到请求。
+  /// 真机实测：在 App 里把成员关系改成「父亲」→ 列表立即变化、提示成功，
+  /// 但服务端仍是 other，重启 App 后改动全部还原。
+  /// 现改为真实调用 POST /api/members，并以服务端返回为准刷新列表。
   Future<bool> addMember(FamilyMember member) async {
     isLoading.value = true;
 
     try {
-      // 模拟添加（实际应调用API）
-      await Future.delayed(const Duration(milliseconds: 500));
-
-      // 模拟返回新成员ID
-      final newMember = member.copyWith(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        createTime: DateTime.now(),
-      );
-
-      members.add(newMember);
+      await dioProvider.post('/api/members', data: _toApiPayload(member));
+      await fetchMembers();
 
       Get.snackbar(
         '成功',
@@ -149,9 +176,10 @@ class MembersController extends GetxController {
 
       return true;
     } catch (e) {
+      AppLogger.e('添加成员失败: $e');
       Get.snackbar(
         '失败',
-        '添加成员失败',
+        '添加成员失败：${_friendlyError(e)}',
         snackPosition: SnackPosition.TOP,
         backgroundColor: Colors.red.shade100,
       );
@@ -161,18 +189,29 @@ class MembersController extends GetxController {
     }
   }
 
+  /// 把异常转成简短提示
+  String _friendlyError(dynamic e) {
+    final s = e.toString();
+    if (s.contains('SocketException') || s.contains('Connection')) {
+      return '网络连接失败';
+    }
+    if (s.contains('403') || s.contains('权限')) {
+      return '需要家庭管理员权限';
+    }
+    return s.length > 60 ? '${s.substring(0, 60)}…' : s;
+  }
+
   /// 编辑成员
+  ///
+  /// 原先同样是「模拟更新（实际应调用API）」，只改内存。
+  /// 现改为真实调用 PUT /api/members/{id}。
   Future<bool> updateMember(FamilyMember member) async {
     isLoading.value = true;
 
     try {
-      // 模拟更新（实际应调用API）
-      await Future.delayed(const Duration(milliseconds: 500));
-
-      final index = members.indexWhere((m) => m.id == member.id);
-      if (index >= 0) {
-        members[index] = member;
-      }
+      await dioProvider.put('/api/members/${member.id}',
+          data: _toApiPayload(member));
+      await fetchMembers();
 
       Get.snackbar(
         '成功',
@@ -183,9 +222,10 @@ class MembersController extends GetxController {
 
       return true;
     } catch (e) {
+      AppLogger.e('更新成员失败: $e');
       Get.snackbar(
         '失败',
-        '更新成员失败',
+        '更新成员失败：${_friendlyError(e)}',
         snackPosition: SnackPosition.TOP,
         backgroundColor: Colors.red.shade100,
       );
@@ -196,14 +236,15 @@ class MembersController extends GetxController {
   }
 
   /// 删除成员
+  ///
+  /// 原先同样是「模拟删除（实际应调用API）」。现改为真实调用
+  /// DELETE /api/members/{id}。
   Future<bool> deleteMember(String memberId) async {
     isLoading.value = true;
 
     try {
-      // 模拟删除（实际应调用API）
-      await Future.delayed(const Duration(milliseconds: 500));
-
-      members.removeWhere((m) => m.id == memberId);
+      await dioProvider.delete('/api/members/$memberId');
+      await fetchMembers();
 
       Get.snackbar(
         '成功',
@@ -214,9 +255,10 @@ class MembersController extends GetxController {
 
       return true;
     } catch (e) {
+      AppLogger.e('删除成员失败: $e');
       Get.snackbar(
         '失败',
-        '删除成员失败',
+        '删除成员失败：${_friendlyError(e)}',
         snackPosition: SnackPosition.TOP,
         backgroundColor: Colors.red.shade100,
       );

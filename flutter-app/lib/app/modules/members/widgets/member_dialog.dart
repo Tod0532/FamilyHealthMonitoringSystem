@@ -291,8 +291,11 @@ class _MemberDialogState extends State<MemberDialog> {
     );
 
     widget.onSave(member).then((success) {
-      if (success) {
-        Get.back();
+      if (success && mounted) {
+        // 本弹窗是用 showDialog 打开的（不是 Get.dialog），
+        // 用 Get.back() 无法可靠关闭，实测：保存后弹窗一直留在屏幕上，
+        // 用户以为没保存会反复点。这里直接用当前 context 关闭。
+        Navigator.of(context).pop();
       }
     });
   }

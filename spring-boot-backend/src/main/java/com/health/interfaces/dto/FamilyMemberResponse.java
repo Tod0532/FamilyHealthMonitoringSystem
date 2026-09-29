@@ -17,8 +17,8 @@ public class FamilyMemberResponse {
     @Schema(description = "成员名称")
     private String name;
 
-    @Schema(description = "性别：0-未知，1-男，2-女")
-    private Integer gender;
+    @Schema(description = "性别：male-男，female-女")
+    private String gender;
 
     @Schema(description = "关系")
     private String relation;
