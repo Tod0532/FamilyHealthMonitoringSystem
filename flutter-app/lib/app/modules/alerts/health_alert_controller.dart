@@ -6,6 +6,7 @@ import 'package:health_center_app/core/models/family_member.dart';
 import 'package:health_center_app/core/network/dio_provider.dart';
 import 'package:health_center_app/app/modules/members/members_controller.dart';
 import 'package:health_center_app/core/utils/permission_utils.dart';
+import 'package:health_center_app/core/utils/logger.dart';
 import 'package:health_center_app/core/mode/app_mode.dart';
 
 /// 健康预警控制器
@@ -246,6 +247,12 @@ class HealthAlertController extends GetxController {
   }
 
   /// 添加预警规则
+  ///
+  /// 【严重缺陷修复】原先这里是「模拟添加（实际应调用API）」：
+  /// 只把规则加进内存列表就提示「成功」，服务端从未收到任何请求。
+  /// 真机实测：App 里显示已添加 2 条规则，服务端 0 条，重启后规则全部消失，
+  /// 用户以为配好了预警，实际上预警永远不会触发。
+  /// 现改为真实调用 POST /api/alert-rules，并以服务端返回为准刷新列表。
   Future<bool> addAlertRule(HealthAlertRule rule) async {
     // 权限检查：只有管理员可以添加预警规则
     if (!PermissionUtils.canEditAlertRules()) {
@@ -253,14 +260,24 @@ class HealthAlertController extends GetxController {
       return false;
     }
 
+    final invalid = rule.validateThresholds();
+    if (invalid != null) {
+      Get.snackbar(
+        '提示',
+        invalid,
+        snackPosition: SnackPosition.TOP,
+        backgroundColor: Colors.orange.shade100,
+      );
+      return false;
+    }
+
     isSubmitting.value = true;
 
     try {
-      // 模拟添加（实际应调用API）
-      await Future.delayed(const Duration(milliseconds: 500));
+      await _dioProvider.post('/api/alert-rules', data: rule.toJson());
 
-      alertRules.add(rule);
-      _applyFilter();
+      // 以服务端为准刷新，避免本地与服务端不一致
+      await fetchAlertRules();
 
       Get.snackbar(
         '成功',
@@ -271,9 +288,10 @@ class HealthAlertController extends GetxController {
 
       return true;
     } catch (e) {
+      AppLogger.e('添加预警规则失败: $e');
       Get.snackbar(
         '失败',
-        '添加预警规则失败',
+        '添加预警规则失败：${_friendlyError(e)}',
         snackPosition: SnackPosition.TOP,
         backgroundColor: Colors.red.shade100,
       );
@@ -284,6 +302,9 @@ class HealthAlertController extends GetxController {
   }
 
   /// 更新预警规则
+  ///
+  /// 原先同样是「模拟更新（实际应调用API）」，只改内存。现改为真实调用
+  /// PUT /api/alert-rules/{id}。
   Future<bool> updateAlertRule(HealthAlertRule rule) async {
     // 权限检查：只有管理员可以更新预警规则
     if (!PermissionUtils.canEditAlertRules()) {
@@ -291,17 +312,20 @@ class HealthAlertController extends GetxController {
       return false;
     }
 
+    final invalid = rule.validateThresholds();
+    if (invalid != null) {
+      Get.snackbar('提示', invalid, snackPosition: SnackPosition.TOP,
+          backgroundColor: Colors.orange.shade100);
+      return false;
+    }
+
     isSubmitting.value = true;
 
     try {
-      // 模拟更新（实际应调用API）
-      await Future.delayed(const Duration(milliseconds: 500));
+      await _dioProvider.put('/api/alert-rules/${rule.id}', data: rule.toJson());
 
-      final index = alertRules.indexWhere((r) => r.id == rule.id);
-      if (index >= 0) {
-        alertRules[index] = rule.copyWith(updateTime: DateTime.now());
-        _applyFilter();
-      }
+      // 以服务端返回为准刷新列表，避免本地与服务端不一致
+      await fetchAlertRules();
 
       Get.snackbar(
         '成功',
@@ -312,9 +336,10 @@ class HealthAlertController extends GetxController {
 
       return true;
     } catch (e) {
+      AppLogger.e('更新预警规则失败: $e');
       Get.snackbar(
         '失败',
-        '更新预警规则失败',
+        '更新预警规则失败：${_friendlyError(e)}',
         snackPosition: SnackPosition.TOP,
         backgroundColor: Colors.red.shade100,
       );
@@ -325,6 +350,9 @@ class HealthAlertController extends GetxController {
   }
 
   /// 删除预警规则
+  ///
+  /// 原先同样是「模拟删除（实际应调用API）」，只从内存移除。现改为真实调用
+  /// DELETE /api/alert-rules/{id}。
   Future<bool> deleteAlertRule(String ruleId) async {
     // 权限检查：只有管理员可以删除预警规则
     if (!PermissionUtils.canEditAlertRules()) {
@@ -335,11 +363,9 @@ class HealthAlertController extends GetxController {
     isSubmitting.value = true;
 
     try {
-      // 模拟删除（实际应调用API）
-      await Future.delayed(const Duration(milliseconds: 500));
+      await _dioProvider.delete('/api/alert-rules/$ruleId');
 
-      alertRules.removeWhere((r) => r.id == ruleId);
-      _applyFilter();
+      await fetchAlertRules();
 
       Get.snackbar(
         '成功',
@@ -350,9 +376,10 @@ class HealthAlertController extends GetxController {
 
       return true;
     } catch (e) {
+      AppLogger.e('删除预警规则失败: $e');
       Get.snackbar(
         '失败',
-        '删除预警规则失败',
+        '删除预警规则失败：${_friendlyError(e)}',
         snackPosition: SnackPosition.TOP,
         backgroundColor: Colors.red.shade100,
       );
@@ -362,16 +389,41 @@ class HealthAlertController extends GetxController {
     }
   }
 
+  /// 把异常转成简短提示
+  String _friendlyError(dynamic e) {
+    final s = e.toString();
+    if (s.contains('SocketException') || s.contains('Connection')) {
+      return '网络连接失败';
+    }
+    if (s.contains('403') || s.contains('权限')) {
+      return '需要家庭管理员权限';
+    }
+    // ApiException 的 toString 通常已带后端 message
+    return s.length > 60 ? '${s.substring(0, 60)}...' : s;
+  }
+
   /// 切换预警规则启用状态
+  ///
+  /// 原先只改本地状态、不调接口 —— 与增删改属于同一类缺陷：
+  /// 界面上的开关看似生效，服务端状态没变，重启后自动复原。
+  /// 现改为真实调用 PUT /api/alert-rules/{id}/toggle。
   Future<void> toggleRuleEnabled(String ruleId, bool enabled) async {
-    final index = alertRules.indexWhere((r) => r.id == ruleId);
-    if (index >= 0) {
-      final rule = alertRules[index];
-      alertRules[index] = rule.copyWith(
-        isEnabled: enabled,
-        updateTime: DateTime.now(),
+    try {
+      await _dioProvider.put(
+        '/api/alert-rules/$ruleId/toggle',
+        queryParameters: {'enabled': enabled ? 1 : 0},
       );
-      _applyFilter();
+    } catch (e) {
+      AppLogger.e('切换预警规则启用状态失败: $e');
+      Get.snackbar(
+        '失败',
+        '切换规则状态失败：${_friendlyError(e)}',
+        snackPosition: SnackPosition.TOP,
+        backgroundColor: Colors.red.shade100,
+      );
+    } finally {
+      // 无论成功与否都以服务端为准，避免界面与服务端不一致
+      await fetchAlertRules();
     }
   }
 
