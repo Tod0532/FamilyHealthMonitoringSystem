@@ -100,3 +100,8 @@ docs/*å‡­æ®*
 # ±¾µØÕæ»ú²âÊÔ²úÉúµÄ½ØÍ¼/UI dump Óë¾É°ü±¸·İ
 /_shots/
 /_backup_phone_app/
+
+# OCR åŸºå‡†ç”Ÿæˆçš„æ•°æ®é›†ï¼ˆå¯ç”± tool/ocr_bench*.dart çš„ gen å­å‘½ä»¤é‡æ–°ç”Ÿæˆï¼‰
+flutter-app/tool/ocr_bench_data/
+flutter-app/tool/ocr_bench_photo_data/
+
