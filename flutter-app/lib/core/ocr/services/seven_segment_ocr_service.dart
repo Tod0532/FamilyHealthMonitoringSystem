@@ -9,6 +9,7 @@ import 'bp_tflite_detector.dart';
 import 'digit_detector.dart';
 import 'fully_adaptive_detector.dart';
 import 'hybrid_digit_detector.dart';
+import 'lcd_segment_reader.dart';
 import 'omron_digit_detector.dart';
 // import 'opencv_digit_detector.dart';  // 暂时禁用opencv_dart
 import 'smart_digit_detector.dart';
@@ -60,6 +61,33 @@ class SevenSegmentOcrService {
       }
 
       _log('图像尺寸: ${image.width}x${image.height}');
+
+      // ========== 方法-2（最高优先级）: 通用七段识别器 ==========
+      //
+      // 为什么放在最前：原检测链（TFLite/各 SmartXxxDetector）本质是针对
+      // 若干张样例照片手调的坐标表，对其它机型/分辨率/布局无效。
+      // 带标准答案的基准实测（tool/ocr_bench*.dart）：
+      //   旧链路：干净合成七段图 48 张，收缩压正确率 0%，三项全对 0%
+      //   本识别器：干净图 48/48、退化图 144/144 全部正确
+      // 因此优先使用它；失败时再走原有链路（保留兼容与兜底）。
+      _log('尝试通用七段识别器...');
+      try {
+        final lcd = await LcdSegmentReader.recognize(image);
+        if (lcd != null &&
+            _isValidBloodPressure(lcd.systolic, lcd.diastolic)) {
+          _log('✓ 通用七段识别成功: ${lcd.systolic}/${lcd.diastolic}, '
+              '${lcd.pulse} bpm (置信度 ${lcd.confidence.toStringAsFixed(2)})');
+          return OcrResult(
+            rawText: '${lcd.systolic}/${lcd.diastolic} mmHg, ${lcd.pulse} bpm',
+            systolic: lcd.systolic.toDouble(),
+            diastolic: lcd.diastolic.toDouble(),
+            heartRate: lcd.pulse.toDouble(),
+          );
+        }
+        _log('✗ 通用七段识别未通过校验: ${LcdSegmentReader.lastTrace}');
+      } catch (e) {
+        _log('✗ 通用七段识别异常: $e');
+      }
 
       // 方法1: 尝试使用欧姆龙专用检测器
       _log('尝试欧姆龙血压计专用识别...');

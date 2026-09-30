@@ -1,0 +1,1730 @@
+[
+  {
+    "id": "s0_v0_clean",
+    "file": "s0_v0_clean.png",
+    "systolic": 120,
+    "diastolic": 80,
+    "pulse": 75,
+    "style": "plain-bw",
+    "profile": "clean"
+  },
+  {
+    "id": "s0_v0_mild",
+    "file": "s0_v0_mild.png",
+    "systolic": 120,
+    "diastolic": 80,
+    "pulse": 75,
+    "style": "plain-bw",
+    "profile": "mild"
+  },
+  {
+    "id": "s0_v0_medium",
+    "file": "s0_v0_medium.png",
+    "systolic": 120,
+    "diastolic": 80,
+    "pulse": 75,
+    "style": "plain-bw",
+    "profile": "medium"
+  },
+  {
+    "id": "s0_v0_hard",
+    "file": "s0_v0_hard.png",
+    "systolic": 120,
+    "diastolic": 80,
+    "pulse": 75,
+    "style": "plain-bw",
+    "profile": "hard"
+  },
+  {
+    "id": "s0_v1_clean",
+    "file": "s0_v1_clean.png",
+    "systolic": 135,
+    "diastolic": 85,
+    "pulse": 68,
+    "style": "plain-bw",
+    "profile": "clean"
+  },
+  {
+    "id": "s0_v1_mild",
+    "file": "s0_v1_mild.png",
+    "systolic": 135,
+    "diastolic": 85,
+    "pulse": 68,
+    "style": "plain-bw",
+    "profile": "mild"
+  },
+  {
+    "id": "s0_v1_medium",
+    "file": "s0_v1_medium.png",
+    "systolic": 135,
+    "diastolic": 85,
+    "pulse": 68,
+    "style": "plain-bw",
+    "profile": "medium"
+  },
+  {
+    "id": "s0_v1_hard",
+    "file": "s0_v1_hard.png",
+    "systolic": 135,
+    "diastolic": 85,
+    "pulse": 68,
+    "style": "plain-bw",
+    "profile": "hard"
+  },
+  {
+    "id": "s0_v2_clean",
+    "file": "s0_v2_clean.png",
+    "systolic": 98,
+    "diastolic": 62,
+    "pulse": 72,
+    "style": "plain-bw",
+    "profile": "clean"
+  },
+  {
+    "id": "s0_v2_mild",
+    "file": "s0_v2_mild.png",
+    "systolic": 98,
+    "diastolic": 62,
+    "pulse": 72,
+    "style": "plain-bw",
+    "profile": "mild"
+  },
+  {
+    "id": "s0_v2_medium",
+    "file": "s0_v2_medium.png",
+    "systolic": 98,
+    "diastolic": 62,
+    "pulse": 72,
+    "style": "plain-bw",
+    "profile": "medium"
+  },
+  {
+    "id": "s0_v2_hard",
+    "file": "s0_v2_hard.png",
+    "systolic": 98,
+    "diastolic": 62,
+    "pulse": 72,
+    "style": "plain-bw",
+    "profile": "hard"
+  },
+  {
+    "id": "s0_v3_clean",
+    "file": "s0_v3_clean.png",
+    "systolic": 145,
+    "diastolic": 95,
+    "pulse": 88,
+    "style": "plain-bw",
+    "profile": "clean"
+  },
+  {
+    "id": "s0_v3_mild",
+    "file": "s0_v3_mild.png",
+    "systolic": 145,
+    "diastolic": 95,
+    "pulse": 88,
+    "style": "plain-bw",
+    "profile": "mild"
+  },
+  {
+    "id": "s0_v3_medium",
+    "file": "s0_v3_medium.png",
+    "systolic": 145,
+    "diastolic": 95,
+    "pulse": 88,
+    "style": "plain-bw",
+    "profile": "medium"
+  },
+  {
+    "id": "s0_v3_hard",
+    "file": "s0_v3_hard.png",
+    "systolic": 145,
+    "diastolic": 95,
+    "pulse": 88,
+    "style": "plain-bw",
+    "profile": "hard"
+  },
+  {
+    "id": "s0_v4_clean",
+    "file": "s0_v4_clean.png",
+    "systolic": 112,
+    "diastolic": 70,
+    "pulse": 60,
+    "style": "plain-bw",
+    "profile": "clean"
+  },
+  {
+    "id": "s0_v4_mild",
+    "file": "s0_v4_mild.png",
+    "systolic": 112,
+    "diastolic": 70,
+    "pulse": 60,
+    "style": "plain-bw",
+    "profile": "mild"
+  },
+  {
+    "id": "s0_v4_medium",
+    "file": "s0_v4_medium.png",
+    "systolic": 112,
+    "diastolic": 70,
+    "pulse": 60,
+    "style": "plain-bw",
+    "profile": "medium"
+  },
+  {
+    "id": "s0_v4_hard",
+    "file": "s0_v4_hard.png",
+    "systolic": 112,
+    "diastolic": 70,
+    "pulse": 60,
+    "style": "plain-bw",
+    "profile": "hard"
+  },
+  {
+    "id": "s0_v5_clean",
+    "file": "s0_v5_clean.png",
+    "systolic": 160,
+    "diastolic": 100,
+    "pulse": 79,
+    "style": "plain-bw",
+    "profile": "clean"
+  },
+  {
+    "id": "s0_v5_mild",
+    "file": "s0_v5_mild.png",
+    "systolic": 160,
+    "diastolic": 100,
+    "pulse": 79,
+    "style": "plain-bw",
+    "profile": "mild"
+  },
+  {
+    "id": "s0_v5_medium",
+    "file": "s0_v5_medium.png",
+    "systolic": 160,
+    "diastolic": 100,
+    "pulse": 79,
+    "style": "plain-bw",
+    "profile": "medium"
+  },
+  {
+    "id": "s0_v5_hard",
+    "file": "s0_v5_hard.png",
+    "systolic": 160,
+    "diastolic": 100,
+    "pulse": 79,
+    "style": "plain-bw",
+    "profile": "hard"
+  },
+  {
+    "id": "s0_v6_clean",
+    "file": "s0_v6_clean.png",
+    "systolic": 128,
+    "diastolic": 84,
+    "pulse": 40,
+    "style": "plain-bw",
+    "profile": "clean"
+  },
+  {
+    "id": "s0_v6_mild",
+    "file": "s0_v6_mild.png",
+    "systolic": 128,
+    "diastolic": 84,
+    "pulse": 40,
+    "style": "plain-bw",
+    "profile": "mild"
+  },
+  {
+    "id": "s0_v6_medium",
+    "file": "s0_v6_medium.png",
+    "systolic": 128,
+    "diastolic": 84,
+    "pulse": 40,
+    "style": "plain-bw",
+    "profile": "medium"
+  },
+  {
+    "id": "s0_v6_hard",
+    "file": "s0_v6_hard.png",
+    "systolic": 128,
+    "diastolic": 84,
+    "pulse": 40,
+    "style": "plain-bw",
+    "profile": "hard"
+  },
+  {
+    "id": "s0_v7_clean",
+    "file": "s0_v7_clean.png",
+    "systolic": 101,
+    "diastolic": 71,
+    "pulse": 73,
+    "style": "plain-bw",
+    "profile": "clean"
+  },
+  {
+    "id": "s0_v7_mild",
+    "file": "s0_v7_mild.png",
+    "systolic": 101,
+    "diastolic": 71,
+    "pulse": 73,
+    "style": "plain-bw",
+    "profile": "mild"
+  },
+  {
+    "id": "s0_v7_medium",
+    "file": "s0_v7_medium.png",
+    "systolic": 101,
+    "diastolic": 71,
+    "pulse": 73,
+    "style": "plain-bw",
+    "profile": "medium"
+  },
+  {
+    "id": "s0_v7_hard",
+    "file": "s0_v7_hard.png",
+    "systolic": 101,
+    "diastolic": 71,
+    "pulse": 73,
+    "style": "plain-bw",
+    "profile": "hard"
+  },
+  {
+    "id": "s0_v8_clean",
+    "file": "s0_v8_clean.png",
+    "systolic": 176,
+    "diastolic": 108,
+    "pulse": 95,
+    "style": "plain-bw",
+    "profile": "clean"
+  },
+  {
+    "id": "s0_v8_mild",
+    "file": "s0_v8_mild.png",
+    "systolic": 176,
+    "diastolic": 108,
+    "pulse": 95,
+    "style": "plain-bw",
+    "profile": "mild"
+  },
+  {
+    "id": "s0_v8_medium",
+    "file": "s0_v8_medium.png",
+    "systolic": 176,
+    "diastolic": 108,
+    "pulse": 95,
+    "style": "plain-bw",
+    "profile": "medium"
+  },
+  {
+    "id": "s0_v8_hard",
+    "file": "s0_v8_hard.png",
+    "systolic": 176,
+    "diastolic": 108,
+    "pulse": 95,
+    "style": "plain-bw",
+    "profile": "hard"
+  },
+  {
+    "id": "s0_v9_clean",
+    "file": "s0_v9_clean.png",
+    "systolic": 90,
+    "diastolic": 55,
+    "pulse": 66,
+    "style": "plain-bw",
+    "profile": "clean"
+  },
+  {
+    "id": "s0_v9_mild",
+    "file": "s0_v9_mild.png",
+    "systolic": 90,
+    "diastolic": 55,
+    "pulse": 66,
+    "style": "plain-bw",
+    "profile": "mild"
+  },
+  {
+    "id": "s0_v9_medium",
+    "file": "s0_v9_medium.png",
+    "systolic": 90,
+    "diastolic": 55,
+    "pulse": 66,
+    "style": "plain-bw",
+    "profile": "medium"
+  },
+  {
+    "id": "s0_v9_hard",
+    "file": "s0_v9_hard.png",
+    "systolic": 90,
+    "diastolic": 55,
+    "pulse": 66,
+    "style": "plain-bw",
+    "profile": "hard"
+  },
+  {
+    "id": "s0_v10_clean",
+    "file": "s0_v10_clean.png",
+    "systolic": 200,
+    "diastolic": 120,
+    "pulse": 50,
+    "style": "plain-bw",
+    "profile": "clean"
+  },
+  {
+    "id": "s0_v10_mild",
+    "file": "s0_v10_mild.png",
+    "systolic": 200,
+    "diastolic": 120,
+    "pulse": 50,
+    "style": "plain-bw",
+    "profile": "mild"
+  },
+  {
+    "id": "s0_v10_medium",
+    "file": "s0_v10_medium.png",
+    "systolic": 200,
+    "diastolic": 120,
+    "pulse": 50,
+    "style": "plain-bw",
+    "profile": "medium"
+  },
+  {
+    "id": "s0_v10_hard",
+    "file": "s0_v10_hard.png",
+    "systolic": 200,
+    "diastolic": 120,
+    "pulse": 50,
+    "style": "plain-bw",
+    "profile": "hard"
+  },
+  {
+    "id": "s0_v11_clean",
+    "file": "s0_v11_clean.png",
+    "systolic": 107,
+    "diastolic": 63,
+    "pulse": 105,
+    "style": "plain-bw",
+    "profile": "clean"
+  },
+  {
+    "id": "s0_v11_mild",
+    "file": "s0_v11_mild.png",
+    "systolic": 107,
+    "diastolic": 63,
+    "pulse": 105,
+    "style": "plain-bw",
+    "profile": "mild"
+  },
+  {
+    "id": "s0_v11_medium",
+    "file": "s0_v11_medium.png",
+    "systolic": 107,
+    "diastolic": 63,
+    "pulse": 105,
+    "style": "plain-bw",
+    "profile": "medium"
+  },
+  {
+    "id": "s0_v11_hard",
+    "file": "s0_v11_hard.png",
+    "systolic": 107,
+    "diastolic": 63,
+    "pulse": 105,
+    "style": "plain-bw",
+    "profile": "hard"
+  },
+  {
+    "id": "s1_v0_clean",
+    "file": "s1_v0_clean.png",
+    "systolic": 120,
+    "diastolic": 80,
+    "pulse": 75,
+    "style": "lcd-green",
+    "profile": "clean"
+  },
+  {
+    "id": "s1_v0_mild",
+    "file": "s1_v0_mild.png",
+    "systolic": 120,
+    "diastolic": 80,
+    "pulse": 75,
+    "style": "lcd-green",
+    "profile": "mild"
+  },
+  {
+    "id": "s1_v0_medium",
+    "file": "s1_v0_medium.png",
+    "systolic": 120,
+    "diastolic": 80,
+    "pulse": 75,
+    "style": "lcd-green",
+    "profile": "medium"
+  },
+  {
+    "id": "s1_v0_hard",
+    "file": "s1_v0_hard.png",
+    "systolic": 120,
+    "diastolic": 80,
+    "pulse": 75,
+    "style": "lcd-green",
+    "profile": "hard"
+  },
+  {
+    "id": "s1_v1_clean",
+    "file": "s1_v1_clean.png",
+    "systolic": 135,
+    "diastolic": 85,
+    "pulse": 68,
+    "style": "lcd-green",
+    "profile": "clean"
+  },
+  {
+    "id": "s1_v1_mild",
+    "file": "s1_v1_mild.png",
+    "systolic": 135,
+    "diastolic": 85,
+    "pulse": 68,
+    "style": "lcd-green",
+    "profile": "mild"
+  },
+  {
+    "id": "s1_v1_medium",
+    "file": "s1_v1_medium.png",
+    "systolic": 135,
+    "diastolic": 85,
+    "pulse": 68,
+    "style": "lcd-green",
+    "profile": "medium"
+  },
+  {
+    "id": "s1_v1_hard",
+    "file": "s1_v1_hard.png",
+    "systolic": 135,
+    "diastolic": 85,
+    "pulse": 68,
+    "style": "lcd-green",
+    "profile": "hard"
+  },
+  {
+    "id": "s1_v2_clean",
+    "file": "s1_v2_clean.png",
+    "systolic": 98,
+    "diastolic": 62,
+    "pulse": 72,
+    "style": "lcd-green",
+    "profile": "clean"
+  },
+  {
+    "id": "s1_v2_mild",
+    "file": "s1_v2_mild.png",
+    "systolic": 98,
+    "diastolic": 62,
+    "pulse": 72,
+    "style": "lcd-green",
+    "profile": "mild"
+  },
+  {
+    "id": "s1_v2_medium",
+    "file": "s1_v2_medium.png",
+    "systolic": 98,
+    "diastolic": 62,
+    "pulse": 72,
+    "style": "lcd-green",
+    "profile": "medium"
+  },
+  {
+    "id": "s1_v2_hard",
+    "file": "s1_v2_hard.png",
+    "systolic": 98,
+    "diastolic": 62,
+    "pulse": 72,
+    "style": "lcd-green",
+    "profile": "hard"
+  },
+  {
+    "id": "s1_v3_clean",
+    "file": "s1_v3_clean.png",
+    "systolic": 145,
+    "diastolic": 95,
+    "pulse": 88,
+    "style": "lcd-green",
+    "profile": "clean"
+  },
+  {
+    "id": "s1_v3_mild",
+    "file": "s1_v3_mild.png",
+    "systolic": 145,
+    "diastolic": 95,
+    "pulse": 88,
+    "style": "lcd-green",
+    "profile": "mild"
+  },
+  {
+    "id": "s1_v3_medium",
+    "file": "s1_v3_medium.png",
+    "systolic": 145,
+    "diastolic": 95,
+    "pulse": 88,
+    "style": "lcd-green",
+    "profile": "medium"
+  },
+  {
+    "id": "s1_v3_hard",
+    "file": "s1_v3_hard.png",
+    "systolic": 145,
+    "diastolic": 95,
+    "pulse": 88,
+    "style": "lcd-green",
+    "profile": "hard"
+  },
+  {
+    "id": "s1_v4_clean",
+    "file": "s1_v4_clean.png",
+    "systolic": 112,
+    "diastolic": 70,
+    "pulse": 60,
+    "style": "lcd-green",
+    "profile": "clean"
+  },
+  {
+    "id": "s1_v4_mild",
+    "file": "s1_v4_mild.png",
+    "systolic": 112,
+    "diastolic": 70,
+    "pulse": 60,
+    "style": "lcd-green",
+    "profile": "mild"
+  },
+  {
+    "id": "s1_v4_medium",
+    "file": "s1_v4_medium.png",
+    "systolic": 112,
+    "diastolic": 70,
+    "pulse": 60,
+    "style": "lcd-green",
+    "profile": "medium"
+  },
+  {
+    "id": "s1_v4_hard",
+    "file": "s1_v4_hard.png",
+    "systolic": 112,
+    "diastolic": 70,
+    "pulse": 60,
+    "style": "lcd-green",
+    "profile": "hard"
+  },
+  {
+    "id": "s1_v5_clean",
+    "file": "s1_v5_clean.png",
+    "systolic": 160,
+    "diastolic": 100,
+    "pulse": 79,
+    "style": "lcd-green",
+    "profile": "clean"
+  },
+  {
+    "id": "s1_v5_mild",
+    "file": "s1_v5_mild.png",
+    "systolic": 160,
+    "diastolic": 100,
+    "pulse": 79,
+    "style": "lcd-green",
+    "profile": "mild"
+  },
+  {
+    "id": "s1_v5_medium",
+    "file": "s1_v5_medium.png",
+    "systolic": 160,
+    "diastolic": 100,
+    "pulse": 79,
+    "style": "lcd-green",
+    "profile": "medium"
+  },
+  {
+    "id": "s1_v5_hard",
+    "file": "s1_v5_hard.png",
+    "systolic": 160,
+    "diastolic": 100,
+    "pulse": 79,
+    "style": "lcd-green",
+    "profile": "hard"
+  },
+  {
+    "id": "s1_v6_clean",
+    "file": "s1_v6_clean.png",
+    "systolic": 128,
+    "diastolic": 84,
+    "pulse": 40,
+    "style": "lcd-green",
+    "profile": "clean"
+  },
+  {
+    "id": "s1_v6_mild",
+    "file": "s1_v6_mild.png",
+    "systolic": 128,
+    "diastolic": 84,
+    "pulse": 40,
+    "style": "lcd-green",
+    "profile": "mild"
+  },
+  {
+    "id": "s1_v6_medium",
+    "file": "s1_v6_medium.png",
+    "systolic": 128,
+    "diastolic": 84,
+    "pulse": 40,
+    "style": "lcd-green",
+    "profile": "medium"
+  },
+  {
+    "id": "s1_v6_hard",
+    "file": "s1_v6_hard.png",
+    "systolic": 128,
+    "diastolic": 84,
+    "pulse": 40,
+    "style": "lcd-green",
+    "profile": "hard"
+  },
+  {
+    "id": "s1_v7_clean",
+    "file": "s1_v7_clean.png",
+    "systolic": 101,
+    "diastolic": 71,
+    "pulse": 73,
+    "style": "lcd-green",
+    "profile": "clean"
+  },
+  {
+    "id": "s1_v7_mild",
+    "file": "s1_v7_mild.png",
+    "systolic": 101,
+    "diastolic": 71,
+    "pulse": 73,
+    "style": "lcd-green",
+    "profile": "mild"
+  },
+  {
+    "id": "s1_v7_medium",
+    "file": "s1_v7_medium.png",
+    "systolic": 101,
+    "diastolic": 71,
+    "pulse": 73,
+    "style": "lcd-green",
+    "profile": "medium"
+  },
+  {
+    "id": "s1_v7_hard",
+    "file": "s1_v7_hard.png",
+    "systolic": 101,
+    "diastolic": 71,
+    "pulse": 73,
+    "style": "lcd-green",
+    "profile": "hard"
+  },
+  {
+    "id": "s1_v8_clean",
+    "file": "s1_v8_clean.png",
+    "systolic": 176,
+    "diastolic": 108,
+    "pulse": 95,
+    "style": "lcd-green",
+    "profile": "clean"
+  },
+  {
+    "id": "s1_v8_mild",
+    "file": "s1_v8_mild.png",
+    "systolic": 176,
+    "diastolic": 108,
+    "pulse": 95,
+    "style": "lcd-green",
+    "profile": "mild"
+  },
+  {
+    "id": "s1_v8_medium",
+    "file": "s1_v8_medium.png",
+    "systolic": 176,
+    "diastolic": 108,
+    "pulse": 95,
+    "style": "lcd-green",
+    "profile": "medium"
+  },
+  {
+    "id": "s1_v8_hard",
+    "file": "s1_v8_hard.png",
+    "systolic": 176,
+    "diastolic": 108,
+    "pulse": 95,
+    "style": "lcd-green",
+    "profile": "hard"
+  },
+  {
+    "id": "s1_v9_clean",
+    "file": "s1_v9_clean.png",
+    "systolic": 90,
+    "diastolic": 55,
+    "pulse": 66,
+    "style": "lcd-green",
+    "profile": "clean"
+  },
+  {
+    "id": "s1_v9_mild",
+    "file": "s1_v9_mild.png",
+    "systolic": 90,
+    "diastolic": 55,
+    "pulse": 66,
+    "style": "lcd-green",
+    "profile": "mild"
+  },
+  {
+    "id": "s1_v9_medium",
+    "file": "s1_v9_medium.png",
+    "systolic": 90,
+    "diastolic": 55,
+    "pulse": 66,
+    "style": "lcd-green",
+    "profile": "medium"
+  },
+  {
+    "id": "s1_v9_hard",
+    "file": "s1_v9_hard.png",
+    "systolic": 90,
+    "diastolic": 55,
+    "pulse": 66,
+    "style": "lcd-green",
+    "profile": "hard"
+  },
+  {
+    "id": "s1_v10_clean",
+    "file": "s1_v10_clean.png",
+    "systolic": 200,
+    "diastolic": 120,
+    "pulse": 50,
+    "style": "lcd-green",
+    "profile": "clean"
+  },
+  {
+    "id": "s1_v10_mild",
+    "file": "s1_v10_mild.png",
+    "systolic": 200,
+    "diastolic": 120,
+    "pulse": 50,
+    "style": "lcd-green",
+    "profile": "mild"
+  },
+  {
+    "id": "s1_v10_medium",
+    "file": "s1_v10_medium.png",
+    "systolic": 200,
+    "diastolic": 120,
+    "pulse": 50,
+    "style": "lcd-green",
+    "profile": "medium"
+  },
+  {
+    "id": "s1_v10_hard",
+    "file": "s1_v10_hard.png",
+    "systolic": 200,
+    "diastolic": 120,
+    "pulse": 50,
+    "style": "lcd-green",
+    "profile": "hard"
+  },
+  {
+    "id": "s1_v11_clean",
+    "file": "s1_v11_clean.png",
+    "systolic": 107,
+    "diastolic": 63,
+    "pulse": 105,
+    "style": "lcd-green",
+    "profile": "clean"
+  },
+  {
+    "id": "s1_v11_mild",
+    "file": "s1_v11_mild.png",
+    "systolic": 107,
+    "diastolic": 63,
+    "pulse": 105,
+    "style": "lcd-green",
+    "profile": "mild"
+  },
+  {
+    "id": "s1_v11_medium",
+    "file": "s1_v11_medium.png",
+    "systolic": 107,
+    "diastolic": 63,
+    "pulse": 105,
+    "style": "lcd-green",
+    "profile": "medium"
+  },
+  {
+    "id": "s1_v11_hard",
+    "file": "s1_v11_hard.png",
+    "systolic": 107,
+    "diastolic": 63,
+    "pulse": 105,
+    "style": "lcd-green",
+    "profile": "hard"
+  },
+  {
+    "id": "s2_v0_clean",
+    "file": "s2_v0_clean.png",
+    "systolic": 120,
+    "diastolic": 80,
+    "pulse": 75,
+    "style": "lcd-grey",
+    "profile": "clean"
+  },
+  {
+    "id": "s2_v0_mild",
+    "file": "s2_v0_mild.png",
+    "systolic": 120,
+    "diastolic": 80,
+    "pulse": 75,
+    "style": "lcd-grey",
+    "profile": "mild"
+  },
+  {
+    "id": "s2_v0_medium",
+    "file": "s2_v0_medium.png",
+    "systolic": 120,
+    "diastolic": 80,
+    "pulse": 75,
+    "style": "lcd-grey",
+    "profile": "medium"
+  },
+  {
+    "id": "s2_v0_hard",
+    "file": "s2_v0_hard.png",
+    "systolic": 120,
+    "diastolic": 80,
+    "pulse": 75,
+    "style": "lcd-grey",
+    "profile": "hard"
+  },
+  {
+    "id": "s2_v1_clean",
+    "file": "s2_v1_clean.png",
+    "systolic": 135,
+    "diastolic": 85,
+    "pulse": 68,
+    "style": "lcd-grey",
+    "profile": "clean"
+  },
+  {
+    "id": "s2_v1_mild",
+    "file": "s2_v1_mild.png",
+    "systolic": 135,
+    "diastolic": 85,
+    "pulse": 68,
+    "style": "lcd-grey",
+    "profile": "mild"
+  },
+  {
+    "id": "s2_v1_medium",
+    "file": "s2_v1_medium.png",
+    "systolic": 135,
+    "diastolic": 85,
+    "pulse": 68,
+    "style": "lcd-grey",
+    "profile": "medium"
+  },
+  {
+    "id": "s2_v1_hard",
+    "file": "s2_v1_hard.png",
+    "systolic": 135,
+    "diastolic": 85,
+    "pulse": 68,
+    "style": "lcd-grey",
+    "profile": "hard"
+  },
+  {
+    "id": "s2_v2_clean",
+    "file": "s2_v2_clean.png",
+    "systolic": 98,
+    "diastolic": 62,
+    "pulse": 72,
+    "style": "lcd-grey",
+    "profile": "clean"
+  },
+  {
+    "id": "s2_v2_mild",
+    "file": "s2_v2_mild.png",
+    "systolic": 98,
+    "diastolic": 62,
+    "pulse": 72,
+    "style": "lcd-grey",
+    "profile": "mild"
+  },
+  {
+    "id": "s2_v2_medium",
+    "file": "s2_v2_medium.png",
+    "systolic": 98,
+    "diastolic": 62,
+    "pulse": 72,
+    "style": "lcd-grey",
+    "profile": "medium"
+  },
+  {
+    "id": "s2_v2_hard",
+    "file": "s2_v2_hard.png",
+    "systolic": 98,
+    "diastolic": 62,
+    "pulse": 72,
+    "style": "lcd-grey",
+    "profile": "hard"
+  },
+  {
+    "id": "s2_v3_clean",
+    "file": "s2_v3_clean.png",
+    "systolic": 145,
+    "diastolic": 95,
+    "pulse": 88,
+    "style": "lcd-grey",
+    "profile": "clean"
+  },
+  {
+    "id": "s2_v3_mild",
+    "file": "s2_v3_mild.png",
+    "systolic": 145,
+    "diastolic": 95,
+    "pulse": 88,
+    "style": "lcd-grey",
+    "profile": "mild"
+  },
+  {
+    "id": "s2_v3_medium",
+    "file": "s2_v3_medium.png",
+    "systolic": 145,
+    "diastolic": 95,
+    "pulse": 88,
+    "style": "lcd-grey",
+    "profile": "medium"
+  },
+  {
+    "id": "s2_v3_hard",
+    "file": "s2_v3_hard.png",
+    "systolic": 145,
+    "diastolic": 95,
+    "pulse": 88,
+    "style": "lcd-grey",
+    "profile": "hard"
+  },
+  {
+    "id": "s2_v4_clean",
+    "file": "s2_v4_clean.png",
+    "systolic": 112,
+    "diastolic": 70,
+    "pulse": 60,
+    "style": "lcd-grey",
+    "profile": "clean"
+  },
+  {
+    "id": "s2_v4_mild",
+    "file": "s2_v4_mild.png",
+    "systolic": 112,
+    "diastolic": 70,
+    "pulse": 60,
+    "style": "lcd-grey",
+    "profile": "mild"
+  },
+  {
+    "id": "s2_v4_medium",
+    "file": "s2_v4_medium.png",
+    "systolic": 112,
+    "diastolic": 70,
+    "pulse": 60,
+    "style": "lcd-grey",
+    "profile": "medium"
+  },
+  {
+    "id": "s2_v4_hard",
+    "file": "s2_v4_hard.png",
+    "systolic": 112,
+    "diastolic": 70,
+    "pulse": 60,
+    "style": "lcd-grey",
+    "profile": "hard"
+  },
+  {
+    "id": "s2_v5_clean",
+    "file": "s2_v5_clean.png",
+    "systolic": 160,
+    "diastolic": 100,
+    "pulse": 79,
+    "style": "lcd-grey",
+    "profile": "clean"
+  },
+  {
+    "id": "s2_v5_mild",
+    "file": "s2_v5_mild.png",
+    "systolic": 160,
+    "diastolic": 100,
+    "pulse": 79,
+    "style": "lcd-grey",
+    "profile": "mild"
+  },
+  {
+    "id": "s2_v5_medium",
+    "file": "s2_v5_medium.png",
+    "systolic": 160,
+    "diastolic": 100,
+    "pulse": 79,
+    "style": "lcd-grey",
+    "profile": "medium"
+  },
+  {
+    "id": "s2_v5_hard",
+    "file": "s2_v5_hard.png",
+    "systolic": 160,
+    "diastolic": 100,
+    "pulse": 79,
+    "style": "lcd-grey",
+    "profile": "hard"
+  },
+  {
+    "id": "s2_v6_clean",
+    "file": "s2_v6_clean.png",
+    "systolic": 128,
+    "diastolic": 84,
+    "pulse": 40,
+    "style": "lcd-grey",
+    "profile": "clean"
+  },
+  {
+    "id": "s2_v6_mild",
+    "file": "s2_v6_mild.png",
+    "systolic": 128,
+    "diastolic": 84,
+    "pulse": 40,
+    "style": "lcd-grey",
+    "profile": "mild"
+  },
+  {
+    "id": "s2_v6_medium",
+    "file": "s2_v6_medium.png",
+    "systolic": 128,
+    "diastolic": 84,
+    "pulse": 40,
+    "style": "lcd-grey",
+    "profile": "medium"
+  },
+  {
+    "id": "s2_v6_hard",
+    "file": "s2_v6_hard.png",
+    "systolic": 128,
+    "diastolic": 84,
+    "pulse": 40,
+    "style": "lcd-grey",
+    "profile": "hard"
+  },
+  {
+    "id": "s2_v7_clean",
+    "file": "s2_v7_clean.png",
+    "systolic": 101,
+    "diastolic": 71,
+    "pulse": 73,
+    "style": "lcd-grey",
+    "profile": "clean"
+  },
+  {
+    "id": "s2_v7_mild",
+    "file": "s2_v7_mild.png",
+    "systolic": 101,
+    "diastolic": 71,
+    "pulse": 73,
+    "style": "lcd-grey",
+    "profile": "mild"
+  },
+  {
+    "id": "s2_v7_medium",
+    "file": "s2_v7_medium.png",
+    "systolic": 101,
+    "diastolic": 71,
+    "pulse": 73,
+    "style": "lcd-grey",
+    "profile": "medium"
+  },
+  {
+    "id": "s2_v7_hard",
+    "file": "s2_v7_hard.png",
+    "systolic": 101,
+    "diastolic": 71,
+    "pulse": 73,
+    "style": "lcd-grey",
+    "profile": "hard"
+  },
+  {
+    "id": "s2_v8_clean",
+    "file": "s2_v8_clean.png",
+    "systolic": 176,
+    "diastolic": 108,
+    "pulse": 95,
+    "style": "lcd-grey",
+    "profile": "clean"
+  },
+  {
+    "id": "s2_v8_mild",
+    "file": "s2_v8_mild.png",
+    "systolic": 176,
+    "diastolic": 108,
+    "pulse": 95,
+    "style": "lcd-grey",
+    "profile": "mild"
+  },
+  {
+    "id": "s2_v8_medium",
+    "file": "s2_v8_medium.png",
+    "systolic": 176,
+    "diastolic": 108,
+    "pulse": 95,
+    "style": "lcd-grey",
+    "profile": "medium"
+  },
+  {
+    "id": "s2_v8_hard",
+    "file": "s2_v8_hard.png",
+    "systolic": 176,
+    "diastolic": 108,
+    "pulse": 95,
+    "style": "lcd-grey",
+    "profile": "hard"
+  },
+  {
+    "id": "s2_v9_clean",
+    "file": "s2_v9_clean.png",
+    "systolic": 90,
+    "diastolic": 55,
+    "pulse": 66,
+    "style": "lcd-grey",
+    "profile": "clean"
+  },
+  {
+    "id": "s2_v9_mild",
+    "file": "s2_v9_mild.png",
+    "systolic": 90,
+    "diastolic": 55,
+    "pulse": 66,
+    "style": "lcd-grey",
+    "profile": "mild"
+  },
+  {
+    "id": "s2_v9_medium",
+    "file": "s2_v9_medium.png",
+    "systolic": 90,
+    "diastolic": 55,
+    "pulse": 66,
+    "style": "lcd-grey",
+    "profile": "medium"
+  },
+  {
+    "id": "s2_v9_hard",
+    "file": "s2_v9_hard.png",
+    "systolic": 90,
+    "diastolic": 55,
+    "pulse": 66,
+    "style": "lcd-grey",
+    "profile": "hard"
+  },
+  {
+    "id": "s2_v10_clean",
+    "file": "s2_v10_clean.png",
+    "systolic": 200,
+    "diastolic": 120,
+    "pulse": 50,
+    "style": "lcd-grey",
+    "profile": "clean"
+  },
+  {
+    "id": "s2_v10_mild",
+    "file": "s2_v10_mild.png",
+    "systolic": 200,
+    "diastolic": 120,
+    "pulse": 50,
+    "style": "lcd-grey",
+    "profile": "mild"
+  },
+  {
+    "id": "s2_v10_medium",
+    "file": "s2_v10_medium.png",
+    "systolic": 200,
+    "diastolic": 120,
+    "pulse": 50,
+    "style": "lcd-grey",
+    "profile": "medium"
+  },
+  {
+    "id": "s2_v10_hard",
+    "file": "s2_v10_hard.png",
+    "systolic": 200,
+    "diastolic": 120,
+    "pulse": 50,
+    "style": "lcd-grey",
+    "profile": "hard"
+  },
+  {
+    "id": "s2_v11_clean",
+    "file": "s2_v11_clean.png",
+    "systolic": 107,
+    "diastolic": 63,
+    "pulse": 105,
+    "style": "lcd-grey",
+    "profile": "clean"
+  },
+  {
+    "id": "s2_v11_mild",
+    "file": "s2_v11_mild.png",
+    "systolic": 107,
+    "diastolic": 63,
+    "pulse": 105,
+    "style": "lcd-grey",
+    "profile": "mild"
+  },
+  {
+    "id": "s2_v11_medium",
+    "file": "s2_v11_medium.png",
+    "systolic": 107,
+    "diastolic": 63,
+    "pulse": 105,
+    "style": "lcd-grey",
+    "profile": "medium"
+  },
+  {
+    "id": "s2_v11_hard",
+    "file": "s2_v11_hard.png",
+    "systolic": 107,
+    "diastolic": 63,
+    "pulse": 105,
+    "style": "lcd-grey",
+    "profile": "hard"
+  },
+  {
+    "id": "s3_v0_clean",
+    "file": "s3_v0_clean.png",
+    "systolic": 120,
+    "diastolic": 80,
+    "pulse": 75,
+    "style": "lcd-dark",
+    "profile": "clean"
+  },
+  {
+    "id": "s3_v0_mild",
+    "file": "s3_v0_mild.png",
+    "systolic": 120,
+    "diastolic": 80,
+    "pulse": 75,
+    "style": "lcd-dark",
+    "profile": "mild"
+  },
+  {
+    "id": "s3_v0_medium",
+    "file": "s3_v0_medium.png",
+    "systolic": 120,
+    "diastolic": 80,
+    "pulse": 75,
+    "style": "lcd-dark",
+    "profile": "medium"
+  },
+  {
+    "id": "s3_v0_hard",
+    "file": "s3_v0_hard.png",
+    "systolic": 120,
+    "diastolic": 80,
+    "pulse": 75,
+    "style": "lcd-dark",
+    "profile": "hard"
+  },
+  {
+    "id": "s3_v1_clean",
+    "file": "s3_v1_clean.png",
+    "systolic": 135,
+    "diastolic": 85,
+    "pulse": 68,
+    "style": "lcd-dark",
+    "profile": "clean"
+  },
+  {
+    "id": "s3_v1_mild",
+    "file": "s3_v1_mild.png",
+    "systolic": 135,
+    "diastolic": 85,
+    "pulse": 68,
+    "style": "lcd-dark",
+    "profile": "mild"
+  },
+  {
+    "id": "s3_v1_medium",
+    "file": "s3_v1_medium.png",
+    "systolic": 135,
+    "diastolic": 85,
+    "pulse": 68,
+    "style": "lcd-dark",
+    "profile": "medium"
+  },
+  {
+    "id": "s3_v1_hard",
+    "file": "s3_v1_hard.png",
+    "systolic": 135,
+    "diastolic": 85,
+    "pulse": 68,
+    "style": "lcd-dark",
+    "profile": "hard"
+  },
+  {
+    "id": "s3_v2_clean",
+    "file": "s3_v2_clean.png",
+    "systolic": 98,
+    "diastolic": 62,
+    "pulse": 72,
+    "style": "lcd-dark",
+    "profile": "clean"
+  },
+  {
+    "id": "s3_v2_mild",
+    "file": "s3_v2_mild.png",
+    "systolic": 98,
+    "diastolic": 62,
+    "pulse": 72,
+    "style": "lcd-dark",
+    "profile": "mild"
+  },
+  {
+    "id": "s3_v2_medium",
+    "file": "s3_v2_medium.png",
+    "systolic": 98,
+    "diastolic": 62,
+    "pulse": 72,
+    "style": "lcd-dark",
+    "profile": "medium"
+  },
+  {
+    "id": "s3_v2_hard",
+    "file": "s3_v2_hard.png",
+    "systolic": 98,
+    "diastolic": 62,
+    "pulse": 72,
+    "style": "lcd-dark",
+    "profile": "hard"
+  },
+  {
+    "id": "s3_v3_clean",
+    "file": "s3_v3_clean.png",
+    "systolic": 145,
+    "diastolic": 95,
+    "pulse": 88,
+    "style": "lcd-dark",
+    "profile": "clean"
+  },
+  {
+    "id": "s3_v3_mild",
+    "file": "s3_v3_mild.png",
+    "systolic": 145,
+    "diastolic": 95,
+    "pulse": 88,
+    "style": "lcd-dark",
+    "profile": "mild"
+  },
+  {
+    "id": "s3_v3_medium",
+    "file": "s3_v3_medium.png",
+    "systolic": 145,
+    "diastolic": 95,
+    "pulse": 88,
+    "style": "lcd-dark",
+    "profile": "medium"
+  },
+  {
+    "id": "s3_v3_hard",
+    "file": "s3_v3_hard.png",
+    "systolic": 145,
+    "diastolic": 95,
+    "pulse": 88,
+    "style": "lcd-dark",
+    "profile": "hard"
+  },
+  {
+    "id": "s3_v4_clean",
+    "file": "s3_v4_clean.png",
+    "systolic": 112,
+    "diastolic": 70,
+    "pulse": 60,
+    "style": "lcd-dark",
+    "profile": "clean"
+  },
+  {
+    "id": "s3_v4_mild",
+    "file": "s3_v4_mild.png",
+    "systolic": 112,
+    "diastolic": 70,
+    "pulse": 60,
+    "style": "lcd-dark",
+    "profile": "mild"
+  },
+  {
+    "id": "s3_v4_medium",
+    "file": "s3_v4_medium.png",
+    "systolic": 112,
+    "diastolic": 70,
+    "pulse": 60,
+    "style": "lcd-dark",
+    "profile": "medium"
+  },
+  {
+    "id": "s3_v4_hard",
+    "file": "s3_v4_hard.png",
+    "systolic": 112,
+    "diastolic": 70,
+    "pulse": 60,
+    "style": "lcd-dark",
+    "profile": "hard"
+  },
+  {
+    "id": "s3_v5_clean",
+    "file": "s3_v5_clean.png",
+    "systolic": 160,
+    "diastolic": 100,
+    "pulse": 79,
+    "style": "lcd-dark",
+    "profile": "clean"
+  },
+  {
+    "id": "s3_v5_mild",
+    "file": "s3_v5_mild.png",
+    "systolic": 160,
+    "diastolic": 100,
+    "pulse": 79,
+    "style": "lcd-dark",
+    "profile": "mild"
+  },
+  {
+    "id": "s3_v5_medium",
+    "file": "s3_v5_medium.png",
+    "systolic": 160,
+    "diastolic": 100,
+    "pulse": 79,
+    "style": "lcd-dark",
+    "profile": "medium"
+  },
+  {
+    "id": "s3_v5_hard",
+    "file": "s3_v5_hard.png",
+    "systolic": 160,
+    "diastolic": 100,
+    "pulse": 79,
+    "style": "lcd-dark",
+    "profile": "hard"
+  },
+  {
+    "id": "s3_v6_clean",
+    "file": "s3_v6_clean.png",
+    "systolic": 128,
+    "diastolic": 84,
+    "pulse": 40,
+    "style": "lcd-dark",
+    "profile": "clean"
+  },
+  {
+    "id": "s3_v6_mild",
+    "file": "s3_v6_mild.png",
+    "systolic": 128,
+    "diastolic": 84,
+    "pulse": 40,
+    "style": "lcd-dark",
+    "profile": "mild"
+  },
+  {
+    "id": "s3_v6_medium",
+    "file": "s3_v6_medium.png",
+    "systolic": 128,
+    "diastolic": 84,
+    "pulse": 40,
+    "style": "lcd-dark",
+    "profile": "medium"
+  },
+  {
+    "id": "s3_v6_hard",
+    "file": "s3_v6_hard.png",
+    "systolic": 128,
+    "diastolic": 84,
+    "pulse": 40,
+    "style": "lcd-dark",
+    "profile": "hard"
+  },
+  {
+    "id": "s3_v7_clean",
+    "file": "s3_v7_clean.png",
+    "systolic": 101,
+    "diastolic": 71,
+    "pulse": 73,
+    "style": "lcd-dark",
+    "profile": "clean"
+  },
+  {
+    "id": "s3_v7_mild",
+    "file": "s3_v7_mild.png",
+    "systolic": 101,
+    "diastolic": 71,
+    "pulse": 73,
+    "style": "lcd-dark",
+    "profile": "mild"
+  },
+  {
+    "id": "s3_v7_medium",
+    "file": "s3_v7_medium.png",
+    "systolic": 101,
+    "diastolic": 71,
+    "pulse": 73,
+    "style": "lcd-dark",
+    "profile": "medium"
+  },
+  {
+    "id": "s3_v7_hard",
+    "file": "s3_v7_hard.png",
+    "systolic": 101,
+    "diastolic": 71,
+    "pulse": 73,
+    "style": "lcd-dark",
+    "profile": "hard"
+  },
+  {
+    "id": "s3_v8_clean",
+    "file": "s3_v8_clean.png",
+    "systolic": 176,
+    "diastolic": 108,
+    "pulse": 95,
+    "style": "lcd-dark",
+    "profile": "clean"
+  },
+  {
+    "id": "s3_v8_mild",
+    "file": "s3_v8_mild.png",
+    "systolic": 176,
+    "diastolic": 108,
+    "pulse": 95,
+    "style": "lcd-dark",
+    "profile": "mild"
+  },
+  {
+    "id": "s3_v8_medium",
+    "file": "s3_v8_medium.png",
+    "systolic": 176,
+    "diastolic": 108,
+    "pulse": 95,
+    "style": "lcd-dark",
+    "profile": "medium"
+  },
+  {
+    "id": "s3_v8_hard",
+    "file": "s3_v8_hard.png",
+    "systolic": 176,
+    "diastolic": 108,
+    "pulse": 95,
+    "style": "lcd-dark",
+    "profile": "hard"
+  },
+  {
+    "id": "s3_v9_clean",
+    "file": "s3_v9_clean.png",
+    "systolic": 90,
+    "diastolic": 55,
+    "pulse": 66,
+    "style": "lcd-dark",
+    "profile": "clean"
+  },
+  {
+    "id": "s3_v9_mild",
+    "file": "s3_v9_mild.png",
+    "systolic": 90,
+    "diastolic": 55,
+    "pulse": 66,
+    "style": "lcd-dark",
+    "profile": "mild"
+  },
+  {
+    "id": "s3_v9_medium",
+    "file": "s3_v9_medium.png",
+    "systolic": 90,
+    "diastolic": 55,
+    "pulse": 66,
+    "style": "lcd-dark",
+    "profile": "medium"
+  },
+  {
+    "id": "s3_v9_hard",
+    "file": "s3_v9_hard.png",
+    "systolic": 90,
+    "diastolic": 55,
+    "pulse": 66,
+    "style": "lcd-dark",
+    "profile": "hard"
+  },
+  {
+    "id": "s3_v10_clean",
+    "file": "s3_v10_clean.png",
+    "systolic": 200,
+    "diastolic": 120,
+    "pulse": 50,
+    "style": "lcd-dark",
+    "profile": "clean"
+  },
+  {
+    "id": "s3_v10_mild",
+    "file": "s3_v10_mild.png",
+    "systolic": 200,
+    "diastolic": 120,
+    "pulse": 50,
+    "style": "lcd-dark",
+    "profile": "mild"
+  },
+  {
+    "id": "s3_v10_medium",
+    "file": "s3_v10_medium.png",
+    "systolic": 200,
+    "diastolic": 120,
+    "pulse": 50,
+    "style": "lcd-dark",
+    "profile": "medium"
+  },
+  {
+    "id": "s3_v10_hard",
+    "file": "s3_v10_hard.png",
+    "systolic": 200,
+    "diastolic": 120,
+    "pulse": 50,
+    "style": "lcd-dark",
+    "profile": "hard"
+  },
+  {
+    "id": "s3_v11_clean",
+    "file": "s3_v11_clean.png",
+    "systolic": 107,
+    "diastolic": 63,
+    "pulse": 105,
+    "style": "lcd-dark",
+    "profile": "clean"
+  },
+  {
+    "id": "s3_v11_mild",
+    "file": "s3_v11_mild.png",
+    "systolic": 107,
+    "diastolic": 63,
+    "pulse": 105,
+    "style": "lcd-dark",
+    "profile": "mild"
+  },
+  {
+    "id": "s3_v11_medium",
+    "file": "s3_v11_medium.png",
+    "systolic": 107,
+    "diastolic": 63,
+    "pulse": 105,
+    "style": "lcd-dark",
+    "profile": "medium"
+  },
+  {
+    "id": "s3_v11_hard",
+    "file": "s3_v11_hard.png",
+    "systolic": 107,
+    "diastolic": 63,
+    "pulse": 105,
+    "style": "lcd-dark",
+    "profile": "hard"
+  }
+]
