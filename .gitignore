@@ -105,3 +105,6 @@ docs/*凭据*
 flutter-app/tool/ocr_bench_data/
 flutter-app/tool/ocr_bench_photo_data/
 
+
+# 文档配图（使用说明的界面截图与图表）需要入库，不受上面的 *.png 规则影响
+!docs/images/*.png
