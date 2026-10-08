@@ -50,12 +50,29 @@ class SevenSegmentOcrService {
       _log('原始图像尺寸: ${originalImage.width}x${originalImage.height}');
 
       // === 新增：检测并裁剪屏幕区域 ===
+      //
+      // 注意：真机实测出现过裁剪把图片从 900x620 缩到 180x180 的情况
+      // （屏幕区域检测给出置信度 0.3 的中心假设），数字所剩无几，
+      // 七段识别必然失败；而随后兜底的旧检测链会返回一个"生理上合理但错误"的
+      // 结果并被接受（实测给出 118/81/88，与真值 200/120/50 相差甚远）。
+      // 因此对"缩得太狠"的裁剪直接放弃，保留原图。
       img.Image image = originalImage;
       final screenRegion = BloodPressureScreenDetector.detect(originalImage);
       if (screenRegion != null && screenRegion.confidence > 0.5) {
         _log('检测到屏幕区域: $screenRegion');
-        image = screenRegion.crop(originalImage);
-        _log('裁剪后图像尺寸: ${image.width}x${image.height}');
+        final cropped = screenRegion.crop(originalImage);
+        final areaRatio = (cropped.width * cropped.height) /
+            (originalImage.width * originalImage.height);
+        if (cropped.width >= 240 &&
+            cropped.height >= 180 &&
+            areaRatio >= 0.25) {
+          image = cropped;
+          _log('裁剪后图像尺寸: ${image.width}x${image.height} '
+              '(占原图 ${(areaRatio * 100).toStringAsFixed(0)}%)');
+        } else {
+          _log('裁剪结果过小（${cropped.width}x${cropped.height}，'
+              '占原图 ${(areaRatio * 100).toStringAsFixed(0)}%），放弃裁剪改用原图');
+        }
       } else {
         _log('未检测到明确屏幕区域，使用原图');
       }
