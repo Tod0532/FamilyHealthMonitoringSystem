@@ -128,6 +128,9 @@ class LcdSegmentReader {
   /// 最近一次识别的内部诊断（失败时也可读取，便于现场排查）
   static String lastTrace = '';
 
+  /// 是否在 trace 里附上每个字形/数值的明细（调试用，默认关闭以免拖慢）
+  static bool kDebugTrace = false;
+
   // ---------------------------------------------------------------- 二值化
 
   /// 灰度化并返回像素值数组
@@ -319,6 +322,12 @@ class LcdSegmentReader {
   static List<_Box> _mergeGlyphs(List<_Box> comps) {
     final n = comps.length;
     if (n == 0) return [];
+
+    // 参照宽度：组件宽度的中位数
+    // （用于判断“两块合起来是否仍不超过一个数字格宽”）
+    final ws = comps.map((c) => c.w).toList()..sort();
+    final refW = ws[ws.length ~/ 2].toDouble();
+
     final parent = List<int>.generate(n, (i) => i);
 
     int find(int x) {
@@ -340,13 +349,31 @@ class LcdSegmentReader {
     bool attached(_Box a, _Box b) {
       final minW = math.min(a.w, b.w).toDouble();
       final minH = math.min(a.h, b.h).toDouble();
+      final maxH = math.max(a.h, b.h).toDouble();
       final ox = math.min(a.x1, b.x1) - math.max(a.x0, b.x0) + 1;
       final oy = math.min(a.y1, b.y1) - math.max(a.y0, b.y0) + 1;
       final xGap = math.max(0, math.max(a.x0, b.x0) - math.min(a.x1, b.x1) - 1);
       final yGap = math.max(0, math.max(a.y0, b.y0) - math.min(a.y1, b.y1) - 1);
-      final xNear = xGap <= 0.25 * minW || ox >= 0.5 * minW;
-      final yNear = yGap <= 0.30 * minH || oy >= 0.5 * minH;
-      return xNear && yNear;
+      // 关键：横向距离的判据必须用"高度"而不是"宽度"做参照。
+      // 带残影的机型里，每个数字的组件宽度就是整个数字格（很宽），
+      // 若按宽度判"够近"，相邻数字间距(约 0.12×字高)会被误判为同格而粘连
+      // （实测：按宽度判会把 120 读成 1120、把 75 读成 175）。
+      // 用高度做参照后：同一数字内部两块(x 间隙≈0)可合并，
+      // 相邻数字(x 间隙≈0.12×字高)不会合并。
+      final xNear = xGap <= 0.08 * minH || ox >= 0.5 * minW;
+      // 纵向同理：必须收到"行内"尺度。否则同一列的上行数字与下行数字
+      // （间隙约 0.13×字高）会跨行并成一块（实测：100x435 的怪块，
+      // 把收缩压 120 拆成 "1"+"20"，同时丢掉舒张压的 8）。
+      final yNear = yGap <= 0.10 * minH || oy >= 0.5 * minH;
+
+      // 并排两块合并：仅在"合起来仍不超过一个数字格宽"时成立
+      // （实测放宽到 1.35×中位宽度会误并相邻数字，故此处保守取 1.15 倍，
+      //   真正的碎片问题改用更稳的二值化阈值 c 解决）
+      final xSpan = math.max(a.x1, b.x1) - math.min(a.x0, b.x0) + 1;
+      final sideBySide =
+          oy >= 0.5 * minH && xGap <= 0.12 * maxH && xSpan <= 1.15 * refW;
+
+      return (xNear && yNear) || sideBySide;
     }
 
     for (var i = 0; i < n; i++) {
@@ -697,7 +724,7 @@ class LcdSegmentReader {
     // 双极性 × 多膨胀半径，全部当假设试一遍，取组合得分最高者
     for (final darkInk in [true, false]) {
       final mask = _adaptiveBinarize(vals, w, h,
-          darkInk: darkInk, window: window, c: 10);
+          darkInk: darkInk, window: window, c: 20);
       final grayRef = _GrayRef(vals, w, h, darkInk);
 
       for (final r in radii) {
@@ -742,6 +769,9 @@ class LcdSegmentReader {
           final glyphs = <_Box>[];
           for (final g in shaped) {
             if (g.h < 0.55 * medianH) continue;
+            // 安全阀：高度超过 1.6 倍中位数的字形跨了多行（合并过度），不是单个数字
+            // （实测：跨行并块 100x435 vs 中位 196 → 已拦下）
+            if (g.h > 1.6 * medianH) continue;
             final t = _tightBox(mask, g.x0 - 1, g.y0 - 1, g.x1 + 1, g.y1 + 1);
             if (t == null || t.h < h * 0.015) continue;
             glyphs.add(t);
@@ -763,9 +793,18 @@ class LcdSegmentReader {
 
           final numbers = _groupNumbers(digits);
           final assign = _assignRoles(numbers);
+          final numberDump = numbers
+              .map((n) => '${n.value}(${n.digits.length}位,h${n.height.toInt()},'
+                  'x${n.cx.toInt()},y${n.cy.toInt()})')
+              .join(',');
+          final digitDump = digits
+              .map((d) => '${d.digit}@${d.box.x0},${d.box.y0} '
+                  '${d.box.w}x${d.box.h} ${d.score.toStringAsFixed(2)}')
+              .join(';');
           perHyp.add('${darkInk ? "暗" : "亮"}r$r${openR > 0 ? "开" : "原"}$vName:字形${glyphs.length}/'
               '数字${digits.length}/数值${numbers.length}'
-              '${assign == null ? "·无解" : ""}');
+              '${assign == null ? "·无解" : ""}'
+              '${kDebugTrace ? " 数[$numberDump] 字[$digitDump]" : ""}');
 
           if (assign != null) {
             if (bestAssign == null || assign.$4 > bestAssign.$4) {

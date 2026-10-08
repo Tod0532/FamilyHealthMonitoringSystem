@@ -16,6 +16,7 @@ Future<void> main(List<String> args) async {
     print('文件不存在: ${args[0]}');
     return;
   }
+  LcdSegmentReader.kDebugTrace = args.contains('--full');
   final image = img.decodeImage(f.readAsBytesSync())!;
   print('图像: ${image.width}x${image.height}');
   final r = await LcdSegmentReader.recognize(image);
