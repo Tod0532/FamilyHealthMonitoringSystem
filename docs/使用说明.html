@@ -30,6 +30,8 @@ code { background:var(--code); padding:2px 6px; border-radius:4px;
 pre { background:var(--code); border:1px solid var(--line); border-radius:8px;
   padding:14px 16px; overflow:auto; }
 pre code { background:none; padding:0; }
+figure.diagram { margin:22px 0; text-align:center; }
+figure.diagram img { border:1px solid var(--line); border-radius:8px; }
 pre.mermaid { background:#fff; border:1px dashed #cfd8dc; text-align:center; padding:18px; }
 blockquote { margin:14px 0; padding:10px 16px; border-left:4px solid var(--brand);
   background:#f2f9f3; color:#2f3a33; border-radius:0 6px 6px 0; }
@@ -72,64 +74,13 @@ footer { max-width:1100px; margin:0 auto; padding:18px 64px 60px; color:var(--mu
 <tr><td>复诊时医生说"把最近的数据给我"</td><td><strong>一键导出</strong> CSV / JSON / Excel</td></tr>
 </tbody></table>
 <h3 id="功能一览">功能一览</h3>
-<pre class="mermaid">flowchart LR
-    subgraph 账号[&quot;👤 账号&quot;]
-        A1[注册 / 登录]
-        A2[修改密码]
-        A3[编辑资料]
-    end
-    subgraph 家庭[&quot;👨‍👩‍👧 家庭协作&quot;]
-        B1[创建家庭]
-        B2[邀请家人&lt;br/&gt;邀请码 / 二维码]
-        B3[成员增删改]
-        B4[退出 / 解散家庭]
-    end
-    subgraph 健康[&quot;❤️ 健康数据&quot;]
-        C1[手动录入 8 类指标]
-        C2[拍照识别血压]
-        C3[蓝牙设备同步]
-        C4[趋势统计]
-    end
-    subgraph 预警[&quot;🔔 健康预警&quot;]
-        D1[预警规则配置]
-        D2[预警记录查看]
-        D3[已读 / 已处理]
-    end
-    subgraph 数据[&quot;📤 数据管理&quot;]
-        E1[导出 CSV/JSON/Excel]
-        E2[保存 / 分享 / 复制]
-    end
-    账号 --&gt; 家庭 --&gt; 健康 --&gt; 预警 --&gt; 数据</pre>
+<p><img alt="功能一览" src="images/diagram-01-features.png"></p>
+<p>&lt;sub&gt;▲ 功能一览　（源文件 <code>docs/diagrams/01-features.mmd</code>）&lt;/sub&gt;</p>
 <hr>
 <h2 id="二系统架构">二、系统架构</h2>
 <h3 id="整体架构">整体架构</h3>
-<pre class="mermaid">flowchart TB
-    subgraph Client[&quot;📱 Flutter App（Android）&quot;]
-        UI[&quot;页面 / 组件&lt;br/&gt;GetX 状态管理&quot;]
-        NET[&quot;网络层&lt;br/&gt;Dio + 拦截器&lt;br/&gt;Token 自动携带 / 401 处理&quot;]
-        LOCAL[&quot;本地存储&lt;br/&gt;GetStorage 缓存&quot;]
-        OCR[&quot;OCR 子系统&lt;br/&gt;七段数码管识别&quot;]
-        BT[&quot;蓝牙子系统&lt;br/&gt;flutter_blue_plus&quot;]
-        UI --&gt; NET
-        UI --&gt; LOCAL
-        UI --&gt; OCR
-        UI --&gt; BT
-    end
-
-    subgraph Server[&quot;🖥 阿里云 ECS&quot;]
-        API[&quot;Spring Boot 2.7&lt;br/&gt;:8080&quot;]
-        SEC[&quot;JWT 鉴权 +&lt;br/&gt;角色拦截器&quot;]
-        SVC[&quot;业务服务层&quot;]
-        MP[&quot;MyBatis-Plus&quot;]
-        API --&gt; SEC --&gt; SVC --&gt; MP
-    end
-
-    DB[(&quot;🐬 MySQL 8.0&lt;br/&gt;health_center_db&quot;)]
-    Files[&quot;📁 导出文件&lt;br/&gt;Android/data/.../files&quot;]
-
-    NET --&gt;|&quot;REST / JSON&lt;br/&gt;X-App-Version 头&quot;| API
-    MP --&gt; DB
-    OCR --&gt; Files</pre>
+<p><img alt="系统整体架构" src="images/diagram-02-architecture.png"></p>
+<p>&lt;sub&gt;▲ 系统整体架构　（源文件 <code>docs/diagrams/02-architecture.mmd</code>）&lt;/sub&gt;</p>
 <h3 id="技术栈">技术栈</h3>
 <table>
 <thead><tr><th>层</th><th>技术</th><th>版本</th><th>作用</th></tr></thead>
@@ -150,12 +101,8 @@ footer { max-width:1100px; margin:0 auto; padding:18px 64px 60px; color:var(--mu
 <hr>
 <h2 id="三角色与权限">三、角色与权限</h2>
 <p><strong>重点：本项目有两套"角色"概念，容易混淆，务必区分。</strong></p>
-<pre class="mermaid">flowchart LR
-    U[&quot;用户账号&quot;] --&gt; R1[&quot;全局角色 role&lt;br/&gt;ADMIN / USER&quot;]
-    U --&gt; R2[&quot;家庭角色 familyRole&lt;br/&gt;admin / member&quot;]
-    R1 --&gt;|&quot;决定&quot;| P1[&quot;早期接口的 @RequireRole 判定&quot;]
-    R2 --&gt;|&quot;决定&quot;| P2[&quot;家庭内管理权限&lt;br/&gt;增删成员 / 配置预警&quot;]
-    style R2 fill:#c8e6c9</pre>
+<p><img alt="角色与权限关系" src="images/diagram-03-roles.png"></p>
+<p>&lt;sub&gt;▲ 角色与权限关系　（源文件 <code>docs/diagrams/03-roles.mmd</code>）&lt;/sub&gt;</p>
 <table>
 <thead><tr><th>能力</th><th>家庭管理员&lt;br/&gt;（familyRole=admin）</th><th>普通成员&lt;br/&gt;（familyRole=member）</th></tr></thead>
 <tbody>
@@ -291,145 +238,29 @@ footer { max-width:1100px; margin:0 auto; padding:18px 64px 60px; color:var(--mu
 <hr>
 <h2 id="六核心流程图">六、核心流程图</h2>
 <h3 id="61-登录鉴权流程">6.1 登录鉴权流程</h3>
-<pre class="mermaid">sequenceDiagram
-    participant U as 用户
-    participant A as App
-    participant S as 后端
-    participant D as 数据库
-    U-&gt;&gt;A: 输入手机号 + 密码
-    A-&gt;&gt;S: POST /api/auth/login
-    S-&gt;&gt;D: 按手机号查用户
-    D--&gt;&gt;S: 用户记录
-    S-&gt;&gt;S: BCrypt 校验密码
-    alt 校验通过
-        S-&gt;&gt;S: 签发 AccessToken(2h) + RefreshToken(7d)&lt;br/&gt;claims: userId / phone / role
-        S--&gt;&gt;A: 200 + token + userInfo
-        A-&gt;&gt;A: 存入本地（GetStorage）
-        A--&gt;&gt;U: 跳转首页
-    else 密码错误
-        S--&gt;&gt;A: 401 原密码错误
-        A--&gt;&gt;U: 顶部提示「手机号或密码错误」&lt;br/&gt;（不清空输入、不跳转）
-    end
-    Note over A,S: 后续请求自动带 Authorization: Bearer &amp;lt;token&amp;gt;&lt;br/&gt;收到业务 401 不再强制退出（仅 Token 过期才退出）</pre>
+<p><img alt="登录鉴权时序" src="images/diagram-04-login-seq.png"></p>
+<p>&lt;sub&gt;▲ 登录鉴权时序　（源文件 <code>docs/diagrams/04-login-seq.mmd</code>）&lt;/sub&gt;</p>
 <h3 id="62-ocr-拍照识别流程">6.2 OCR 拍照识别流程</h3>
-<pre class="mermaid">flowchart TD
-    A[&quot;选择图片（拍照 / 相册）&quot;] --&gt; B[&quot;读取图片&quot;]
-    B --&gt; C{&quot;屏幕区域检测&lt;br/&gt;置信度 &amp;gt; 0.5 ?&quot;}
-    C --&gt;|是| D{&quot;裁剪结果是否过小?&lt;br/&gt;小于 240x180 或不足原图 25%&quot;}
-    D --&gt;|过小| E[&quot;放弃裁剪，用原图&quot;]
-    D --&gt;|合理| F[&quot;裁剪到屏幕区域&quot;]
-    C --&gt;|否| E
-    E --&gt; G[&quot;通用七段识别器&quot;]
-    F --&gt; G
-    G --&gt; G1[&quot;① 自适应局部阈值二值化&lt;br/&gt;（自动判定极性）&quot;]
-    G1 --&gt; G2[&quot;② 开运算去细线&lt;br/&gt;（去掉屏幕边框线）&quot;]
-    G2 --&gt; G3[&quot;③ 多尺度连通域 + 结构法合成数字&quot;]
-    G3 --&gt; G4[&quot;④ 灰度对比度相对归一化&lt;br/&gt;判断七段亮灭&quot;]
-    G4 --&gt; G5[&quot;⑤ 按位置线索判定&lt;br/&gt;收缩压 / 舒张压 / 脉搏&quot;]
-    G5 --&gt; H{&quot;生理范围校验通过?&quot;}
-    H --&gt;|是| I[&quot;返回识别结果&quot;]
-    H --&gt;|否| J[&quot;回退旧检测链&lt;br/&gt;（TFLite / 各 SmartXxx 检测器）&quot;]
-    J --&gt; K{&quot;结果有效?&quot;}
-    K --&gt;|是| I
-    K --&gt;|否| L[&quot;提示识别失败&quot;]
-    I --&gt; M[&quot;弹窗确认 → 填入表单&quot;]</pre>
+<p><img alt="OCR 拍照识别流程" src="images/diagram-05-ocr-flow.png"></p>
+<p>&lt;sub&gt;▲ OCR 拍照识别流程　（源文件 <code>docs/diagrams/05-ocr-flow.mmd</code>）&lt;/sub&gt;</p>
 <blockquote><p>关键设计：<strong>多假设择优</strong>。二值化极性、开运算开关、膨胀半径、是否合并散段，全部作为独立假设分别尝试，最后按统一评分选最优结果，避免被单一假设绑死。</p></blockquote>
 <h3 id="63-预警产生流程">6.3 预警产生流程</h3>
-<pre class="mermaid">flowchart LR
-    A[&quot;录入健康数据&quot;] --&gt; B[&quot;保存成功&quot;]
-    B --&gt; C[&quot;读取该用户启用的预警规则&quot;]
-    C --&gt; D{&quot;数值是否越过阈值?&quot;}
-    D --&gt;|否| E[&quot;仅保存数据&quot;]
-    D --&gt;|是| F[&quot;生成预警记录&lt;br/&gt;级别: info/warning/danger&quot;]
-    F --&gt; G[&quot;预警 tab 显示&quot;]
-    G --&gt; H[&quot;用户标记已读 / 已处理&quot;]</pre>
+<p><img alt="预警产生流程" src="images/diagram-06-alert-flow.png"></p>
+<p>&lt;sub&gt;▲ 预警产生流程　（源文件 <code>docs/diagrams/06-alert-flow.mmd</code>）&lt;/sub&gt;</p>
 <h3 id="64-家庭协作流程">6.4 家庭协作流程</h3>
-<pre class="mermaid">stateDiagram-v2
-    [*] --&gt; 无家庭
-    无家庭 --&gt; 家庭管理员: 创建家庭（创建者=admin）
-    无家庭 --&gt; 家庭成员: 邀请码 / 扫码加入
-    家庭管理员 --&gt; 家庭管理员: 增删成员、配置预警、邀请家人
-    家庭成员 --&gt; 无家庭: 退出家庭
-    家庭管理员 --&gt; 无家庭: 成员&gt;1 时需先转让或解散&lt;br/&gt;仅剩自己时可直接退出（家庭解散）</pre>
+<p><img alt="家庭协作状态流转" src="images/diagram-07-family-state.png"></p>
+<p>&lt;sub&gt;▲ 家庭协作状态流转　（源文件 <code>docs/diagrams/07-family-state.mmd</code>）&lt;/sub&gt;</p>
 <h3 id="65-数据导出流程">6.5 数据导出流程</h3>
-<pre class="mermaid">flowchart TD
-    A[&quot;我的 → 数据导出&quot;] --&gt; B[&quot;按时间范围 + 数据类型筛选&quot;]
-    B --&gt; C[&quot;选择格式 CSV / JSON / Excel&quot;]
-    C --&gt; D[&quot;生成内容（含 UTF-8 BOM，Excel 中文不乱码）&quot;]
-    D --&gt; E{&quot;有可导出数据?&quot;}
-    E --&gt;|否| F[&quot;提示：当前条件下无数据&quot;]
-    E --&gt;|是| G[&quot;进入导出结果页&quot;]
-    G --&gt; H[&quot;保存到本地&lt;br/&gt;Android/data/包名/files/HealthExport/&quot;]
-    G --&gt; I[&quot;分享文件&lt;br/&gt;先写临时文件再调系统分享&quot;]
-    G --&gt; J[&quot;复制全部内容&lt;br/&gt;写入剪贴板&quot;]</pre>
+<p><img alt="数据导出流程" src="images/diagram-08-export-flow.png"></p>
+<p>&lt;sub&gt;▲ 数据导出流程　（源文件 <code>docs/diagrams/08-export-flow.mmd</code>）&lt;/sub&gt;</p>
 <hr>
 <h2 id="七后端与数据库">七、后端与数据库</h2>
 <h3 id="71-分层结构">7.1 分层结构</h3>
-<pre class="mermaid">flowchart TB
-    C[&quot;interfaces/controller&lt;br/&gt;REST 入口&quot;] --&gt; D[&quot;interfaces/dto&lt;br/&gt;请求 / 响应对象&quot;]
-    C --&gt; S[&quot;service / impl&lt;br/&gt;业务逻辑&quot;]
-    S --&gt; M[&quot;domain/mapper&lt;br/&gt;MyBatis-Plus Mapper&quot;]
-    M --&gt; E[(&quot;domain/entity&lt;br/&gt;数据库实体&quot;)]
-    C --&gt; SEC[&quot;config/RoleInterceptor&lt;br/&gt;角色校验&quot;]
-    S --&gt; EX[&quot;exception/GlobalExceptionHandler&lt;br/&gt;统一异常 → ApiResponse&quot;]</pre>
+<p><img alt="后端分层与请求链路" src="images/diagram-09-backend-layers.png"></p>
+<p>&lt;sub&gt;▲ 后端分层与请求链路　（源文件 <code>docs/diagrams/09-backend-layers.mmd</code>）&lt;/sub&gt;</p>
 <h3 id="72-数据库关系">7.2 数据库关系</h3>
-<pre class="mermaid">erDiagram
-    USER ||--o| FAMILY : &quot;属于（family_id）&quot;
-    USER ||--o{ FAMILY_MEMBER : &quot;档案行&quot;
-    FAMILY ||--o{ FAMILY_MEMBER : &quot;包含&quot;
-    USER ||--o{ HEALTH_DATA : &quot;录入&quot;
-    USER ||--o{ ALERT_RULE : &quot;配置&quot;
-    USER ||--o{ ALERT_RECORD : &quot;产生&quot;
-    FAMILY_MEMBER ||--o{ HEALTH_DATA : &quot;归属&quot;
-
-    USER {
-        bigint id PK
-        varchar phone &quot;唯一&quot;
-        varchar password &quot;BCrypt&quot;
-        varchar nickname
-        varchar role &quot;全局角色 ADMIN/USER&quot;
-        bigint family_id FK
-        varchar family_role &quot;家庭角色 admin/member&quot;
-    }
-    FAMILY {
-        bigint id PK
-        varchar family_name
-        varchar family_code &quot;邀请码&quot;
-        bigint admin_id
-        int member_count &quot;按实际行数重算&quot;
-    }
-    FAMILY_MEMBER {
-        bigint id PK
-        bigint user_id FK
-        bigint family_id FK &quot;NULL=未归属&quot;
-        varchar name
-        varchar relation
-        date birthday
-    }
-    HEALTH_DATA {
-        bigint id PK
-        bigint user_id FK
-        bigint member_id
-        varchar data_type
-        decimal value1
-        decimal value2
-        datetime measure_time
-    }
-    ALERT_RULE {
-        bigint id PK
-        bigint user_id FK
-        varchar rule_name
-        varchar condition_type &quot;gt/between/lt&quot;
-        decimal threshold1
-        decimal threshold2
-        tinyint enabled
-    }
-    ALERT_RECORD {
-        bigint id PK
-        bigint user_id FK
-        varchar alert_level
-        varchar status
-    }</pre>
+<p><img alt="数据库关系（ER）" src="images/diagram-10-er.png"></p>
+<p>&lt;sub&gt;▲ 数据库关系（ER）　（源文件 <code>docs/diagrams/10-er.mmd</code>）&lt;/sub&gt;</p>
 <h3 id="73-主要接口">7.3 主要接口</h3>
 <table>
 <thead><tr><th>分类</th><th>接口</th><th>说明</th></tr></thead>
@@ -446,37 +277,11 @@ footer { max-width:1100px; margin:0 auto; padding:18px 64px 60px; color:var(--mu
 <hr>
 <h2 id="八部署与运维">八、部署与运维</h2>
 <h3 id="81-部署拓扑">8.1 部署拓扑</h3>
-<pre class="mermaid">flowchart LR
-    subgraph Dev[&quot;开发机（Windows）&quot;]
-        SRC[&quot;源码&quot;]
-        APK[&quot;APK 构建&quot;]
-        DBV[&quot;DbViewer&lt;br/&gt;127.0.0.1:18090&lt;br/&gt;只读查库&quot;]
-    end
-    subgraph Cloud[&quot;阿里云 ECS 139.129.108.119&quot;]
-        NG[&quot;Spring Boot :8080&lt;br/&gt;systemd: health-app&quot;]
-        MY[(&quot;MySQL 3306&lt;br/&gt;health_center_db&quot;)]
-        LOG[&quot;/opt/health-center/logs/app.log&quot;]
-    end
-    PH[&quot;📱 Android 手机&quot;]
-    SRC --&gt;|&quot;mvnw package + scp&quot;| NG
-    NG --&gt; MY
-    NG --&gt; LOG
-    SRC --&gt; APK --&gt; PH
-    PH --&gt;|&quot;REST&quot;| NG
-    DBV -.-&gt;|&quot;只读 JDBC&quot;| MY</pre>
+<p><img alt="部署拓扑" src="images/diagram-11-deploy.png"></p>
+<p>&lt;sub&gt;▲ 部署拓扑　（源文件 <code>docs/diagrams/11-deploy.mmd</code>）&lt;/sub&gt;</p>
 <h3 id="82-发布流程">8.2 发布流程</h3>
-<pre class="mermaid">flowchart TD
-    A[&quot;本地改代码&quot;] --&gt; B[&quot;flutter analyze / mvnw package&quot;]
-    B --&gt; C{&quot;本地验证通过?&quot;}
-    C --&gt;|否| A
-    C --&gt;|是| D[&quot;备份线上 jar&lt;br/&gt;/opt/health-center/backup-jar-日期/&quot;]
-    D --&gt; E[&quot;scp 上传新 jar&quot;]
-    E --&gt; F[&quot;校验 md5 一致&quot;]
-    F --&gt; G[&quot;替换 jar + systemctl restart health-app&quot;]
-    G --&gt; H{&quot;systemctl is-active&lt;br/&gt;= active?&quot;}
-    H --&gt;|否| I[&quot;回滚：用备份 jar 重启&quot;]
-    H --&gt;|是| J[&quot;接口冒烟测试&quot;]
-    J --&gt; K[&quot;清理测试数据&quot;]</pre>
+<p><img alt="发布流程" src="images/diagram-12-release.png"></p>
+<p>&lt;sub&gt;▲ 发布流程　（源文件 <code>docs/diagrams/12-release.mmd</code>）&lt;/sub&gt;</p>
 <p><strong>常用运维命令</strong></p>
 <pre><code># 服务状态 / 重启
 systemctl status health-app
@@ -537,16 +342,8 @@ dart run tool/ocr_debug_one.dart tool/ocr_bench_data/s0_v0_clean.png --full  # �
 <hr>
 <h2 id="十故障排查">十、故障排查</h2>
 <h3 id="101-排查决策图">10.1 排查决策图</h3>
-<pre class="mermaid">flowchart TD
-    S[&quot;App 出现异常&quot;] --&gt; Q1{&quot;能打开 App?&quot;}
-    Q1 --&gt;|否，闪退| A1[&quot;看 logcat：adb logcat | grep -E &#x27;FATAL|flutter&#x27;&quot;]
-    Q1 --&gt;|是| Q2{&quot;能登录?&quot;}
-    Q2 --&gt;|否| A2{&quot;提示什么?&quot;}
-    A2 --&gt;|手机号或密码错误| A21[&quot;确认账号；或后端是否可达&quot;]
-    A2 --&gt;|网络错误| A22[&quot;检查服务是否 active、8080 是否放通、&lt;br/&gt;手机网络/隧道 adb reverse&quot;]
-    Q2 --&gt;|是| Q3{&quot;数据不显示?&quot;}
-    Q3 --&gt;|列表空| A3[&quot;下拉刷新；确认该账号/家庭是否真有数据&quot;]
-    Q3 --&gt;|显示与预期不符| A4[&quot;用 DbViewer 直连数据库核对真值&quot;]</pre>
+<p><img alt="故障排查决策" src="images/diagram-13-troubleshoot.png"></p>
+<p>&lt;sub&gt;▲ 故障排查决策　（源文件 <code>docs/diagrams/13-troubleshoot.mmd</code>）&lt;/sub&gt;</p>
 <h3 id="102-常见问题">10.2 常见问题</h3>
 <table>
 <thead><tr><th>现象</th><th>可能原因</th><th>处理</th></tr></thead>
@@ -588,14 +385,44 @@ dart run tool/ocr_debug_one.dart tool/ocr_bench_data/s0_v0_clean.png --full  # �
 │       ├── domain/                 # entity / mapper
 │       └── config/                 # 鉴权、拦截器、MyBatis 配置
 ├── docs/                           # 文档
-│   ├── images/                     # 本文档所有截图与图表
+│   ├── images/                     # 本文档所有截图、图表、流程图渲染图
+│   ├── diagrams/                   # 流程图源文件（Mermaid .mmd，可编辑）
 │   ├── api.md / database.md         # 接口与数据库
 │   ├── 使用说明.md                   # 本文档
 │   └── user-manual.md              # 纯文字版手册
 ├── scripts/dbviewer/               # 只读数据库查看器（本地网页）
+├── scripts/md2html.py              # 本文档 Markdown → HTML 生成器
 └── dist/                           # 发布用 APK</code></pre>
 <hr>
-<p>*文档中的界面截图均来自真机运行（测试账号 + 本地模拟后端），图表数据来自可复现的自动化基准。*</p>
+<h2 id="附录-b修改流程图">附录 B：修改流程图</h2>
+<p>文档里的流程图是 <strong>渲染好的图片</strong>（<code>docs/images/diagram-*.png</code>）， 源文件是 Mermaid 文本（<code>docs/diagrams/*.mmd</code>）。改图流程：</p>
+<pre><code># 1) 编辑源文件，例如 docs/diagrams/05-ocr-flow.mmd
+# 2) 重新渲染成同名图片（文件名保持 diagram-05-ocr-flow.png 即可，文档自动引用）
+npx -y @mermaid-js/mermaid-cli -i docs/diagrams/05-ocr-flow.mmd \
+    -o docs/images/diagram-05-ocr-flow.png -b white -s 2
+
+# 3) 重新生成 HTML 版本
+python scripts/md2html.py &quot;docs/使用说明.md&quot; &quot;docs/使用说明.html&quot; &quot;家庭健康中心 · 使用说明&quot;</code></pre>
+<table>
+<thead><tr><th>序号</th><th>源文件</th><th>内容</th></tr></thead>
+<tbody>
+<tr><td>01</td><td><code>01-features.mmd</code></td><td>功能一览</td></tr>
+<tr><td>02</td><td><code>02-architecture.mmd</code></td><td>系统整体架构</td></tr>
+<tr><td>03</td><td><code>03-roles.mmd</code></td><td>角色与权限关系</td></tr>
+<tr><td>04</td><td><code>04-login-seq.mmd</code></td><td>登录鉴权时序</td></tr>
+<tr><td>05</td><td><code>05-ocr-flow.mmd</code></td><td>OCR 拍照识别流程</td></tr>
+<tr><td>06</td><td><code>06-alert-flow.mmd</code></td><td>预警产生流程</td></tr>
+<tr><td>07</td><td><code>07-family-state.mmd</code></td><td>家庭协作状态流转</td></tr>
+<tr><td>08</td><td><code>08-export-flow.mmd</code></td><td>数据导出流程</td></tr>
+<tr><td>09</td><td><code>09-backend-layers.mmd</code></td><td>后端分层与请求链路</td></tr>
+<tr><td>10</td><td><code>10-er.mmd</code></td><td>数据库关系（ER）</td></tr>
+<tr><td>11</td><td><code>11-deploy.mmd</code></td><td>部署拓扑</td></tr>
+<tr><td>12</td><td><code>12-release.mmd</code></td><td>发布流程</td></tr>
+<tr><td>13</td><td><code>13-troubleshoot.mmd</code></td><td>故障排查决策</td></tr>
+</tbody></table>
+<blockquote><p>⚠️ Mermaid 语法注意：<code>sequenceDiagram</code> 的消息/注释文本里<strong>不要出现第二个冒号</strong>，</p><p>也不要用 <code>&lt;</code> <code>&gt;</code> 尖括号（会被当作语法），否则整图解析失败、渲染不出来。</p><p>建议改动后用 mermaid-cli 渲染一次，渲染成功即语法正确。</p></blockquote>
+<hr>
+<p>*文档中的界面截图均来自真机运行（测试账号 + 本地模拟后端）； 流程图与精度图表均可通过 <code>docs/diagrams/</code> 与 <code>flutter-app/tool/</code> 重新生成。*</p>
 </div>
 <footer>本页由 scripts/md2html.py 从 Markdown 生成 · 图表需联网加载 mermaid</footer>
 

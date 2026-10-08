@@ -1,0 +1,58 @@
+flowchart LR
+    subgraph ACC["👤 账号"]
+        direction TB
+        A1["注册 / 登录"]
+        A2["修改密码"]
+        A3["编辑资料"]
+    end
+
+    subgraph FAM["👨‍👩‍👧 家庭协作"]
+        direction TB
+        B1["创建家庭"]
+        B2["邀请家人<br/>邀请码 / 二维码"]
+        B3["成员增删改"]
+        B4["退出 / 解散家庭"]
+    end
+
+    subgraph HEA["❤️ 健康数据"]
+        direction TB
+        C1["手动录入<br/>8 类指标"]
+        C2["📷 拍照识别血压"]
+        C3["蓝牙设备同步"]
+        C4["趋势统计"]
+    end
+
+    subgraph ALR["🔔 健康预警"]
+        direction TB
+        D1["预警规则配置"]
+        D2["预警记录查看"]
+        D3["已读 / 已处理"]
+    end
+
+    subgraph DAT["📤 数据管理"]
+        direction TB
+        E1["导出 CSV / JSON / Excel"]
+        E2["保存 / 分享 / 复制"]
+    end
+
+    A1 --> B1
+    B1 --> B2 --> B3
+    C2 --> C1
+    D1 --> D2 --> D3
+    E1 --> E2
+
+    style ACC fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
+    style FAM fill:#e8f5e9,stroke:#388e3c,stroke-width:2px
+    style HEA fill:#fce4ec,stroke:#c2185b,stroke-width:2px
+    style ALR fill:#fff8e1,stroke:#f9a825,stroke-width:2px
+    style DAT fill:#ede7f6,stroke:#5e35b1,stroke-width:2px
+    classDef acc fill:#fff,stroke:#1976d2,color:#0d47a1
+    classDef fam fill:#fff,stroke:#388e3c,color:#1b5e20
+    classDef hea fill:#fff,stroke:#c2185b,color:#880e4f
+    classDef alr fill:#fff,stroke:#f9a825,color:#e65100
+    classDef dat fill:#fff,stroke:#5e35b1,color:#311b92
+    class A1,A2,A3 acc
+    class B1,B2,B3,B4 fam
+    class C1,C2,C3,C4 hea
+    class D1,D2,D3 alr
+    class E1,E2 dat

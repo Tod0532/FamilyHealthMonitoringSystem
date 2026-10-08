@@ -1,0 +1,66 @@
+erDiagram
+    USER ||--o| FAMILY : "属于（family_id）"
+    USER ||--o{ FAMILY_MEMBER : "成员档案（user_id）"
+    USER ||--o{ HEALTH_DATA : "录入"
+    USER ||--o{ ALERT_RULE : "配置"
+    USER ||--o{ ALERT_RECORD : "产生"
+    FAMILY ||--o{ FAMILY_MEMBER : "包含（family_id）"
+    FAMILY_MEMBER ||--o{ HEALTH_DATA : "数据归属（member_id）"
+
+    USER {
+        bigint id PK "雪花 ID"
+        varchar phone UK "手机号，唯一"
+        varchar password "BCrypt 哈希"
+        varchar nickname
+        varchar role "全局角色：ADMIN / USER"
+        bigint family_id FK "可为空：未加入家庭"
+        varchar family_role "家庭角色：admin / member"
+        datetime create_time "自动填充"
+    }
+
+    FAMILY {
+        bigint id PK
+        varchar family_name
+        varchar family_code UK "6 位邀请码"
+        bigint admin_id "管理员 user_id"
+        int member_count "按实际行数重算"
+    }
+
+    FAMILY_MEMBER {
+        bigint id PK "接口返回的成员 id"
+        bigint user_id FK
+        bigint family_id FK "NULL = 未归属任何家庭"
+        varchar name
+        varchar relation "father/mother/spouse/child/other"
+        date birthday
+    }
+
+    HEALTH_DATA {
+        bigint id PK
+        bigint user_id FK
+        bigint member_id FK "关联 family_member.id"
+        varchar data_type "blood_pressure / heart_rate …"
+        decimal value1
+        decimal value2 "舒张压（血压时使用）"
+        datetime measure_time
+    }
+
+    ALERT_RULE {
+        bigint id PK
+        bigint user_id FK
+        varchar rule_name
+        varchar condition_type "gt / between / lt"
+        decimal threshold1
+        decimal threshold2
+        varchar alert_level "info / warning / danger"
+        tinyint enabled "1 启用 0 停用"
+    }
+
+    ALERT_RECORD {
+        bigint id PK
+        bigint user_id FK
+        bigint rule_id FK
+        varchar alert_level
+        varchar status "unread / read / handled"
+        datetime create_time
+    }

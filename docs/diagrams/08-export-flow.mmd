@@ -1,0 +1,19 @@
+flowchart TD
+    A(["我的 → 数据导出"]) --> B["按时间范围筛选<br/>7 天 / 30 天 / 3 个月 / 全部"]
+    B --> C["勾选数据类型<br/>血压 / 心率 / 血糖 …"]
+    C --> D["选择格式<br/>CSV / JSON / Excel"]
+    D --> E["生成内容<br/>带 UTF-8 BOM（Excel 中文不乱码）"]
+
+    E --> F{"有可导出数据?"}
+    F -->|否| G["提示：当前条件下无数据"]
+    F -->|是| H["进入导出结果页<br/>文件名 · 记录数 · 文件大小"]
+
+    H --> I["保存到本地<br/>Android/data/包名/files/HealthExport/"]
+    H --> J["分享文件<br/>先写临时文件再调系统分享"]
+    H --> K["复制全部内容<br/>写入剪贴板"]
+
+    style A fill:#e3f2fd,stroke:#1976d2,color:#0d47a1
+    style F fill:#f3e5f5,stroke:#7b1fa2,color:#4a148c
+    style E fill:#e8f5e9,stroke:#388e3c,color:#1b5e20
+    style G fill:#ffebee,stroke:#c62828,color:#b71c1c
+    style H,I,J,K fill:#fff8e1,stroke:#f9a825,color:#e65100

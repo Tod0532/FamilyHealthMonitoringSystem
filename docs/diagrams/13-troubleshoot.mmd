@@ -1,0 +1,19 @@
+flowchart TD
+    S(["App 出现异常"]) --> Q1{"能打开 App?"}
+
+    Q1 -->|"否 · 闪退"| A1["adb logcat | grep -E 'FATAL|flutter'"]
+    Q1 -->|是| Q2{"能登录?"}
+
+    Q2 -->|否| A2["看提示文案"]
+    A2 -->|"手机号或密码错误"| A21["核对账号密码<br/>确认后端账号是否被改过"]
+    A2 -->|"网络错误 / 无响应"| A22["① systemctl is-active health-app<br/>② 8080 是否放通<br/>③ 手机是否有网（或用 adb reverse）"]
+
+    Q2 -->|是| Q3{"数据不显示?"}
+    Q3 -->|"列表为空"| A3["下拉刷新<br/>确认该账号/家庭确实有数据"]
+    Q3 -->|"显示与预期不符"| A4["DbViewer 直连数据库核对真值<br/>再判断是写入问题还是展示问题"]
+
+    Q1 -->|"能开但很卡"| A5["看设备同步页是否在扫描蓝牙<br/>扫描会持续占用资源"]
+
+    style S fill:#e3f2fd,stroke:#1976d2,stroke-width:2px,color:#0d47a1
+    style Q1,Q2,Q3 fill:#f3e5f5,stroke:#7b1fa2,color:#4a148c
+    style A1,A2,A21,A22,A3,A4,A5 fill:#e8f5e9,stroke:#388e3c,color:#1b5e20

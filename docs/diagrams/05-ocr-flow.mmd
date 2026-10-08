@@ -1,0 +1,37 @@
+flowchart TD
+    A(["选择图片<br/>拍照 / 相册"]) --> B["读取图片<br/>记录原始尺寸"]
+
+    B --> C{"屏幕区域检测<br/>置信度 &gt; 0.5 ?"}
+    C -->|否| E["使用原图"]
+    C -->|是| D{"裁剪结果是否过小?<br/>小于 240×180<br/>或不足原图 25%"}
+    D -->|"是（会把屏幕裁掉大半）"| E
+    D -->|否| F["裁剪到屏幕区域"]
+
+    E --> G
+    F --> G
+
+    subgraph OCR["通用七段识别器（多假设择优）"]
+        direction LR
+        G["① 自适应局部阈值二值化<br/>自动判定极性（暗字亮底 / 反色）"] --> G2["② 开运算去细线<br/>去掉液晶屏边框线"]
+        G2 --> G3["③ 多尺度连通域 + 结构法合成数字"]
+        G3 --> G4["④ 灰度对比度相对归一化<br/>判断七段亮灭（抗残影）"]
+        G4 --> G5["⑤ 按位置线索判定<br/>收缩压 / 舒张压 / 脉搏"]
+    end
+
+    G5 --> H{"生理范围校验通过?"}
+    H -->|是| I["返回识别结果"]
+    H -->|否| J["回退旧检测链<br/>TFLite / 各 SmartXxx 检测器"]
+    J --> K{"结果有效?"}
+    K -->|是| I
+    K -->|否| L["提示识别失败<br/>建议重拍"]
+
+    I --> M["弹窗确认<br/>血压 X/Y mmHg，心率 Z bpm<br/>确认填充 → 保存记录<br/>（保存后触发预警判定）"]
+
+    style A fill:#e3f2fd,stroke:#1976d2,color:#0d47a1
+    style G,G2,G3,G4,G5 fill:#e8f5e9,stroke:#388e3c,color:#1b5e20
+    style C,D,H,K fill:#f3e5f5,stroke:#7b1fa2,color:#4a148c
+    style E,F fill:#fff8e1,stroke:#f9a825,color:#e65100
+    style J fill:#fff3e0,stroke:#ef6c00,color:#e65100
+    style L fill:#ffebee,stroke:#c62828,color:#b71c1c
+    style I,M fill:#e8f5e9,stroke:#388e3c,color:#1b5e20
+    style OCR fill:#f1f8e9,stroke:#558b2f,stroke-width:2px

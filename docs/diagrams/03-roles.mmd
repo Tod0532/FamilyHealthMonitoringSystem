@@ -1,0 +1,12 @@
+flowchart LR
+    U["用户账号<br/>user 表"] --> R1["全局角色 role<br/>ADMIN / USER"]
+    U --> R2["家庭角色 familyRole<br/>admin / member"]
+
+    R1 -.->|"❌ 历史实现只看这个"| X["后注册的普通用户<br/>即使是家庭管理员<br/>也加不了成员、配不了预警"]
+    R2 ==>|"✅ 真正决定权限"| P["家庭内管理权限<br/>增删成员 · 配置预警 · 邀请家人"]
+
+    style R2 fill:#c8e6c9,stroke:#388e3c,stroke-width:3px,color:#1b5e20
+    style P fill:#e8f5e9,stroke:#388e3c,stroke-width:2px,color:#1b5e20
+    style U fill:#e3f2fd,stroke:#1976d2,color:#0d47a1
+    style R1 fill:#fff8e1,stroke:#f9a825,color:#e65100
+    style X fill:#ffebee,stroke:#c62828,stroke-width:2px,color:#b71c1c

@@ -1,0 +1,18 @@
+flowchart LR
+    A(["录入健康数据"]) --> B["保存成功"]
+    B --> C["读取该用户<br/>已启用的预警规则"]
+    C --> D{"数值越过阈值?"}
+
+    D -->|否| E["仅保存数据<br/>不产生预警"]
+    D -->|是| F["生成预警记录<br/>级别 info / warning / danger<br/>记录触发值"]
+    F --> G["预警 tab 列表显示<br/>未读角标 +1"]
+    G --> H{"用户操作"}
+    H -->|标记已读| I["未读角标 -1"]
+    H -->|标记已处理| J["状态置为已处理"]
+
+    style A fill:#e3f2fd,stroke:#1976d2,color:#0d47a1
+    style D,H fill:#f3e5f5,stroke:#7b1fa2,color:#4a148c
+    style F fill:#ffebee,stroke:#c62828,stroke-width:2px,color:#b71c1c
+    style E fill:#e8f5e9,stroke:#388e3c,color:#1b5e20
+    style I,J fill:#e8f5e9,stroke:#388e3c,color:#1b5e20
+    style G fill:#fff8e1,stroke:#f9a825,color:#e65100

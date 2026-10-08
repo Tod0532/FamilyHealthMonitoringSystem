@@ -1,0 +1,23 @@
+flowchart LR
+    A(["本地改代码"]) --> B["静态检查 / 编译<br/>flutter analyze · mvnw package"]
+    B --> C{"本地验证通过?"}
+    C -->|否| A
+    C -->|是| D["备份线上 jar<br/>/opt/health-center/backup-jar-日期/"]
+    D --> E["scp 上传新 jar"]
+    E --> F{"md5 一致?"}
+    F -->|否| E
+    F -->|是| G["替换 jar<br/>systemctl restart health-app"]
+    G --> H{"is-active = active?"}
+    H -->|否| I["🔙 回滚<br/>用备份 jar 重启"]
+    I --> J["排查日志<br/>/opt/health-center/logs/app.log"]
+    H -->|是| K["接口冒烟测试<br/>登录 / 家庭 / 健康数据 / 预警"]
+    K --> L{"关键接口 200?"}
+    L -->|否| I
+    L -->|是| M["清理测试数据<br/>删除本轮验证产生的记录"]
+    M --> N(["发布完成"])
+
+    style A fill:#e3f2fd,stroke:#1976d2,color:#0d47a1
+    style C,F,H,L fill:#f3e5f5,stroke:#7b1fa2,color:#4a148c
+    style D,E,G,K,M fill:#e8f5e9,stroke:#388e3c,color:#1b5e20
+    style I,J fill:#ffebee,stroke:#c62828,stroke-width:2px,color:#b71c1c
+    style N fill:#c8e6c9,stroke:#388e3c,stroke-width:3px,color:#1b5e20

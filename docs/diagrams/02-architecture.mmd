@@ -1,0 +1,38 @@
+flowchart TB
+    subgraph Client["📱 Flutter App（Android）"]
+        direction TB
+        UI["页面 / 组件层<br/>GetX 状态管理 + 路由"]
+        NET["网络层<br/>Dio + 拦截器<br/>Token 自动携带 · 401 处理"]
+        LOCAL["本地存储<br/>GetStorage 缓存"]
+        OCR["OCR 子系统<br/>七段数码管识别"]
+        BT["蓝牙子系统<br/>flutter_blue_plus"]
+        UI --> NET
+        UI --> LOCAL
+        UI --> OCR
+        UI --> BT
+    end
+
+    subgraph Cloud["🖥 阿里云 ECS（139.129.108.119）"]
+        direction TB
+        API["Spring Boot 2.7<br/>:8080 · REST / JSON"]
+        SEC["JWT 鉴权<br/>角色拦截器"]
+        SVC["业务服务层"]
+        MP["MyBatis-Plus<br/>逻辑删除 · 字段自动填充"]
+        API --> SEC --> SVC --> MP
+    end
+
+    DB[("🐬 MySQL 8.0<br/>health_center_db")]
+    FS["📁 导出文件<br/>Android/data/…/files"]
+
+    NET -->|"REST / JSON<br/>X-App-Version 头"| API
+    MP --> DB
+    OCR --> FS
+
+    style Client fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
+    style Cloud fill:#e8f5e9,stroke:#388e3c,stroke-width:2px
+    style DB fill:#fff8e1,stroke:#f9a825,stroke-width:2px
+    style FS fill:#fff8e1,stroke:#f9a825,stroke-width:2px
+    classDef svc fill:#fff,stroke:#388e3c,color:#1b5e20
+    class API,SEC,SVC,MP svc
+    classDef app fill:#fff,stroke:#1976d2,color:#0d47a1
+    class UI,NET,LOCAL,OCR,BT app

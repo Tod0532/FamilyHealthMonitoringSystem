@@ -1,0 +1,33 @@
+sequenceDiagram
+    autonumber
+    participant U as 用户
+    participant A as App
+    participant S as 后端
+    participant D as 数据库
+
+    rect rgb(227, 242, 253)
+    Note over U,A: ① 输入凭证
+    U->>A: 手机号 + 密码
+    A->>S: POST /api/auth/login
+    end
+
+    rect rgb(232, 245, 233)
+    Note over S,D: ② 服务端校验
+    S->>D: 按手机号查用户
+    D-->>S: 用户记录
+    S->>S: BCrypt 校验密码
+    end
+
+    alt ✅ 校验通过
+        rect rgb(232, 245, 233)
+        S->>S: 签发 AccessToken 2 小时<br/>+ RefreshToken 7 天<br/>claims 含 userId / phone / role
+        S-->>A: 200 + token + userInfo
+        A->>A: 写入本地存储（GetStorage）
+        A-->>U: 跳转首页
+        end
+    else ❌ 密码错误
+        S-->>A: 401 原密码错误
+        A-->>U: 顶部提示「手机号或密码错误」<br/>保留已输入内容、不跳转
+    end
+
+    Note over A,S: 后续请求自动携带 Bearer 令牌<br/>业务类 401 不强制退出，仅令牌过期才退出

@@ -41,6 +41,8 @@ code { background:var(--code); padding:2px 6px; border-radius:4px;
 pre { background:var(--code); border:1px solid var(--line); border-radius:8px;
   padding:14px 16px; overflow:auto; }
 pre code { background:none; padding:0; }
+figure.diagram { margin:22px 0; text-align:center; }
+figure.diagram img { border:1px solid var(--line); border-radius:8px; }
 pre.mermaid { background:#fff; border:1px dashed #cfd8dc; text-align:center; padding:18px; }
 blockquote { margin:14px 0; padding:10px 16px; border-left:4px solid var(--brand);
   background:#f2f9f3; color:#2f3a33; border-radius:0 6px 6px 0; }
@@ -87,7 +89,17 @@ def inline(text: str) -> str:
     return out
 
 
-def convert(md: str, title: str) -> str:
+def convert(md: str, title: str, img_dir: str = "images", img_scan: str = None) -> str:
+    # 预先扫描已渲染的流程图图片：images/diagram-NN-*.png
+    # 存在则优先用图片（离线也能看），否则回退为 <pre class="mermaid">（需联网渲染）
+    diagram_png = {}
+    scan_dir = img_scan or img_dir
+    if os.path.isdir(scan_dir):
+        for fn in os.listdir(scan_dir):
+            m = re.match(r"diagram-(\d{2})-.*\.png$", fn)
+            if m:
+                diagram_png[int(m.group(1))] = fn
+
     lines = md.split("\n")
     body = []
     i = 0
@@ -96,6 +108,7 @@ def convert(md: str, title: str) -> str:
     code_buf = []
     in_table = False
     table_rows = []
+    mermaid_seq = 0
     in_list = False
     list_tag = "ul"
 
@@ -128,7 +141,15 @@ def convert(md: str, title: str) -> str:
             if in_code:
                 code = "\n".join(code_buf)
                 if code_lang == "mermaid":
-                    body.append(f'<pre class="mermaid">{html.escape(code)}</pre>')
+                    mermaid_seq += 1
+                    png = diagram_png.get(mermaid_seq)
+                    if png:
+                        body.append(
+                            f'<figure class="diagram"><img alt="流程图 {mermaid_seq}" '
+                            f'src="{img_dir}/{png}"></figure>'
+                        )
+                    else:
+                        body.append(f'<pre class="mermaid">{html.escape(code)}</pre>')
                 else:
                     body.append(f"<pre><code>{html.escape(code)}</code></pre>")
                 in_code = False
@@ -250,7 +271,8 @@ def main() -> int:
     title = sys.argv[3] if len(sys.argv) > 3 else os.path.basename(src)
     with io.open(src, encoding="utf-8") as f:
         md = f.read()
-    out = convert(md, title)
+    img_scan = os.path.join(os.path.dirname(os.path.abspath(dst)), 'images')
+    out = convert(md, title, 'images', img_scan)
     with io.open(dst, "w", encoding="utf-8", newline="\n") as f:
         f.write(out)
     print(f"生成 {dst}  ({len(out)} 字符)")

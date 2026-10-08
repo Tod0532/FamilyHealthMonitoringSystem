@@ -1,0 +1,18 @@
+flowchart TB
+    REQ(["HTTP 请求"]) --> SEC{"角色拦截器<br/>@RequireRole"}
+    SEC -->|"未授权"| ERR401["401 未提供/无效令牌"]
+    SEC -->|"权限不足"| ERR403["403 权限不足"]
+    SEC -->|"通过"| CTRL["interfaces/controller<br/>REST 入口"]
+    CTRL --> DTO["interfaces/dto<br/>请求 / 响应对象<br/>+ 参数校验注解"]
+    CTRL --> SVC["service / impl<br/>业务逻辑 · 事务"]
+    SVC --> MAP["domain/mapper<br/>MyBatis-Plus"]
+    MAP --> ENT[("domain/entity<br/>表实体")]
+    SVC -.->|"抛业务异常"| EX["GlobalExceptionHandler<br/>统一转 ApiResponse"]
+    EX --> RESP(["统一响应体<br/>code / message / data"])
+
+    style REQ fill:#e3f2fd,stroke:#1976d2,color:#0d47a1
+    style SEC fill:#f3e5f5,stroke:#7b1fa2,color:#4a148c
+    style ERR401,ERR403,EX fill:#ffebee,stroke:#c62828,color:#b71c1c
+    style CTRL,DTO,SVC,MAP fill:#e8f5e9,stroke:#388e3c,color:#1b5e20
+    style ENT fill:#fff8e1,stroke:#f9a825,color:#e65100
+    style RESP fill:#e8f5e9,stroke:#388e3c,stroke-width:2px,color:#1b5e20
