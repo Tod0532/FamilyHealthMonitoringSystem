@@ -373,6 +373,101 @@ List<Digit> scanBand(
   return chosen;
 }
 
+// ============================ 节距法切分（自动定位） ============================
+
+/// 行带内的列墨迹投影
+List<double> columnProfile(List<double> c, Band band, bool brightInk, int w) {
+  final col = List<double>.filled(w, 0);
+  for (var x = 0; x < w; x++) {
+    var s = 0.0;
+    for (var y = band.y0; y <= band.y1; y++) {
+      final v = c[y * w + x];
+      if (brightInk ? v > 12 : v < -12) s += 1;
+    }
+    col[x] = s / band.h;
+  }
+  return col;
+}
+
+/// 用列投影的**自相关**求数字节距（pitch）。
+///
+/// 为什么这是关键：七段数码管是**等宽等距**排布的，行带内的列墨迹投影因此呈周期性。
+/// 真实照片里液晶亮晕会把相邻数字粘起来，"找低墨迹间隙再切分"必然失败
+/// （实测切出的格子与真实数字错位、读出全错），而自相关求节距不受粘连影响。
+int? findPitch(List<double> col, {int minP = 6, int maxP = 0}) {
+  final n = col.length;
+  if (n < minP * 3) return null;
+  final hi = maxP > 0 ? maxP : n ~/ 3;
+  var mean = 0.0;
+  for (final v in col) {
+    mean += v;
+  }
+  mean /= n;
+  final c = List<double>.generate(n, (i) => col[i] - mean);
+  var best = 0.0;
+  final scores = List<double>.filled(hi + 1, 0);
+  for (var p = minP; p <= hi; p++) {
+    var s = 0.0;
+    for (var i = 0; i + p < n; i++) {
+      s += c[i] * c[i + p];
+    }
+    s /= (n - p);
+    scores[p] = s;
+    if (s > best) best = s;
+  }
+  if (best <= 0) return null;
+  // 注意：不能用"最小周期"——自相关在小滞后处天然偏高，会取到 p=6 这种明显错误的值
+  // （实测就是这样）。数字节距的物理范围是 0.45~1.3 倍字高，调用方已按此设定
+  // minP/maxP，因此这里直接在范围内取最大相关。
+  var bestP = -1;
+  var bestS = 0.0;
+  for (var p = minP; p <= hi; p++) {
+    if (scores[p] > bestS) {
+      bestS = scores[p];
+      bestP = p;
+    }
+  }
+  return bestP > 0 ? bestP : null;
+}
+
+/// 相位：数字之间的分界应落在墨迹最少的列
+int findPhase(List<double> col, int p) {
+  var bestV = double.infinity;
+  var bestOff = 0;
+  for (var off = 0; off < p; off++) {
+    var s = 0.0;
+    var cnt = 0;
+    for (var x = off; x < col.length; x += p) {
+      s += col[x];
+      cnt++;
+    }
+    if (cnt >= 2) {
+      final avg = s / cnt;
+      if (avg < bestV) {
+        bestV = avg;
+        bestOff = off;
+      }
+    }
+  }
+  return bestOff;
+}
+
+/// 按节距+相位切出数字格（每个格子带一个"节距内实际墨迹占比"用于后续筛选）
+List<Cell> cellsByPitch(List<double> col, int p, int off, Band band, int w) {
+  final cells = <Cell>[];
+  for (var x = off; x + p <= w; x += p) {
+    final x0 = x, x1 = x + p - 1;
+    var ink = 0.0;
+    for (var xx = x0; xx <= x1; xx++) {
+      ink += col[xx];
+    }
+    ink /= (x1 - x0 + 1);
+    if (ink < 0.08) continue; // 空档跳过
+    cells.add(Cell(x0, x1, band.y0, band.y1));
+  }
+  return cells;
+}
+
 // ============================ 基准入口 ============================
 
 Reading? fitImage(img.Image im, {bool dump = false}) {
@@ -397,12 +492,28 @@ Reading? fitImage(img.Image im, {bool dump = false}) {
     }
     final all = <Digit>[];
     for (final band in bands.take(4)) {
-      final rowDigits = scanBand(c, band, brightInk, w, h);
-      all.addAll(rowDigits);
+      // 节距法自动切分（不依赖找间隙，因此不受亮晕粘连影响）
+      final col = columnProfile(c, band, brightInk, w);
+      final p = findPitch(col,
+          minP: math.max(6, (0.45 * band.h).round()),
+          maxP: math.max(10, (1.30 * band.h).round()));
+      if (p == null) continue;
+      final off = findPhase(col, p);
+      final cells = cellsByPitch(col, p, off, band, w);
+      final rowDigits = <String>[];
+      for (final cell in cells) {
+        final d = Fitter.readCell(c, w, h, cell, brightInk);
+        if (d != null) {
+          all.add(d);
+          rowDigits.add('${d.value}@${d.cell.x0}');
+        } else {
+          rowDigits.add('×@${cell.x0}');
+        }
+      }
       if (dump) {
         print('    行带 ${band.y0}-${band.y1}(h${band.h}): '
-            '滑窗命中 ${rowDigits.length} 个 -> '
-            '${rowDigits.map((d) => "${d.value}@${d.cell.x0}").take(14).join(" ")}');
+            '节距 p=$p 相位 off=$off -> ${cells.length} 格: '
+            '${rowDigits.take(16).join(" ")}');
       }
     }
     // 按行分组分别尝试（不同行字号不同，混合分组会乱）
