@@ -213,7 +213,107 @@ class Fitter {
     return out;
   }
 
-  /// 在数字格内测 7 段的相对亮度，查表识别（静态：只用 c/w/h，不依赖实例）
+  /// 结构化七段测量（v2）：不依赖固定采样矩形，直接测"笔画覆盖响应"。
+  ///
+  /// 背景：v1 用归一化固定矩形（a 段占顶部 14% 高等）采样，真实机型笔画粗细与
+  /// 段间距各不相同，采样区偏了就测错（实测 8 格里只有 2 格能解出数字）。
+  ///
+  /// v2 依据七段数码管的**结构不变性**：
+  ///   · 三条横条分别位于上 / 中 / 下三个高度带 → a、g、d
+  ///   · 左右各两条竖条，分别位于上半 / 下半   → f、b（左上/右上）、e、c（左下/右下）
+  /// 每个段在其允许区域内取"最大覆盖响应"（某一行/列上墨迹所占比例），
+  /// 因此只要求"笔画大致在正确位置"，不要求精确比例。
+  static Map<String, double> segResponse(
+      List<double> c, int w, int h, Cell cell, bool brightInk, double inkThr) {
+    double inkAt(int x, int y) {
+      final v = c[y * w + x];
+      return brightInk ? v : -v;
+    }
+
+    double rowCov(int y, int x0, int x1) {
+      var cnt = 0, n = 0;
+      for (var x = x0; x <= x1; x++) {
+        if (inkAt(x, y) > inkThr) cnt++;
+        n++;
+      }
+      return n == 0 ? 0 : cnt / n;
+    }
+
+    double colCov(int x, int y0, int y1) {
+      var cnt = 0, n = 0;
+      for (var y = y0; y <= y1; y++) {
+        if (inkAt(x, y) > inkThr) cnt++;
+        n++;
+      }
+      return n == 0 ? 0 : cnt / n;
+    }
+
+    final x0 = cell.x0, x1 = cell.x1, y0 = cell.y0, y1 = cell.y1;
+    final cw = (x1 - x0 + 1).toDouble(), ch = (y1 - y0 + 1).toDouble();
+    int rx(double f) => (x0 + f * cw).round().clamp(x0, x1);
+    int ry(double f) => (y0 + f * ch).round().clamp(y0, y1);
+
+    double maxRow(int ya, int yb, double xa, double xb) {
+      var best = 0.0;
+      for (var y = ya; y <= yb; y++) {
+        final v = rowCov(y, rx(xa), rx(xb));
+        if (v > best) best = v;
+      }
+      return best;
+    }
+
+    double maxCol(int xa, int xb, double ya, double yb) {
+      var best = 0.0;
+      for (var x = xa; x <= xb; x++) {
+        final v = colCov(x, ry(ya), ry(yb));
+        if (v > best) best = v;
+      }
+      return best;
+    }
+
+    final out = <String, double>{};
+    out['a'] = maxRow(ry(0.00), ry(0.30), 0.12, 0.88);
+    out['g'] = maxRow(ry(0.35), ry(0.65), 0.12, 0.88);
+    out['d'] = maxRow(ry(0.70), ry(1.00), 0.12, 0.88);
+    out['f'] = maxCol(rx(0.00), rx(0.28), 0.06, 0.44);
+    out['b'] = maxCol(rx(0.72), rx(1.00), 0.06, 0.44);
+    out['e'] = maxCol(rx(0.00), rx(0.28), 0.56, 0.94);
+    out['c'] = maxCol(rx(0.72), rx(1.00), 0.56, 0.94);
+    return out;
+  }
+
+  /// 用结构化响应识别单格数字：以本格 7 段响应的最大值为参照判亮灭，
+  /// 并设绝对下限，避免在空白格上硬凑出数字。
+  static Digit? readCellStrong(
+      List<double> c, int w, int h, Cell cell, bool brightInk, double inkThr) {
+    final resp = segResponse(c, w, h, cell, brightInk, inkThr);
+    var hi = 0.0;
+    for (final v in resp.values) {
+      if (v > hi) hi = v;
+    }
+    if (hi < 0.42) return null; // 本格没有明显笔画
+    final on = <String, bool>{};
+    for (final e in resp.entries) {
+      on[e.key] = e.value >= 0.55 * hi;
+    }
+    int? bestD;
+    var bestMiss = 99;
+    kDigitSegs.forEach((d, segs) {
+      var miss = 0;
+      for (final s in 'abcdefg'.split('')) {
+        if (on[s]! != segs.contains(s)) miss++;
+      }
+      if (miss < bestMiss) {
+        bestMiss = miss;
+        bestD = d;
+      }
+    });
+    final bd = bestD;
+    if (bd == null || bestMiss > 1) return null;
+    return Digit(bd, cell, 1.0 - bestMiss / 7.0);
+  }
+
+  /// 在数字格内测 7 段的相对亮度，查表识别（v1，保留用于对照）
   static Digit? readCell(List<double> c, int w, int h, Cell cell, bool brightInk) {
     final dens = <String, double>{};
     for (final e in kSegBox.entries) {
@@ -468,9 +568,33 @@ List<Cell> cellsByPitch(List<double> col, int p, int off, Band band, int w) {
   return cells;
 }
 
+/// 把节距切出的格子收紧到内部实际墨迹范围。
+///
+/// 必要性：按节距等距切分时，格子宽度包含数字之间的空隙，
+/// 而"上/中/下三段 + 左右竖条"的测量要求边框紧贴数字本身，
+/// 否则横条只覆盖格子的 70% 会被误判为"没亮"。
+Cell? tightenCell(List<double> c, int w, Cell cell, bool brightInk, double inkThr) {
+  var minX = cell.x1, maxX = cell.x0, minY = cell.y1, maxY = cell.y0;
+  var any = false;
+  for (var y = cell.y0; y <= cell.y1; y++) {
+    for (var x = cell.x0; x <= cell.x1; x++) {
+      final v = brightInk ? c[y * w + x] : -c[y * w + x];
+      if (v > inkThr) {
+        any = true;
+        if (x < minX) minX = x;
+        if (x > maxX) maxX = x;
+        if (y < minY) minY = y;
+        if (y > maxY) maxY = y;
+      }
+    }
+  }
+  if (!any || maxX <= minX || maxY <= minY) return null;
+  return Cell(minX, maxX, minY, maxY);
+}
+
 // ============================ 基准入口 ============================
 
-Reading? fitImage(img.Image im, {bool dump = false}) {
+Reading? fitImage(img.Image im, {bool dump = false, double inkThr = 30}) {
   final grayImg = img.grayscale(im);
   final w = grayImg.width, h = grayImg.height;
   final g = List<int>.filled(w * h, 0);
@@ -501,18 +625,22 @@ Reading? fitImage(img.Image im, {bool dump = false}) {
       final off = findPhase(col, p);
       final cells = cellsByPitch(col, p, off, band, w);
       final rowDigits = <String>[];
+      var used = 0;
       for (final cell in cells) {
-        final d = Fitter.readCell(c, w, h, cell, brightInk);
+        final tight = tightenCell(c, w, cell, brightInk, inkThr);
+        if (tight == null) continue;
+        used++;
+        final d = Fitter.readCellStrong(c, w, h, tight, brightInk, inkThr);
         if (d != null) {
           all.add(d);
-          rowDigits.add('${d.value}@${d.cell.x0}');
+          rowDigits.add('${d.value}@${d.cell.x0}(${d.cell.w}x${d.cell.h})');
         } else {
-          rowDigits.add('×@${cell.x0}');
+          rowDigits.add('×@${tight.x0}(${tight.w}x${tight.h})');
         }
       }
       if (dump) {
         print('    行带 ${band.y0}-${band.y1}(h${band.h}): '
-            '节距 p=$p 相位 off=$off -> ${cells.length} 格: '
+            '节距 p=$p 相位 off=$off -> ${cells.length} 格(有效 $used): '
             '${rowDigits.take(16).join(" ")}');
       }
     }
@@ -547,6 +675,8 @@ Future<void> main(List<String> args) async {
   final limitArg =
       args.firstWhere((a) => a.startsWith('--limit='), orElse: () => '--limit=0');
   final limit = int.tryParse(limitArg.split('=').last) ?? 0;
+  final inkArg = args.firstWhere((a) => a.startsWith('--ink='), orElse: () => '--ink=30');
+  final inkThr = double.tryParse(inkArg.split('=').last) ?? 30;
 
   final boxFile = File('tool/lcd_detector_boxes.json');
   Map<String, List<double>> boxes = {};
@@ -573,7 +703,7 @@ Future<void> main(List<String> args) async {
   truths.sort((a, b) => a.file.compareTo(b.file));
   final list = limit > 0 ? truths.take(limit).toList() : truths;
 
-  print('七段结构拟合原型（方案 B）：${list.length} 张'
+  print('七段结构拟合原型（方案 B）：${list.length} 张 · 墨迹阈值 $inkThr'
       '${whole ? " · 整图" : " · 用检测模型框裁剪"}');
   print('');
 
@@ -605,7 +735,7 @@ Future<void> main(List<String> args) async {
     n++;
     if (dump) print('# ${t.file}  真值 ${t.sys}/${t.dia} ${t.pulse}  '
         '尺寸 ${im.width}x${im.height}');
-    final r = fitImage(im, dump: dump);
+    final r = fitImage(im, dump: dump, inkThr: inkThr);
     if (r == null) {
       none++;
       print('  ${t.file.padRight(18)} 真值 ${t.sys}/${t.dia} ${t.pulse} -> 无结果');
