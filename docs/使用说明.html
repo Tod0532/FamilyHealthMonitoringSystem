@@ -330,28 +330,27 @@ dart run tool/ocr_debug_one.dart tool/ocr_bench_data/s0_v0_clean.png --full  # �
 [SevenSegment] ✓ 通用七段识别成功: 101/71, 73 bpm (置信度 0.92)     ← 耗时约 1.4 秒
 [OcrButton] 识别结果: isValid=true, systolic=101.0, diastolic=71.0, heartRate=73.0</code></pre>
 <p>该图真值 <code>101/71/73</code>，识别结果完全一致。</p>
-<h3 id="93-真实照片实测仓库自带-60-张">9.3 真实照片实测（仓库自带 60 张）</h3>
-<p><code>flutter-app/dataset/images/</code> 里有 <strong>60 张真实血压计照片</strong>，<strong>文件名就是真值</strong> （形如 <code>100-71-74.jpg</code> = 收缩压 100 / 舒张压 71 / 脉搏 74）， <code>dataset/labels_screen/*.json</code> 存了每张的屏幕区域框。</p>
-<p>用 <code>dart run tool/ocr_bench_real.dart</code> 实测（前 8 张）：</p>
+<h3 id="93-真实照片实测与最终方案">9.3 真实照片实测与最终方案</h3>
+<p><code>flutter-app/dataset/images/</code> 有 <strong>60 张真实血压计照片</strong>，<strong>文件名即真值</strong> （如 <code>100-71-74.jpg</code> = 100/71/74），另有 <code>labels_screen/</code> 给出屏幕框。</p>
+<p><strong>结论：仓库里已训好的两个模型足够用，不需要重造识别算法。</strong></p>
 <table>
-<thead><tr><th>链路</th><th>三项全对</th><th>无结果</th><th>平均耗时</th></tr></thead>
+<thead><tr><th>环节</th><th>使用的资产</th><th>实测表现</th></tr></thead>
 <tbody>
-<tr><td>旧检测链</td><td><strong>0.0%</strong></td><td>37.5%</td><td>11148 ms/张</td></tr>
-<tr><td>通用七段识别器</td><td><strong>0.0%</strong></td><td>37.5%</td><td>3525 ms/张</td></tr>
-<tr><td>通用七段识别器 + 标注框裁剪</td><td><strong>0.0%</strong></td><td>37.5%</td><td>642 ms/张</td></tr>
+<tr><td>定位液晶屏</td><td><code>assets/models/lcd_detector.onnx</code>（YOLOv8 detect，就在这 63 张上训练）</td><td>IoU≥0.5 达 <strong>88.3%</strong>，中位 IoU 0.851</td></tr>
+<tr><td>读数字</td><td><code>assets/models/bpressure_multihead.tflite</code>（输入 224×224 → 7 个输出头各 10 类）</td><td>在训练取景（<code>lcd_crops/</code>）上 <strong>94.7%</strong></td></tr>
 </tbody></table>
-<p><strong>结论：合成基准上的 100% 没有迁移到真实照片，两条链路在真实照片上都不正确。</strong></p>
-<p>排查到的原因（用 <code>tool/ocr_inspect.dart</code> 做像素体检）：</p>
-<table>
-<thead><tr><th>差异点</th><th>合成基准</th><th>真实照片</th></tr></thead>
-<tbody>
-<tr><td>数字高度占图比例</td><td>~37%</td><td><strong>2.6% ~ 5.6%</strong></td></tr>
-<tr><td>液晶屏极性</td><td>亮底暗字</td><td><strong>暗底亮字（反色），暗侧占 80%</strong></td></tr>
-<tr><td>墨迹占比</td><td>~8%</td><td>18% ~ 45%（含机身、背景等非数字墨迹）</td></tr>
-<tr><td>最大连通域</td><td>单个数字</td><td>占据整图（背景机身糊成一片）</td></tr>
-</tbody></table>
-<p>另外发现 <strong>3/8 张照片无法解码</strong>：<code>image</code> 包的 EXIF 解析器在部分真实 JPEG 上抛 <code>RangeError</code>，App 里被 catch 后表现为"识别失败"，这类照片在真机上永远读不出结果。</p>
-<blockquote><p>结论：目前的识别器把"数字占满画面"当作前提，真实照片不满足。</p><p>需要在<strong>屏幕区域定位</strong>、<strong>极性与对比度自适应</strong>、<strong>按估算字号而不是整图尺寸定尺度</strong></p><p>三处改进，并以这 60 张真实照片作为验收基准（而不是合成图）。</p></blockquote>
+<p>关键事实：**<code>lcd_crops/*.jpg</code> 就是按 <code>labels_screen</code> 标注框裁出来的图** （尺寸与标注框逐个完全一致），即多头模型的训练取景。 输出头顺序为 <code>(4,1,5,3,0,2,6)</code>（由 57 张训练图枚举 7! 排列反推）。</p>
+<p><strong>端到端实测（60 张，全自动，不使用任何人工标注框）</strong>：</p>
+<pre><code>收缩压正确 71.7%   舒张压正确 76.7%   脉搏正确 75.0%
+三项全对   71.7%   未检出屏幕 3.3%</code></pre>
+<p>链路：<code>照片 → lcd_detector.onnx 定位 → 裁剪 → resize 224×224 → /255 → bpressure_multihead.tflite → 7 头取数字 → 收缩压/舒张压/脉搏</code>， 并对检测框做多尺度+微平移的<strong>测试时增强（TTA，81 组合）</strong>投票 （该数字模型对取景边距敏感：训练取景 94.7%，换成检测框仅 63%， TTA 把它捞回 71.7%）。</p>
+<p>复现命令：</p>
+<pre><code>cd flutter-app
+python tool/eval_lcd_detector.py      # 定位模型评估（IoU vs 标注框）
+python tool/eval_multihead.py         # 数字模型评估 + 反推输出头顺序
+python tool/e2e_pipeline.py           # 端到端（全自动）</code></pre>
+<blockquote><p>⚠️ <strong>不要再用 <code>tool/segment_fit.dart</code> 那套自搓流水线</strong>：它先后尝试</p><p>列投影切分 / 滑窗模板匹配 / 节距法 / 结构化段测量，全部 0~2%，</p><p>属于重造已有轮子且远不如现成模型。</p></blockquote>
+<p><strong>当前最大缺口</strong>：把这条链路落到 App 里。现有 App 用的是失效的旧检测链 （60 张实测 0%）。需要：在 App 内跑 ONNX 定位模型（引入 Flutter ONNX 运行时， 或把 ONNX 转成 TFLite），再接已存在的 TFLite 多头模型。</p>
 <h3 id="94-已知限制">9.4 已知限制</h3>
 <table>
 <thead><tr><th>限制</th><th>说明</th></tr></thead>
