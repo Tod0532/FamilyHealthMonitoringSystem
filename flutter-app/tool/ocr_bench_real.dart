@@ -141,21 +141,104 @@ List<int>? loadBBox(String base) {
   return null;
 }
 
+/// 用检测模型导出的框（tool/lcd_detector_boxes.json，由 eval_lcd_detector.py 生成）
+///
+/// 为什么要单独一份：labels_screen 的标注部分不合格
+/// （实测 117-80-57 的标注是 377x96 的细条，不可能框住整块屏幕），
+/// 用它裁剪会裁错区域，把"识别失败"错误地记到识别器头上。
+Map<String, List<double>>? loadDetectorBoxes(String path) {
+  final f = File(path);
+  if (!f.existsSync()) return null;
+  try {
+    final j = jsonDecode(f.readAsStringSync()) as Map<String, dynamic>;
+    final out = <String, List<double>>{};
+    j.forEach((k, v) {
+      final b = (v as Map<String, dynamic>)['bbox'];
+      if (b is List && b.length >= 4) {
+        out[k] = b.take(4).map((e) => (e as num).toDouble()).toList();
+      }
+    });
+    return out;
+  } catch (_) {
+    return null;
+  }
+}
+
+/// 固定数据集划分（调参集 / 验证集）
+///
+/// 为什么必须划分：在全部 60 张上调参，任何改动都能"变好"，
+/// 但无法证明它对没见过的照片也有效。这里按**收缩压分层交替**分配，
+/// 保证两个集合的血压范围接近；结果完全确定（不含随机数），可复现。
+///
+/// 每 4 张里第 4 张进验证集 → 60 张约为 45 / 15。
+const int kHoldoutEvery = 4;
+
+bool isHoldout(Truth t, List<Truth> all) {
+  final sorted = [...all]..sort((a, b) {
+      final c = a.sys.compareTo(b.sys);
+      return c != 0 ? c : a.file.compareTo(b.file);
+    });
+  final idx = sorted.indexWhere((x) => x.file == t.file);
+  if (idx < 0) return false;
+  return idx % kHoldoutEvery == kHoldoutEvery - 1;
+}
+
+/// 拍摄类型：真实手机拍摄 vs 截图/导出图（按分辨率与体积区分）
+/// 17 张 1279x1706、平均 179KB 的是二次加工图，难度与真实拍摄不同，
+/// 汇报时必须分开看。
+String captureKind(String file) => '?';
+
 Future<void> main(List<String> args) async {
   final maxArg =
       args.firstWhere((a) => a.startsWith('--max='), orElse: () => '--max=1600');
   final maxSide = int.tryParse(maxArg.split('=').last) ?? 1600;
   final useCrop = args.contains('--crop');
   final useOld = args.contains('--old');
+  // --boxes=detector 时改用 ONNX 检测模型的框（更可靠），默认用 labels_screen 标注
+  final useDetectorBoxes = args.contains('--boxes=detector');
+  final detBoxes = useDetectorBoxes
+      ? loadDetectorBoxes('tool/lcd_detector_boxes.json')
+      : null;
+  if (useDetectorBoxes && detBoxes == null) {
+    print('找不到 tool/lcd_detector_boxes.json，'
+        '请先运行: python tool/eval_lcd_detector.py');
+    return;
+  }
   final limitArg = args.firstWhere((a) => a.startsWith('--limit='),
       orElse: () => '--limit=0');
   final limit = int.tryParse(limitArg.split('=').last) ?? 0;
 
-  var (truths, skipped) = loadTruths();
+  var (all, skipped) = loadTruths();
+  final total60 = all.length;
+
+  // 划分：默认跑全部，可用 --split=tune / holdout 只看其中一集
+  final splitArg =
+      args.firstWhere((a) => a.startsWith('--split='), orElse: () => '');
+  final split = splitArg.isEmpty ? 'all' : splitArg.split('=').last;
+  var truths = all;
+  if (split == 'tune') {
+    truths = all.where((t) => !isHoldout(t, all)).toList();
+  } else if (split == 'holdout') {
+    truths = all.where((t) => isHoldout(t, all)).toList();
+  }
   if (limit > 0 && truths.length > limit) truths = truths.sublist(0, limit);
 
-  print('真实照片基准：${truths.length} 张'
+  // 打印划分构成，便于核对两个集合是否可比
+  final tuneSet = all.where((t) => !isHoldout(t, all)).toList();
+  final holdSet = all.where((t) => isHoldout(t, all)).toList();
+  String rng(List<Truth> xs) {
+    if (xs.isEmpty) return '-';
+    final s = xs.map((t) => t.sys).toList()..sort();
+    return '${s.first}~${s.last}';
+  }
+
+  print('真实照片数据集：共 $total60 张'
       '${skipped > 0 ? "（另 $skipped 张文件名无法解析，已跳过）" : ""}');
+  print('  调参集 ${tuneSet.length} 张（收缩压 ${rng(tuneSet)}）'
+      ' / 验证集 ${holdSet.length} 张（收缩压 ${rng(holdSet)}）');
+  if (split != 'all') {
+    print('  本次只跑：${split == 'tune' ? '调参集' : '验证集'}（${truths.length} 张）');
+  }
   print('模式：${useOld ? "旧检测链" : "通用七段识别器"}'
       '${useCrop ? " + 标注框裁剪" : "（整图）"}'
       '${maxSide > 0 ? " · 最长边缩放到 $maxSide" : " · 原图"}');
@@ -193,18 +276,34 @@ Future<void> main(List<String> args) async {
     }
     if (im == null) continue;
 
-    final origW = im.width;
 
     // 顺序很重要：必须"先从原图裁剪屏幕区域，再缩放"。
     // 反过来（先缩放到 1600 再裁剪）会把屏幕区域裁成很小的图，
     // 数字只有几十像素高，识别必然失败（实测裁剪后仍 0%）。
-    if (useCrop) {
-      final b = loadBBox(t.file);
-      if (b != null) {
-        final x = b[0].clamp(0, im.width - 2);
-        final y = b[1].clamp(0, im.height - 2);
-        final w = b[2].clamp(1, im.width - x);
-        final h = b[3].clamp(1, im.height - y);
+    if (useCrop || useDetectorBoxes) {
+      num? bx, by, bw, bh;
+      if (useDetectorBoxes) {
+        final d = detBoxes![t.file];
+        if (d != null) {
+          bx = d[0];
+          by = d[1];
+          bw = d[2];
+          bh = d[3];
+        }
+      } else {
+        final b = loadBBox(t.file);
+        if (b != null) {
+          bx = b[0];
+          by = b[1];
+          bw = b[2];
+          bh = b[3];
+        }
+      }
+      if (bx != null && bw != null && bh != null) {
+        final x = bx.toInt().clamp(0, im.width - 2);
+        final y = by!.toInt().clamp(0, im.height - 2);
+        final w = bw.toInt().clamp(1, im.width - x);
+        final h = bh!.toInt().clamp(1, im.height - y);
         im = img.copyCrop(im, x: x, y: y, width: w, height: h);
       }
     }
