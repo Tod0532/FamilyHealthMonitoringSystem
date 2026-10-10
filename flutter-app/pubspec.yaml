@@ -87,6 +87,7 @@ dependencies:
   # Cupertino 风格图标
   cupertino_icons: ^1.0.6
   image: ^4.3.0
+  onnxruntime: ^1.4.1
 
 dev_dependencies:
   flutter_test:

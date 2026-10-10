@@ -9,6 +9,7 @@ import 'bp_tflite_detector.dart';
 import 'digit_detector.dart';
 import 'fully_adaptive_detector.dart';
 import 'hybrid_digit_detector.dart';
+import 'lcd_onnx_pipeline.dart';
 import 'lcd_segment_reader.dart';
 import 'omron_digit_detector.dart';
 // import 'opencv_digit_detector.dart';  // 暂时禁用opencv_dart
@@ -87,6 +88,31 @@ class SevenSegmentOcrService {
       //   旧链路：干净合成七段图 48 张，收缩压正确率 0%，三项全对 0%
       //   本识别器：干净图 48/48、退化图 144/144 全部正确
       // 因此优先使用它；失败时再走原有链路（保留兼容与兜底）。
+      // ===== 最高优先级：ONNX 定位 + TFLite 多头数字模型 =====
+      // 实测（60 张真实照片，全自动）：三项全对 71.7%，
+      // 而旧检测链在同一批照片上是 0%。详见 docs/使用说明.md 9.3。
+      _log('尝试 ONNX+TFLite 新链路...');
+      try {
+        if (await LcdOnnxPipeline.init()) {
+          final r = LcdOnnxPipeline.recognize(image);
+          if (r != null && _isValidBloodPressure(r.$1, r.$2)) {
+            _log('✓ 新链路识别成功: ${r.$1}/${r.$2}, ${r.$3} bpm');
+            _log('  ${LcdOnnxPipeline.lastTrace}');
+            return OcrResult(
+              systolic: r.$1.toDouble(),
+              diastolic: r.$2.toDouble(),
+              heartRate: r.$3.toDouble(),
+              rawText: '${r.$1}/${r.$2} mmHg, ${r.$3} bpm',
+            );
+          }
+          _log('新链路未通过校验: ${LcdOnnxPipeline.lastTrace}');
+        } else {
+          _log('新链路模型未就绪: ${LcdOnnxPipeline.lastTrace}');
+        }
+      } catch (e) {
+        _log('新链路异常: $e');
+      }
+
       _log('尝试通用七段识别器...');
       try {
         final lcd = await LcdSegmentReader.recognize(image);
