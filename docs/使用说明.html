@@ -304,7 +304,8 @@ adb reverse tcp:8080 tcp:8080
 <hr>
 <h2 id="九质量与验证">九、质量与验证</h2>
 <h3 id="91-ocr-精度实测">9.1 OCR 精度实测</h3>
-<p><strong>方法</strong>：用程序生成<strong>真值已知</strong>的七段数码管图像（4 种液晶风格 × 12 组数值 × 4 档退化 = 192 张）， 跑真实检测代码逐张比对。基准工具在 <code>flutter-app/tool/</code>，可随时重跑回归。</p>
+<blockquote><p>⚠️ <strong>重要说明（先看这段）</strong>：下面的 100% 是<strong>合成数据集</strong>上的结果，</p><p>它<strong>不能代表真实照片</strong>。仓库里已有的 <strong>60 张真实血压计照片</strong>（<code>flutter-app/dataset/images/</code>，</p><p>文件名即真值）实测<strong>两条链路都是 0% 全对</strong>。原因与修复计划见 <strong>9.3 真实照片实测</strong>。</p></blockquote>
+<p><strong>合成基准</strong>：用程序生成<strong>真值已知</strong>的七段数码管图像 （4 种液晶风格 × 12 组数值 × 4 档退化 = 192 张），跑真实检测代码逐张比对。 基准工具在 <code>flutter-app/tool/</code>，可随时重跑回归。</p>
 <p><img alt="OCR 精度对比" src="images/chart-ocr-accuracy.png"></p>
 <table>
 <thead><tr><th>指标</th><th>修复前（旧检测链）</th><th>修复后（通用七段识别器）</th></tr></thead>
@@ -329,15 +330,38 @@ dart run tool/ocr_debug_one.dart tool/ocr_bench_data/s0_v0_clean.png --full  # �
 [SevenSegment] ✓ 通用七段识别成功: 101/71, 73 bpm (置信度 0.92)     ← 耗时约 1.4 秒
 [OcrButton] 识别结果: isValid=true, systolic=101.0, diastolic=71.0, heartRate=73.0</code></pre>
 <p>该图真值 <code>101/71/73</code>，识别结果完全一致。</p>
-<h3 id="93-已知限制">9.3 已知限制</h3>
+<h3 id="93-真实照片实测仓库自带-60-张">9.3 真实照片实测（仓库自带 60 张）</h3>
+<p><code>flutter-app/dataset/images/</code> 里有 <strong>60 张真实血压计照片</strong>，<strong>文件名就是真值</strong> （形如 <code>100-71-74.jpg</code> = 收缩压 100 / 舒张压 71 / 脉搏 74）， <code>dataset/labels_screen/*.json</code> 存了每张的屏幕区域框。</p>
+<p>用 <code>dart run tool/ocr_bench_real.dart</code> 实测（前 8 张）：</p>
+<table>
+<thead><tr><th>链路</th><th>三项全对</th><th>无结果</th><th>平均耗时</th></tr></thead>
+<tbody>
+<tr><td>旧检测链</td><td><strong>0.0%</strong></td><td>37.5%</td><td>11148 ms/张</td></tr>
+<tr><td>通用七段识别器</td><td><strong>0.0%</strong></td><td>37.5%</td><td>3525 ms/张</td></tr>
+<tr><td>通用七段识别器 + 标注框裁剪</td><td><strong>0.0%</strong></td><td>37.5%</td><td>642 ms/张</td></tr>
+</tbody></table>
+<p><strong>结论：合成基准上的 100% 没有迁移到真实照片，两条链路在真实照片上都不正确。</strong></p>
+<p>排查到的原因（用 <code>tool/ocr_inspect.dart</code> 做像素体检）：</p>
+<table>
+<thead><tr><th>差异点</th><th>合成基准</th><th>真实照片</th></tr></thead>
+<tbody>
+<tr><td>数字高度占图比例</td><td>~37%</td><td><strong>2.6% ~ 5.6%</strong></td></tr>
+<tr><td>液晶屏极性</td><td>亮底暗字</td><td><strong>暗底亮字（反色），暗侧占 80%</strong></td></tr>
+<tr><td>墨迹占比</td><td>~8%</td><td>18% ~ 45%（含机身、背景等非数字墨迹）</td></tr>
+<tr><td>最大连通域</td><td>单个数字</td><td>占据整图（背景机身糊成一片）</td></tr>
+</tbody></table>
+<p>另外发现 <strong>3/8 张照片无法解码</strong>：<code>image</code> 包的 EXIF 解析器在部分真实 JPEG 上抛 <code>RangeError</code>，App 里被 catch 后表现为"识别失败"，这类照片在真机上永远读不出结果。</p>
+<blockquote><p>结论：目前的识别器把"数字占满画面"当作前提，真实照片不满足。</p><p>需要在<strong>屏幕区域定位</strong>、<strong>极性与对比度自适应</strong>、<strong>按估算字号而不是整图尺寸定尺度</strong></p><p>三处改进，并以这 60 张真实照片作为验收基准（而不是合成图）。</p></blockquote>
+<h3 id="94-已知限制">9.4 已知限制</h3>
 <table>
 <thead><tr><th>限制</th><th>说明</th></tr></thead>
 <tbody>
+<tr><td><strong>真实照片识别不可用</strong></td><td>60 张真实照片实测 0% 全对，见 9.3，属当前最大缺口</td></tr>
+<tr><td>部分 JPEG 无法解码</td><td><code>image</code> 包 EXIF 解析限制，表现为"识别失败"</td></tr>
 <tr><td>验证码未校验</td><td>后端跳过短信校验，上线前必须处理</td></tr>
 <tr><td>健康内容为空</td><td><code>health_content</code> 表无数据，App 显示「内容服务暂未接入」</td></tr>
 <tr><td>日记 / 提醒 / 设备为本地功能</td><td>后端无对应接口，换机不迁移</td></tr>
 <tr><td>蓝牙同步</td><td>依赖设备广播，实测部分心率设备连上后收不到数据</td></tr>
-<tr><td>复杂机身背景的识别</td><td>含外壳/反光/斜拍的严苛场景仍在迭代</td></tr>
 </tbody></table>
 <hr>
 <h2 id="十故障排查">十、故障排查</h2>
