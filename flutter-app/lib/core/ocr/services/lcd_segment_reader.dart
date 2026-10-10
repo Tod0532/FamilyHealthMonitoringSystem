@@ -618,7 +618,8 @@ class LcdSegmentReader {
   static bool _plausible(int v, int lo, int hi) => v >= lo && v <= hi;
 
   /// 由数值集合推断 (收缩压, 舒张压, 脉搏, 得分, 说明)
-  static (int, int, int, double, String)? _assignRoles(List<_Number> numbers) {
+  static (int, int, int, double, String)? _assignRoles(
+      List<_Number> numbers, double imgH) {
     final cands = numbers
         .where((n) => n.digits.length >= 2 && n.digits.length <= 3)
         .where((n) => _plausible(n.value, 20, 260))
@@ -647,6 +648,18 @@ class LcdSegmentReader {
       // 不给这个权重时，碎片凑出的"合法三元组"会盖过正确假设
       // （实测：加此项前干净基准 62.5%，退化 97.2%）。
       var score = 100.0;
+
+      // 尺寸先验：血压计上"数字是屏幕上最大的字"。
+      // 真实照片里小字/噪点会凑出看起来合理的读数
+      // （实测 100-71-74：24px 的噪点被读成 86/60/75），
+      // 因此把收缩压字号占整图高度的比例计入得分
+      // （每 10% 图高记 40 分，上限 120 分）：
+      // 真实数字 111/428≈26% → +104，噪点 24/428≈5.6% → +22，相差 82 分足以翻盘。
+      if (imgH > 0) {
+        final rel = sys.height / imgH;
+        score += (rel / 0.10).clamp(0.0, 3.0) * 40.0;
+      }
+
       if (dia != null) {
         score += 45;
         if (dia.cy > sys.cy) score += 40; // 舒张压在收缩压下方
@@ -691,6 +704,103 @@ class LcdSegmentReader {
   }
 
   // ------------------------------------------------------------------ 入口
+
+  /// 把"宽扁大块"按列墨迹投影切成单字格。
+  ///
+  /// 背景（真实照片实测）：液晶的亮晕/背光会让同一行的数字连成一条横条，
+  /// 例如 100-71-74 裁剪图中出现 880x111（宽高比 7.9）的大块，
+  /// 里面其实是整行数字。若不做切分，它会被"高 > 宽"过滤整条丢掉。
+  ///
+  /// 做法：对宽高比 ≥ 1.6 的块做逐列墨迹计数，找出"墨迹很稀的列"作为切缝，
+  /// 切出的每段再取紧致包围盒。切缝阈值取 0.10×块高——
+  /// 七段数字内部不存在这么稀的整列（笔画覆盖充分），而数字之间一定存在。
+  static List<_Box> _splitWideBlobs(
+      _Mask mask, List<_Box> comps, int w, int h) {
+    final out = <_Box>[];
+    for (final c in comps) {
+      if (c.w < 1.6 * c.h || c.w < 12) {
+        out.add(c);
+        continue;
+      }
+      // 逐列墨迹计数
+      final cols = List<int>.filled(c.w, 0);
+      for (var y = c.y0; y <= c.y1; y++) {
+        for (var x = c.x0; x <= c.x1; x++) {
+          if (mask.data[y * w + x] != 0) cols[x - c.x0]++;
+        }
+      }
+      final gapThreshold = math.max(1, (0.10 * c.h).round());
+      var segStart = -1;
+      final segments = <(int, int)>[];
+      for (var i = 0; i < cols.length; i++) {
+        final isGap = cols[i] <= gapThreshold;
+        if (!isGap && segStart < 0) {
+          segStart = i;
+        } else if (isGap && segStart >= 0) {
+          if (i - segStart >= 2) segments.add((segStart, i - 1));
+          segStart = -1;
+        }
+      }
+      if (segStart >= 0 && cols.length - segStart >= 2) {
+        segments.add((segStart, cols.length - 1));
+      }
+      // 切缝太少说明不是"多字粘条"，保持原样交给后续逻辑
+      if (segments.length < 2) {
+        out.add(c);
+        continue;
+      }
+      for (final (a, b) in segments) {
+        final t = _tightBox(mask, c.x0 + a, c.y0, c.x0 + b, c.y1);
+        if (t != null) out.add(t);
+      }
+    }
+    return out;
+  }
+
+  /// 把字形按 y 聚成"行"，只保留中位高度接近最大行的那些行。
+  ///
+  /// 为什么需要：真实血压计屏幕上，数字是**最大的字**；面板上的小字说明、
+  /// 屏幕纹理与背景噪点高度远小于数字。而"相对全图中位高度"的过滤在
+  /// 噪点占多数时会失效——真实照片 100-71-74（裁剪后 1226x428）实测：
+  /// 组件高度中位仅 23px，真实数字约 90-110px，结果识别器挑了 23px 的小字，
+  /// 读成 86/73/75（真值 100/71/74）。
+  ///
+  /// 阈值取 0.45 倍：既丢掉小字行，又能保留"收缩压字号明显大于舒张压"的机型
+  /// （常见为 1.4~1.7 倍，仍高于 0.45）。
+  static List<_Box> _keepDominantRows(List<_Box> glyphs) {
+    if (glyphs.length <= 2) return glyphs;
+
+    final sorted = glyphs.toList()..sort((a, b) => a.cy.compareTo(b.cy));
+    final rows = <List<_Box>>[];
+    for (final g in sorted) {
+      var placed = false;
+      for (final row in rows) {
+        final ref = row.last;
+        final minH = math.min(ref.h, g.h).toDouble();
+        if ((g.cy - ref.cy).abs() <= 0.6 * minH) {
+          row.add(g);
+          placed = true;
+          break;
+        }
+      }
+      if (!placed) rows.add(<_Box>[g]);
+    }
+
+    double rowMedian(List<_Box> row) {
+      final hs = row.map((g) => g.h).toList()..sort();
+      return hs[hs.length ~/ 2].toDouble();
+    }
+
+    final meds = rows.map(rowMedian).toList();
+    final maxMed = meds.reduce(math.max);
+    final keep = <_Box>[];
+    for (var i = 0; i < rows.length; i++) {
+      if (meds[i] >= 0.45 * maxMed) {
+        keep.addAll(rows[i]);
+      }
+    }
+    return keep;
+  }
 
   /// 识别一张血压计屏幕图；返回 null 表示识别失败
   static Future<LcdReading?> recognize(img.Image image) async {
@@ -746,22 +856,32 @@ class LcdSegmentReader {
             cands.add(c);
           }
 
+          // 真实照片里数字常被"亮晕/背光"连成一条宽扁横条
+          // （实测 100-71-74 裁剪图：一条 880x111、宽高比 7.9 的横条包住整行数字），
+          // 这种块过不了"高 > 宽"的几何过滤，会被整条丢掉，
+          // 于是识别器只能拿 22x23 的噪点当数字（读成 86/73/75，真值 100/71/74）。
+          // 这里先按列墨迹投影把宽扁大块切成单字格。
+          final splitCands = _splitWideBlobs(mask, cands, w, h);
+
           // 把"是否合并散段"当作两种假设都试：
           //  · 有残影的机型：组件本身就是整格，合并反而会把相邻数字并成一块
           //    （照片级基准实测：格宽 135、间距 27，任何"相对宽度"的合并判据都会误并）
           //  · 无残影的机型：组件是散段，必须合并才能得到数字
           // 取两者中评分更高者，避免被单一假设绑死。
           final variants = <(String, List<_Box>)>[
-            ('直', cands),
-            ('合', _mergeGlyphs(cands)),
+            ('直', splitCands),
+            ('合', _mergeGlyphs(splitCands)),
           ];
 
         var mergedDims = '';
 
         for (final (vName, vBoxes) in variants) {
-          // 几何过滤：七段数字一律"高 > 宽"（近方形的块不是数字），
-          // 且不应明显矮于同屏其它数字（矮的是段碎片）
-          final shaped = vBoxes.where((g) => g.h >= 1.15 * g.w).toList();
+          // 几何过滤：七段数字"高度不小于宽度的一定比例"。
+          // 合成基准里数字明显瘦高（h/w ≈ 1.4），但真实照片经亮晕粘连后
+          // 按列切出的单字格常常接近方形甚至略宽（实测 h/w ≈ 0.9~1.1），
+          // 用 1.15 会把真实数字整批丢掉，因此放宽到 0.8；
+          // 明显扁平的横条（机身文字、边框线）仍会被拦下。
+          final shaped = vBoxes.where((g) => g.h >= 0.8 * g.w).toList();
           if (shaped.isEmpty) continue;
           final hs = shaped.map((g) => g.h).toList()..sort();
           final medianH = hs[hs.length ~/ 2].toDouble();
@@ -778,21 +898,32 @@ class LcdSegmentReader {
           }
           if (glyphs.isEmpty) continue;
 
+          // 按"行"筛选：血压计上数字是最大的字，屏幕上的小字与噪点必须丢掉。
+          //
+          // 为什么需要：真实照片实测（100-71-74，裁剪后 1226x428）中，
+          // 组件高度中位数只有 23px 而真实数字约 90-110px，
+          // 于是上面的"相对中位数"过滤反而把噪点全留下、结果读成 86/73/75。
+          // 这里把字形按 y 聚成"行"，只保留中位高度接近最高行的那些行
+          // （阈值取 0.45 倍，兼顾收缩压比舒张压字号更大的常见机型）。
+          final rowFiltered = _keepDominantRows(glyphs);
+          if (rowFiltered.isEmpty) continue;
+
           if (vName == '合' && mergedDims.isEmpty) {
-            mergedDims = (glyphs.toList()..sort((a, b) => a.x0.compareTo(b.x0)))
+            mergedDims = (rowFiltered.toList()
+                    ..sort((a, b) => a.x0.compareTo(b.x0)))
                 .take(10)
                 .map((g) => '${g.w}x${g.h}')
                 .join(' ');
           }
 
           final digits = <_Digit>[];
-          for (final g in glyphs) {
+          for (final g in rowFiltered) {
             final d = _readGlyph(grayRef, g);
             if (d != null && d.score >= 0.80) digits.add(d);
           }
 
           final numbers = _groupNumbers(digits);
-          final assign = _assignRoles(numbers);
+          final assign = _assignRoles(numbers, h.toDouble());
           final numberDump = numbers
               .map((n) => '${n.value}(${n.digits.length}位,h${n.height.toInt()},'
                   'x${n.cx.toInt()},y${n.cy.toInt()})')
@@ -801,7 +932,8 @@ class LcdSegmentReader {
               .map((d) => '${d.digit}@${d.box.x0},${d.box.y0} '
                   '${d.box.w}x${d.box.h} ${d.score.toStringAsFixed(2)}')
               .join(';');
-          perHyp.add('${darkInk ? "暗" : "亮"}r$r${openR > 0 ? "开" : "原"}$vName:字形${glyphs.length}/'
+          perHyp.add('${darkInk ? "暗" : "亮"}r$r${openR > 0 ? "开" : "原"}$vName:'
+              '字形${glyphs.length}→${rowFiltered.length}/'
               '数字${digits.length}/数值${numbers.length}'
               '${assign == null ? "·无解" : ""}'
               '${kDebugTrace ? " 数[$numberDump] 字[$digitDump]" : ""}');

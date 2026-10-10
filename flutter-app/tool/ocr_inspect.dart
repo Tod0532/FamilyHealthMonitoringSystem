@@ -16,6 +16,7 @@ class Box {
   int get h => y1 - y0 + 1;
 }
 
+List<Box> boxList(List<Box> xs) => xs;
 void main(List<String> args) {
   final path = args.firstWhere((a) => !a.startsWith('--'), orElse: () => '');
   if (path.isEmpty) {
@@ -61,6 +62,15 @@ void main(List<String> args) {
     final h = b[3].clamp(1, im.height - y);
     im = img.copyCrop(im, x: x, y: y, width: w, height: h);
     print('裁剪标注框 [$x,$y,$w,$h] -> ${im.width}x${im.height}');
+
+    // 可选：把裁剪结果存出来，供 ocr_debug_one 逐假设诊断
+    final saveArg = args.firstWhere((a) => a.startsWith('--save='),
+        orElse: () => '');
+    if (saveArg.isNotEmpty) {
+      final out = saveArg.split('=').last;
+      File(out).writeAsBytesSync(img.encodePng(im));
+      print('已保存裁剪图: $out');
+    }
   }
 
   final gray = img.grayscale(im);
@@ -174,6 +184,62 @@ void main(List<String> args) {
   final inkPixels = mask.where((v) => v == 1).length;
   print('墨迹像素占比: ${(100 * inkPixels / total).toStringAsFixed(2)}%'
       '（七段数字通常 5%~20%）');
+
+  // 高度直方图：看"数字尺寸"的组件存不存在
+  final buckets = List<int>.filled(10, 0);
+  for (final b in boxes) {
+    final pct = (100 * b.h / h).clamp(0, 99).toInt() ~/ 10;
+    buckets[pct]++;
+  }
+  print('组件高度分布（占图高）:');
+  for (var i = 0; i < 10; i++) {
+    if (buckets[i] == 0) continue;
+    print('   ${i * 10}%~${i * 10 + 10}%  ${buckets[i]} 个');
+  }
+
+  // "像单个数字"的组件：高宽比 0.3~1.2 且高度占图 4%~35%
+  final digitLike = boxes
+      .where((b) => b.h >= 0.04 * h && b.h <= 0.35 * h)
+      .where((b) => b.h / b.w >= 0.3 && b.h / b.w <= 1.2)
+      .toList()
+    ..sort((a, b) => a.x0.compareTo(b.x0));
+  print('像单个数字的组件: ${digitLike.length} 个');
+  for (final b in digitLike.take(12)) {
+    print('   ${b.w}x${b.h} (高宽比 ${(b.h / b.w).toStringAsFixed(2)}) '
+        '位置(${b.x0},${b.y0})');
+  }
+
+  // 宽扁平大块：多半是"多个数字粘成一条"
+  final wideBlobs = boxes
+      .where((b) => b.w >= 1.6 * b.h && b.h >= 0.04 * h)
+      .toList()
+    ..sort((a, b) => (b.w * b.h).compareTo(a.w * a.h));
+  print('宽扁大块（可能是粘连的多个数字）: ${wideBlobs.length} 个');
+  for (final b in wideBlobs.take(6)) {
+    print('   ${b.w}x${b.h} 位置(${b.x0},${b.y0}) 宽/高='
+        '${(b.w / b.h).toStringAsFixed(1)}');
+  }
+
+  // 可视化：把候选框画到图上，便于人工核对识别器到底在看哪里
+  final visArg =
+      args.firstWhere((a) => a.startsWith('--vis='), orElse: () => '');
+  if (visArg.isNotEmpty) {
+    final canvas = im.convert(numChannels: 3);
+    // 绿色：像单个数字的组件；红色：宽扁大块；黄色：其它较大组件
+    for (final b in boxList(digitLike)) {
+      img.drawRect(canvas,
+          x1: b.x0, y1: b.y0, x2: b.x1, y2: b.y1,
+          color: img.ColorRgb8(0, 255, 0), thickness: 3);
+    }
+    for (final b in boxList(wideBlobs)) {
+      img.drawRect(canvas,
+          x1: b.x0, y1: b.y0, x2: b.x1, y2: b.y1,
+          color: img.ColorRgb8(255, 0, 0), thickness: 3);
+    }
+    final out = visArg.split('=').last;
+    File(out).writeAsBytesSync(img.encodePng(canvas));
+    print('已输出可视化: $out （绿=像数字 红=宽扁大块）');
+  }
   if (boxes.isNotEmpty) {
     final heights = boxes.take(20).map((b) => b.h).toList()..sort();
     print('前 20 大连通域高度中位: ${heights[heights.length ~/ 2]}');

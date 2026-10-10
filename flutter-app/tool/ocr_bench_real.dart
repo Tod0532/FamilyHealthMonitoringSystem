@@ -24,6 +24,7 @@ import 'package:health_center_app/core/ocr/services/smart_adaptive_detector.dart
 import 'package:health_center_app/core/ocr/services/smart_digit_detector.dart';
 import 'package:health_center_app/core/ocr/services/smart_digit_detector_v2.dart';
 import 'package:health_center_app/core/ocr/services/universal_digit_detector.dart';
+import 'package:health_center_app/core/ocr/utils/jpeg_sanitizer.dart';
 
 const String imgDir = 'dataset/images';
 const String labelDir = 'dataset/labels_screen';
@@ -170,18 +171,25 @@ Future<void> main(List<String> args) async {
     if (!f.existsSync()) continue;
 
     // image 包的 EXIF 解析器在部分真实 JPEG 上会抛 RangeError
-    // （InputBuffer.readUint16 越界）。App 内该异常被 catch 后表现为"识别失败"，
-    // 这类照片在真机上永远读不出结果，属需要记录的真实限制。
+    // （InputBuffer.readUint16 越界）。先按原样解，失败则剥离元数据段再解一次。
     img.Image? im;
     try {
       im = img.decodeImage(f.readAsBytesSync());
     } catch (e) {
-      decodeFail++;
-      total++;
-      none++;
-      print('  ! ${t.file.padRight(18)} 解码失败（${e.runtimeType}）'
-          ' 真值 ${t.sys}/${t.dia} ${t.pulse}');
-      continue;
+      final sanitized = JpegSanitizer.stripMetadata(f.readAsBytesSync());
+      if (sanitized != null) {
+        try {
+          im = img.decodeImage(sanitized);
+        } catch (_) {}
+      }
+      if (im == null) {
+        decodeFail++;
+        total++;
+        none++;
+        print('  ! ${t.file.padRight(18)} 解码失败（${e.runtimeType}）'
+            ' 真值 ${t.sys}/${t.dia} ${t.pulse}');
+        continue;
+      }
     }
     if (im == null) continue;
 
