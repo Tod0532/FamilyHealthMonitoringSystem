@@ -97,7 +97,7 @@ docs/*密码*
 docs/*凭据*
 
 
-# ����������Բ����Ľ�ͼ/UI dump ��ɰ�����
+# ����������Բ����Ľ�ͼ/UI dump ��ɰ�����
 /_shots/
 /_backup_phone_app/
 
@@ -117,3 +117,10 @@ docs/ocr-debug/
 # 真实血压计照片与标注：唯一且不可再生的数据资产，必须入库（照片走 git-lfs）
 !flutter-app/dataset/images/*.jpg
 !flutter-app/dataset/labels_screen/*.json
+
+# ESP32 固件：本机私有配置（WiFi 密码、绑定码、手环名）不入库
+# —— 模板见 hardware/esp32_hr_bridge/include/secrets.example.h
+hardware/esp32_hr_bridge/include/secrets.h
+
+# ESP32 固件：PlatformIO 的编译产物与下载的依赖（几百 MB，可随时重建）
+hardware/esp32_hr_bridge/.pio/

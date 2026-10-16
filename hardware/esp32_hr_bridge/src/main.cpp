@@ -33,27 +33,50 @@
 #include <time.h>
 
 // ============================== 配置区 ==============================
-// 全部集中在这里，改完直接烧写，不需要动其它代码。
+// 本机私有配置（WiFi 密码、绑定码、手环名）放 include/secrets.h ——
+// 那个文件在 .gitignore 里，**不会**被提交。
+// 首次使用：把 include/secrets.example.h 复制成 include/secrets.h 再填。
+// 不填也能编译（下面每个都有 #ifndef 兜底），只是连不上 WiFi。
+#if __has_include("secrets.h")
+#include "secrets.h"
+#endif
 
-static const char* WIFI_SSID = "你的WiFi名";
-static const char* WIFI_PASS = "你的WiFi密码";
+// WiFi 名 / 密码
+#ifndef HR_WIFI_SSID
+#define HR_WIFI_SSID "你的WiFi名"
+#endif
+#ifndef HR_WIFI_PASS
+#define HR_WIFI_PASS "你的WiFi密码"
+#endif
 
-// 后端地址（阿里云）或本地调试地址（配合 adb reverse 时是 127.0.0.1 不行，
-// 板子要填电脑的局域网 IP，例如 http://192.168.1.10:8080）
-static const char* API_BASE = "http://139.129.108.119:8080";
+// 后端地址。板子不能用 127.0.0.1（那是板子自己），本地联调要填**电脑的局域网 IP**，
+// 例如 http://192.168.1.10:8080，并确保板和电脑在同一个 WiFi 下。
+#ifndef HR_API_BASE
+#define HR_API_BASE "http://139.129.108.119:8080"
+#endif
 
-// 设备绑定（推荐用这个，不要把 App 账号口令写进固件）
-// 先在 App「我的 → 设备管理」生成 6 位绑定码，填到这里，首次上电用它换令牌；
-// 令牌会存进 NVS，之后同一块板子不再需要绑定码。
-static const char* BIND_CODE = "000000";
-static const char* DEVICE_SN = "HR-BRIDGE-001";
-static const char* FIRMWARE_VER = "v2.0";
+// 设备绑定：在 App「我的 → 设备管理」生成 6 位绑定码填这里（10 分钟内有效、只能用一次）；
+// 首次上电用它换令牌，令牌存进 NVS 后同一块板子不再需要绑定码。
+#ifndef HR_BIND_CODE
+#define HR_BIND_CODE "000000"
+#endif
+#ifndef HR_DEVICE_SN
+#define HR_DEVICE_SN "HR-BRIDGE-001"
+#endif
 
-// 注意：不再需要 memberId —— 归属由设备令牌决定（绑定码就是为某个成员生成的）
-
-// 手环的广播名（可用 nRF Connect 看到的那个名字，例如 "HR-287" / "G81-31824"）
+// 手环的广播名（nRF Connect 里看到的那个，例如 "HR-287" / "G81-31824"）
 // 留空表示"连接第一个广播了 0x180D 的设备"，更省事但可能连到别的设备
-static const char* BAND_NAME = "HR-287";
+#ifndef HR_BAND_NAME
+#define HR_BAND_NAME "HR-287"
+#endif
+
+static const char* WIFI_SSID = HR_WIFI_SSID;
+static const char* WIFI_PASS = HR_WIFI_PASS;
+static const char* API_BASE = HR_API_BASE;
+static const char* BIND_CODE = HR_BIND_CODE;
+static const char* DEVICE_SN = HR_DEVICE_SN;
+static const char* BAND_NAME = HR_BAND_NAME;
+static const char* FIRMWARE_VER = "v2.1";
 
 // 上报策略：心率发生明显变化才上报，或至少每 HEARTBEAT_REPORT_MS 报一次
 //
@@ -111,6 +134,13 @@ static void onHrNotify(NimBLERemoteCharacteristic* ch, uint8_t* data,
 }
 
 // 扫描并连接手环
+//
+// 注意 NimBLE-Arduino 的 API 在 1.4.x 变过：
+//   · 1.3: NimBLEScanResults* getResults(uint32_t duration, bool is_continue)
+//   · 1.4: NimBLEScanResults  start(uint32_t duration, bool is_continue)  ← 按值返回、阻塞
+// 这段代码原来是照 1.3 的接口写的，**第一次真正编译时报错**：
+//   no matching function for call to 'NimBLEScan::getResults(int, bool)'
+// 所以请按 1.4 的接口用 start()，不要改回 getResults(时长)。
 static bool connectBand() {
   Serial.println("[BLE] 开始扫描...");
   NimBLEScan* scan = NimBLEDevice::getScan();
@@ -118,16 +148,16 @@ static bool connectBand() {
   scan->setInterval(100);
   scan->setWindow(80);
 
-  NimBLEScanResults* found = scan->getResults(8000, false); // 扫 8 秒
-  if (found == nullptr || found->getCount() == 0) {
+  NimBLEScanResults found = scan->start(8000, false); // 阻塞扫 8 秒
+  if (found.getCount() == 0) {
     Serial.println("[BLE] 未扫到任何设备");
     scan->clearResults();
     return false;
   }
 
   NimBLEAdvertisedDevice* target = nullptr;
-  for (int i = 0; i < found->getCount(); i++) {
-    NimBLEAdvertisedDevice d = found->getDevice(i);
+  for (int i = 0; i < found.getCount(); i++) {
+    NimBLEAdvertisedDevice d = found.getDevice(i);
     const bool hasHrs = d.haveServiceUUID() &&
                         d.getServiceUUID().equals(NimBLEUUID((uint16_t)0x180D));
     Serial.printf("[BLE] 发现 %-22s rssi=%d %s\n",
@@ -152,7 +182,8 @@ static bool connectBand() {
   if (g_client == nullptr) {
     g_client = NimBLEDevice::createClient();
     g_client->setConnectTimeout(10);
-    g_client->setReconnectTimeout(4, 30);
+    // 注意：NimBLEClient 没有 setReconnectTimeout（1.4.3 里也不存在，写了编译不过）。
+    // 重连由 loop() 里显式判断 isConnected() 后重连，不需要库自带的重连策略。
   }
   if (!g_client->connect(target)) {
     Serial.println("[BLE] 连接失败");
@@ -215,7 +246,8 @@ static bool login() {
   String url = String(API_BASE) + "/api/device/bind";
   http.begin(url);
   http.addHeader("Content-Type", "application/json");
-  StaticJsonDocument<256> req;
+  // ArduinoJson 7 起这几个类已废弃（只告警不报错），统一用弹性的 JsonDocument
+  JsonDocument req;
   req["bindCode"] = BIND_CODE;
   req["deviceSn"] = DEVICE_SN;
   req["deviceName"] = "ESP32-BLE-HR";
@@ -230,7 +262,7 @@ static bool login() {
     Serial.printf("[API] 绑定失败 HTTP %d: %s\n", code, resp.c_str());
     return false;
   }
-  DynamicJsonDocument res(4096);
+  JsonDocument res;
   if (deserializeJson(res, resp) != DeserializationError::Ok) {
     Serial.println("[API] 绑定响应解析失败");
     return false;
@@ -271,7 +303,7 @@ static bool postHeartRate(int hr, long epochSec) {
   http.addHeader("Content-Type", "application/json");
   http.addHeader("X-Device-Token", g_token);   // 设备令牌，不再是用户 JWT
 
-  DynamicJsonDocument req(512);
+  JsonDocument req;
   req["dataType"] = "heart_rate";
   req["value1"] = hr;
   req["unit"] = "bpm";
