@@ -97,9 +97,12 @@ while ((Get-Date) -lt $deadline) {
   }
   $reported++
 
-  # 两次上报之间轮询（模拟 App 停在本页）
+  # 两次上报之间轮询（模拟 App 停在本页）。
+  # 两次各睡 2.5 秒，使**上报间隔真的是 5 秒**（与固件 HEARTBEAT_REPORT_MS 一致）。
+  # 原来写的是各 1.5 秒 → 实际间隔 3.1 秒，与上面那句"每 5s 一条"不符：
+  # 冒烟脚本存在的意义就是复现固件的节奏，节奏不对就白测了。
   for ($p = 0; $p -lt 2; $p++) {
-    Start-Sleep -Milliseconds 1500
+    Start-Sleep -Milliseconds 2500
     $lj = Invoke-CurlJson -Url "$base/api/device/latest" -Headers $auth
     try {
       $d = ($lj | ConvertFrom-Json).data[0]
@@ -132,10 +135,39 @@ Check ($maxAge -le 20) `
 Write-Host "=== 6. 判定：落库节流是否真的减少了行数 ==="
 # 注意：/api/health-data 的 data 是**数组**（不是 MyBatis Plus 那套 records/total 分页对象）。
 # 写成 $hd.data.records 会静默拿到空数组，于是出现"落库 0 行"的假失败（实测踩到）
-$hd = (Invoke-CurlJson -Url "$base/api/health-data?page=1&size=100" -Headers $auth) | ConvertFrom-Json
-$rows = @($hd.data | Where-Object { $_.dataSource -eq 'device' -and $_.dataType -eq 'heart_rate' })
-Write-Host ("    上报 {0} 次 → health_data 落库 {1} 行：{2}" -f `
-    $seq.Length, $rows.Count, (($rows | ForEach-Object { $_.value1 }) -join ', '))
+#
+# 本步骤实测出现过**偶发误报**：报"落库 0 行"，而同一时刻手工用同样的请求查
+# 一切正常（并发上报下连查 20 次 20 次正常）。根因是 PowerShell 捕获 curl
+# 输出时**偶发丢数据** → JSON 解析失败；而 `$x = <坏内容> | ConvertFrom-Json`
+# **不抛异常**，只把 $x 变成 $null，于是 `@($null).Count` 恰好是 1，
+# 看起来就像"接口只返回 1 条"。已把 helper 改成 `curl -o 文件` 读回来（治根因），
+# 这里再显式校验解析结果并带重试 —— 判据不健全的检查比没有检查更糟：
+# 它会让人去怀疑一个其实没问题的功能。
+$raw = ''
+$hd = $null
+for ($try = 1; $try -le 4; $try++) {
+  $raw = Invoke-CurlJson -Url "$base/api/health-data?page=1&size=100" -Headers $auth -TimeoutSec 20
+  if ($raw) {
+    try { $hd = $raw | ConvertFrom-Json -ErrorAction Stop } catch { $hd = $null }
+  }
+  if ($hd -and ($hd.data -is [array])) { break }
+  $why = if ($script:SMOKE_LAST_ERROR) { $script:SMOKE_LAST_ERROR } `
+    else { "响应 {0} 字节，但不是含 data 数组的合法 JSON" -f $raw.Length }
+  Write-Host ("    第 {0} 次查询不可用（{1}），1 秒后重试" -f $try, $why)
+  $hd = $null
+  Start-Sleep -Seconds 1
+}
+
+$rows = @()
+$totalText = 'n/a'
+if ($hd -and ($hd.data -is [array])) {
+  $all = @($hd.data)
+  $totalText = $all.Count
+  $rows = @($all | Where-Object { $_.dataSource -eq 'device' -and $_.dataType -eq 'heart_rate' })
+}
+Write-Host ("    上报 {0} 次 → 接口返回 {1} 条（响应 {2} 字节），设备来源心率 {3} 行：{4}" -f `
+    $seq.Length, $totalText, $raw.Length, $rows.Count,
+    (($rows | ForEach-Object { $_.value1 }) -join ', '))
 Check ($rows.Count -lt $seq.Length -and $rows.Count -ge 1) `
   "落库行数少于上报次数，节流生效" `
   ("期望 1 <= 落库行数 < {0}，实际 {1}" -f $seq.Length, $rows.Count)
@@ -148,6 +180,40 @@ Check ($d.stale -eq $true) `
   ("stale=true（age={0}s）—— App 显示「数据已停止」，不把旧值当实时值" -f $d.ageSeconds) `
   ("stale={0} age={1}s —— 旧读数会被当成实时心率" -f $d.stale, $d.ageSeconds)
 Write-Host ("    （online={0}：设备在线窗口是 5 分钟，此刻仍可能为 true）" -f $d.online)
+
+Write-Host "=== 8. 判定：预警去重（持续超标 30 秒，不该每报一条） ==="
+# 为什么单独冒这一条：单测覆盖的是 evaluator 内部逻辑，覆盖不到
+# "设备上报 → 规则命中 → 去重 → 落库" 这条真实链路。
+# 数据线里默认有 heartbeat >100（danger，冷却 3 分钟）这一条规则，
+# 所以下面 7 次超标上报在 30 秒内只应产生 **1 条**预警；
+# 没有去重的话会正好产生 7 条（实测过：上报次数与预警条数 1:1）。
+function Get-AlertCount {
+  $ar = (Invoke-CurlJson -Url "$base/api/alert-records?page=1&size=500" -Headers $auth) | ConvertFrom-Json
+  return @($ar.data).Count
+}
+$alertsBefore = Get-AlertCount
+Write-Host ("    超标前 alert_record 条数 = {0}" -f $alertsBefore)
+
+$spikeReports = 0
+for ($i = 1; $i -le 7; $i++) {
+  $ts = (Get-Date).ToString('yyyy-MM-ddTHH:mm:ss')
+  $r = Invoke-CurlJson -Url "$base/api/device/health-data" -Method POST -Headers $dhead `
+    -Json (ConvertTo-JsonCompact @{
+        dataType    = 'heart_rate'
+        value1      = 112
+        unit        = 'bpm'
+        measureTime = $ts
+      })
+  if ($r -like '*"code":200*') { $spikeReports++ }
+  Start-Sleep -Seconds 5
+}
+$alertsAfter = Get-AlertCount
+$newAlerts = $alertsAfter - $alertsBefore
+Write-Host ("    持续超标：上报 {0} 次 → 新增预警 {1} 条（前 {2} → 后 {3}）" -f `
+    $spikeReports, $newAlerts, $alertsBefore, $alertsAfter)
+Check ($newAlerts -le 2 -and $newAlerts * 3 -lt $spikeReports) `
+  ("去重生效：{0} 次超标上报只产生 {1} 条预警" -f $spikeReports, $newAlerts) `
+  ("{0} 次超标上报产生了 {1} 条预警 —— 去重没生效，预警页会被刷爆" -f $spikeReports, $newAlerts)
 
 Write-Host ""
 Write-Host ("=== 结果：{0} 项通过 / {1} 项失败 ===" -f $pass, $fail)

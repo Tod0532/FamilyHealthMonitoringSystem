@@ -15,6 +15,15 @@ $script:SMOKE_BODY_FILE = Join-Path $env:TEMP 'smoke_body.json'
 $script:SMOKE_UTF8 = New-Object System.Text.UTF8Encoding($false)
 
 # GET/POST，返回响应文本（失败时返回空串，错误信息在 $script:SMOKE_LAST_ERROR）
+#
+# 响应为什么走**文件**而不是管道捕获：
+#   `$raw = & curl.exe @cargs` 这种捕获方式实测会**偶发丢数据** ——
+#   响应被截断或按块拆开后用 "`n" 拼回，结果 JSON 解析失败，而 PS 里
+#   `$x = <坏内容> | ConvertFrom-Json` **不抛异常**、只把 $x 变成 $null，
+#   于是调用方看到的是"接口返回 0 条"这种**假失败**（实测：冒烟第 6 步
+#   连续两次报"落库 0 行"，同一时刻手工用同样的请求查却一切正常；
+#   换成本函数这种写法后，并发上报下连查 20 次 20 次正常）。
+#   用 `-o 文件` 再按 UTF-8 读回来，既不会截断，也不会被控制台编码影响。
 function Invoke-CurlJson {
   param(
     [Parameter(Mandatory = $true)][string]$Url,
@@ -23,7 +32,9 @@ function Invoke-CurlJson {
     [string]$Json = '',
     [int]$TimeoutSec = 10
   )
-  $cargs = @('-s', '-m', "$TimeoutSec", '-X', $Method, $Url)
+  $respFile = Join-Path $env:TEMP 'smoke_resp.json'
+  Remove-Item $respFile -ErrorAction SilentlyContinue
+  $cargs = @('-s', '-m', "$TimeoutSec", '-X', $Method, '-o', $respFile, $Url)
   foreach ($h in $Headers) { $cargs += @('-H', $h) }
   if ($Json) {
     [System.IO.File]::WriteAllText($script:SMOKE_BODY_FILE, $Json, $script:SMOKE_UTF8)
@@ -33,7 +44,11 @@ function Invoke-CurlJson {
   $raw = & curl.exe @cargs 2>&1
   $errs = @($raw | Where-Object { $_ -is [System.Management.Automation.ErrorRecord] })
   if ($errs.Count -gt 0) { $script:SMOKE_LAST_ERROR = ($errs | ForEach-Object { $_.ToString() }) -join ' ' }
-  return (($raw | Where-Object { $_ -isnot [System.Management.Automation.ErrorRecord] }) -join "`n")
+  if (-not (Test-Path $respFile)) {
+    if (-not $script:SMOKE_LAST_ERROR) { $script:SMOKE_LAST_ERROR = "curl 退出码 $LASTEXITCODE，且没有写出响应文件" }
+    return ''
+  }
+  return [System.IO.File]::ReadAllText($respFile, $script:SMOKE_UTF8)
 }
 
 function ConvertTo-JsonCompact {
