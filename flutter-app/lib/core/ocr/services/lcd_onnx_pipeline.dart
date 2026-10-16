@@ -5,6 +5,8 @@ import 'package:flutter/services.dart' show rootBundle;
 import 'package:image/image.dart' as img;
 import 'package:tflite_flutter/tflite_flutter.dart';
 
+import '../models/ocr_quality.dart';
+
 /// 血压计识别新链路：TFLite 定位模型 + TFLite 多头数字模型
 ///
 /// 为什么最终用 TFLite（而不是 ONNX）：
@@ -38,6 +40,12 @@ class LcdOnnxPipeline {
   static Interpreter? _digits;
   static bool _ready = false;
   static String lastTrace = '';
+
+  /// 最近一次识别的可信度信号（录入表单据此决定要不要提示"请核对"）
+  ///
+  /// 见 `lib/core/ocr/models/ocr_quality.dart` 与标定脚本
+  /// `tool/confidence_calibration.py`。
+  static OcrQuality? lastQuality;
 
   static bool get isReady => _ready;
 
@@ -94,8 +102,13 @@ class LcdOnnxPipeline {
 
     // 测试时增强：该数字模型对取景边距敏感（训练取景 94.7%，检测框仅 63%），
     // 多尺度+微平移后按模型置信度加权投票可把损失捞回来（实测 71.7%）。
+    //
+    // 顺便白拿一组可信度信号：81 组尝试里有多少组读出了同一个结果。
+    // 读错的时候往往多个尺度各执一词，胜出读数的一致度就低 —— 这正是"请核对"
+    // 提示要抓的信号（阈值由 tool/confidence_calibration.py 在 60 张真照片上标定）。
     final votes = <String, double>{};
     final counts = <String, int>{};
+    final geoSum = <String, double>{};
     for (final sw in const [0.85, 1.0, 1.18]) {
       for (final sh in const [0.85, 1.0, 1.18]) {
         for (final dx in const [-0.08, 0.0, 0.08]) {
@@ -105,26 +118,51 @@ class LcdOnnxPipeline {
             final key = '${r.$1}/${r.$2}/${r.$3}';
             votes[key] = (votes[key] ?? 0) + r.$4;
             counts[key] = (counts[key] ?? 0) + 1;
+            geoSum[key] = (geoSum[key] ?? 0) + r.$5;
           }
         }
       }
     }
     if (votes.isEmpty) {
       lastTrace = '$lastTrace | 各尺度均无可信读数';
+      lastQuality = null;
       return null;
     }
+    // 评分 = 置信度和 + 0.5 × 票数（与 tool/confidence_calibration.py 保持一致）
+    double scoreOf(String k) => votes[k]! + 0.5 * (counts[k] ?? 0);
     var bestKey = '';
     var bestScore = -1.0;
-    votes.forEach((k, v) {
-      final s = v + 0.5 * (counts[k] ?? 0);
+    var secondScore = 0.0;
+    votes.forEach((k, _) {
+      final s = scoreOf(k);
       if (s > bestScore) {
+        secondScore = bestScore < 0 ? 0.0 : bestScore;
         bestScore = s;
         bestKey = k;
+      } else if (s > secondScore) {
+        secondScore = s;
       }
     });
     final p = bestKey.split('/');
+
+    final totalCount = counts.values.fold<int>(0, (a, b) => a + b);
+    final totalWeight = votes.values.fold<double>(0, (a, b) => a + b);
+    final winnerCount = counts[bestKey] ?? 0;
+    final quality = OcrQuality(
+      detConf: box.$5,
+      variants: votes.length,
+      agree: totalCount == 0 ? 0 : winnerCount / totalCount,
+      weightShare: totalWeight == 0 ? 0 : votes[bestKey]! / totalWeight,
+      margin: bestScore <= 0 ? 0 : (bestScore - secondScore) / bestScore,
+      // 胜出读数那几组尝试的平均置信度（几何均值），比"概率连乘"好解释也好定阈值
+      meanGeo: winnerCount == 0 ? 0 : (geoSum[bestKey] ?? 0) / winnerCount,
+    );
+    lastQuality = quality;
+
     lastTrace = '$lastTrace | TTA 候选 ${votes.length} 种，选中 $bestKey'
-        '（票数 ${counts[bestKey]}）';
+        '（票数 $winnerCount）'
+        '${quality.needsReview ? ' ⚠ 建议人工核对' : ''}'
+        ' [${quality.debugLabel}]';
     return (int.parse(p[0]), int.parse(p[1]), int.parse(p[2]));
   }
 
@@ -191,7 +229,7 @@ class LcdOnnxPipeline {
     );
   }
 
-  static (int, int, int, double)? _readAt(
+  static (int, int, int, double, double)? _readAt(
       img.Image im,
       int w,
       int h,
@@ -249,7 +287,8 @@ class LcdOnnxPipeline {
     }
 
     final heads = List<int>.filled(outCount, 0);
-    var conf = 1.0;
+    var conf = 1.0;      // 各头最大概率的**乘积**（投票权重沿用这个，别改，改了会影响识别结果）
+    var logSum = 0.0;    // 同上，但取对数 —— 用来算几何均值，好解释也好定阈值
     for (var i = 0; i < outCount; i++) {
       final row = outputs[i][0];
       var mx = -1e9;
@@ -265,8 +304,11 @@ class LcdOnnxPipeline {
         sum += math.exp(row[c] - mx);
       }
       heads[i] = arg;
-      conf *= sum == 0 ? 0.0 : (1.0 / sum);
+      final pmax = sum == 0 ? 0.0 : (1.0 / sum);
+      conf *= pmax;
+      logSum += math.log(pmax < 1e-12 ? 1e-12 : pmax);
     }
+    final geo = math.exp(logSum / outCount);
     final ds = [for (final i in _headOrder) heads[i]];
     final sys = ds[0] * 100 + ds[1] * 10 + ds[2];
     final dia = ds[3] * 10 + ds[4];
@@ -274,6 +316,7 @@ class LcdOnnxPipeline {
     if (sys < 60 || sys > 260 || dia < 30 || dia > 160) return null;
     if (pulse < 30 || pulse > 220) return null;
     if (sys <= dia) return null;
-    return (sys, dia, pulse, conf);
+    // (收缩压, 舒张压, 脉搏, 置信度乘积, 置信度几何均值)
+    return (sys, dia, pulse, conf, geo);
   }
 }

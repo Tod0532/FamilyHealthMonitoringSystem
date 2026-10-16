@@ -96,13 +96,21 @@ class SevenSegmentOcrService {
         if (await LcdOnnxPipeline.init()) {
           final r = LcdOnnxPipeline.recognize(image);
           if (r != null && _isValidBloodPressure(r.$1, r.$2)) {
+            // 带上可信度信号：识别**成功**不等于识别**可信**。
+            // 读错时给的是"看着合理"的错值（138/88 → 133/88），用户看不出来，
+            // 所以要靠 TTA 一致度等信号判断是否提示"请核对"。
+            final quality = LcdOnnxPipeline.lastQuality;
             _log('✓ 新链路识别成功: ${r.$1}/${r.$2}, ${r.$3} bpm');
             _log('  ${LcdOnnxPipeline.lastTrace}');
+            if (quality != null && quality.needsReview) {
+              _log('  ⚠ 可信度偏低，将提示用户核对: ${quality.reviewReason}');
+            }
             return OcrResult(
               systolic: r.$1.toDouble(),
               diastolic: r.$2.toDouble(),
               heartRate: r.$3.toDouble(),
               rawText: '${r.$1}/${r.$2} mmHg, ${r.$3} bpm',
+              quality: quality,
             );
           }
           _log('新链路未通过校验: ${LcdOnnxPipeline.lastTrace}');

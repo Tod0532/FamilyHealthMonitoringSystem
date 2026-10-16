@@ -41,6 +41,14 @@ class _HealthDataEntryPageState extends State<HealthDataEntryPage> {
   final _systolicController = TextEditingController();
   final _diastolicController = TextEditingController();
 
+  /// 有一次 OCR 结果可信度偏低，等用户核对确认
+  ///
+  /// 置位期间**不允许保存** —— 否则"提示"就只是装饰：错值照样被存进去。
+  bool _reviewPending = false;
+
+  /// 提示条上的原因文案（来自 OcrQuality.reviewReason）
+  String _reviewNote = '';
+
   @override
   void initState() {
     super.initState();
@@ -130,6 +138,7 @@ class _HealthDataEntryPageState extends State<HealthDataEntryPage> {
 
               // 数据输入
               _buildSectionTitle('数据录入'),
+              if (_reviewPending) _buildReviewBanner(),
               Obx(() => _buildDataInput(_selectedType.value)),
               SizedBox(height: 16.h),
 
@@ -455,6 +464,8 @@ class _HealthDataEntryPageState extends State<HealthDataEntryPage> {
           TextFormField(
             controller: controller,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            // 用户自己改了数值 = 已经核对过，撤掉"请核对"提示
+            onChanged: (_) => _clearReviewIfEdited(),
             decoration: InputDecoration(
               hintText: hint,
               suffixText: unit,
@@ -616,6 +627,19 @@ class _HealthDataEntryPageState extends State<HealthDataEntryPage> {
       return;
     }
 
+    // 低可信度的识别结果必须先人工核对，否则不给存 ——
+    // 只提示不拦，等于把"看着合理"的错值直接写进健康档案
+    if (_reviewPending) {
+      Get.snackbar(
+        '请先核对识别结果',
+        '这张照片的识别可信度偏低，请对照血压计屏幕确认数值无误后再保存',
+        snackPosition: SnackPosition.TOP,
+        backgroundColor: Colors.orange.shade100,
+        duration: const Duration(seconds: 4),
+      );
+      return;
+    }
+
     if (_selectedMember.value == null) {
       Get.snackbar(
         '提示',
@@ -707,6 +731,7 @@ class _HealthDataEntryPageState extends State<HealthDataEntryPage> {
     if (result.heartRate != null) {
       _value1Controller.text = result.heartRate!.toInt().toString();
     }
+    _applyOcrQuality(result);
   }
 
   /// 处理心率OCR识别结果
@@ -714,13 +739,97 @@ class _HealthDataEntryPageState extends State<HealthDataEntryPage> {
     if (result.heartRate != null) {
       _value1Controller.text = result.heartRate!.toInt().toString();
     }
-    // 如果同时识别到血压，也填充到输入框（方便后续切换类型）
+    // 如果同时识别到血压，也填到输入框（方便后续切换类型）
     if (result.systolic != null) {
       _systolicController.text = result.systolic!.toInt().toString();
     }
     if (result.diastolic != null) {
       _diastolicController.text = result.diastolic!.toInt().toString();
     }
+    _applyOcrQuality(result);
+  }
+
+  /// 识别可信度偏低时挂上"请核对"提示
+  ///
+  /// 为什么要这一步：血压计**读错**的时候给的是"看着很合理"的错值
+  /// （真值 138/88 被读成 133/88），用户看不出来就直接存了 —— 这比识别失败更危险。
+  /// 判据不是拍脑袋定的：见 `lib/core/ocr/models/ocr_quality.dart` 与标定脚本
+  /// `tool/confidence_calibration.py`（60 张真实照片跑完整 81 组 TTA）。
+  void _applyOcrQuality(OcrResult result) {
+    if (!mounted) return;
+    setState(() {
+      _reviewPending = result.needsReview;
+      _reviewNote = result.quality?.reviewReason ?? '';
+    });
+  }
+
+  /// 用户手动改过数值 = 已经自己核对过了，撤掉提示（避免反复打扰）
+  void _clearReviewIfEdited() {
+    if (!_reviewPending) return;
+    setState(() {
+      _reviewPending = false;
+      _reviewNote = '';
+    });
+  }
+
+  /// "请核对"提示条
+  Widget _buildReviewBanner() {
+    const warn = Color(0xFFEF6C00);
+    return Container(
+      width: double.infinity,
+      margin: EdgeInsets.only(bottom: 12.h),
+      padding: EdgeInsets.all(14.w),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF3E0),
+        border: Border.all(color: const Color(0xFFFFB74D)),
+        borderRadius: BorderRadius.circular(8.r),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.error_outline, color: warn, size: 20.sp),
+              SizedBox(width: 8.w),
+              Text(
+                '识别结果请核对',
+                style: TextStyle(
+                  fontSize: 15.sp,
+                  fontWeight: FontWeight.bold,
+                  color: warn,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 6.h),
+          if (_reviewNote.isNotEmpty)
+            Text(
+              _reviewNote,
+              style: TextStyle(fontSize: 12.sp, color: Colors.grey.shade800),
+            ),
+          SizedBox(height: 4.h),
+          Text(
+            '血压计读数识别错时，给出的往往也是"看起来很正常"的数字。'
+            '请对照血压计屏幕确认后再保存。',
+            style: TextStyle(fontSize: 12.sp, color: Colors.grey.shade700),
+          ),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton.icon(
+              onPressed: () {
+                setState(() {
+                  _reviewPending = false;
+                  _reviewNote = '';
+                });
+              },
+              icon: Icon(Icons.check_circle_outline, size: 18.sp),
+              label: Text('我已核对，数值正确', style: TextStyle(fontSize: 13.sp)),
+              style: TextButton.styleFrom(foregroundColor: warn),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   /// 保存数据
