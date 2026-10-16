@@ -196,6 +196,18 @@ python tool/eval_multihead.py                   # 数字模型 + 反推输出头
 </ul>
 <p>真机调试环境：手机 <code>SM02G4061983569</code>，需 <code>adb reverse tcp:8080 tcp:8080</code> 才能连本地后端。 adb 路径：<code>%LOCALAPPDATA%\Android\Sdk\platform-tools\adb.exe</code></p>
 <p><strong>手机连不上时</strong>：先 <code>adb kill-server &amp;&amp; adb start-server</code> 触发授权弹窗， 再让用户在手机上点「允许 USB 调试」（本次实测这样即可恢复）。</p>
+<hr>
+<h2 id="七会话之间怎么对话重要">七、会话之间怎么"对话"（重要）</h2>
+<p>会话之间<strong>不能直接通信</strong>，但可以通过工作区文件<strong>异步传递</strong>。本项目用三层：</p>
+<table>
+<thead><tr><th>层</th><th>文件</th><th>作用</th><th>谁维护</th></tr></thead>
+<tbody>
+<tr><td>1. 自动层</td><td><strong><code>CLAUDE.md</code></strong></td><td><strong>每个新会话启动时自动加载</strong>（无需用户贴任何开场白）。内含当前进展速览 + 三条最贵的教训 + 真机调试要点</td><td>每次收尾时更新「当前进展」表</td></tr>
+<tr><td>2. 详细层</td><td><strong><code>docs/交接说明.md</code></strong>（本文）</td><td>完整现状、下一步、13 个坑、常用命令、已装环境</td><td>每次收尾时更新第二/三节</td></tr>
+<tr><td>3. 时间线层</td><td><code>git log</code> + <code>docs/需求分析与方案计划.md</code> 的执行进展章节</td><td>按时间的改动记录与理由</td><td>每次提交时</td></tr>
+</tbody></table>
+<p><strong>收尾约定（请每轮照做）</strong>：把「下一步做什么、卡在哪、新增了什么坑」 写进上面第 1、2 层，然后提交。这样下一个会话不需要问"之前做到哪了"。</p>
+<p><strong>给用户的最省事用法</strong>：新会话里只需说一句 <code>读 CLAUDE.md 与 docs/交接说明.md，按「下一步」继续</code> —— 即使不说，<code>CLAUDE.md</code> 也会被自动加载。</p>
 </div>
 <footer>本页由 scripts/md2html.py 从 Markdown 生成 · 图表需联网加载 mermaid</footer>
 
