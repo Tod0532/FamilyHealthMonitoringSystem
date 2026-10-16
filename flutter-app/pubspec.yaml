@@ -124,7 +124,7 @@ flutter:
     # ONNX 定位模型：新链路 lcd_onnx_pipeline.dart 需要它。
     # 注意：这一行曾被注释掉（当时 Dart 侧确实不加载它），导致 APK 里没有该文件，
     # 真机上表现为"新链路模型未就绪"、只能回退旧链路。
-    - assets/models/lcd_detector.onnx
+    - assets/models/lcd_detector.tflite
     #
     # 以下资源刻意不打包（原先用目录声明时被全量打进 APK，约 18MB 无效体积）：
     #   assets/models/lcd_detector.pt         训练产物，App 不加载（YOLOv8n 权重）
