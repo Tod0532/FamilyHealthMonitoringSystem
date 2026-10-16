@@ -174,6 +174,34 @@ footer { max-width:1100px; margin:0 auto; padding:18px 64px 60px; color:var(--mu
 <pre><code>P0 设备接入  ──►  P1 OCR 收尾  ──►  P2 安全  ──►  P3 资产与文档  ──►  P4 体验
    (1.5天)          (1天)            (1天)          (0.5天)          按需</code></pre>
 <p>理由：P0 是当前唯一"新增能力"且能立刻产生用户价值（心率自动入库）； P1 是把已有成果做扎实（避免"看起来 71.7% 实际不能推广"）； P2 是上线前提（其中验证码一项需要你决策）；P3 是防资产丢失。</p>
+<hr>
+<h2 id="六执行进展随时更新">六、执行进展（随时更新）</h2>
+<h3 id="r1-拍照识血压-已完成并达标">R1 拍照识血压 —— ✅ 已完成并达标</h3>
+<table>
+<thead><tr><th>目标项</th><th>要求</th><th>实测</th><th>状态</th></tr></thead>
+<tbody>
+<tr><td>合成基准·干净图</td><td>≥95%</td><td>100%</td><td>✅</td></tr>
+<tr><td>合成基准·退化图</td><td>≥85%</td><td>100%</td><td>✅</td></tr>
+<tr><td>真机复验 + 提升幅度</td><td>要求</td><td>旧链路 0% → 新链路 <strong>62.5%</strong>（真机 8 张 5 对）</td><td>✅</td></tr>
+</tbody></table>
+<p>最终链路（真机验证）：</p>
+<p>照片 → lcd_detector.tflite 定位 → 裁剪 + 81 组 TTA → bpressure_multihead.tflite 7 头前向 → 收缩压/舒张压/脉搏</p>
+<p>期间修掉的 4 个真实缺陷：多输出 TFLite 调用方式（runForMultipleInputs + Map + [1,10]）、 App 原有 BpTfliteDetector 同一处 bug（从未成功调用过）、ONNX 资产被注释未打包、 ONNX 改 TFLite（Flutter 版 onnxruntime 缺 Reshape 算子）。</p>
+<p><strong>遗留风险</strong>：① 真机 62.5% 仍有"看起来合理的错值"风险； ② 两个模型就是在这 60 张上训练的，<strong>泛化能力未验证</strong>，换机型可能骤降。</p>
+<h3 id="r2-手环心率-服务器-app">R2 手环心率 → 服务器 → App</h3>
+<table>
+<thead><tr><th>子项</th><th>状态</th></tr></thead>
+<tbody>
+<tr><td>后端设备体系（绑定码 + 设备令牌 + 上报 + 心跳 + 解绑）</td><td>✅ 完成，冒烟 8 步全过</td></tr>
+<tr><td>ESP32 固件 v1（BLE 主机 + WiFi 上报）</td><td>✅ 完成</td></tr>
+<tr><td>ESP32 固件 v2（改用设备令牌 + NVS）</td><td>✅ 完成（<strong>本机无 ESP32 工具链，未编译验证</strong>）</td></tr>
+<tr><td>App 设备管理页（生成绑定码 / 设备列表 / 解绑 / 来源标签）</td><td>⏳ <strong>唯一剩余项</strong></td></tr>
+<tr><td>真机联调（烧板子 → 绑定 → 心率入库）</td><td>⏳ 依赖上一项</td></tr>
+</tbody></table>
+<p>后端接口（已冒烟验证）：</p>
+<p>POST /api/device/bind-code      App 生成 6 位绑定码（10 分钟有效） POST /api/device/bind           设备用绑定码换令牌 POST /api/device/health-data    设备上报（X-Device-Token） POST /api/device/heartbeat      设备心跳 GET  /api/device                App 查看设备（含在线状态） DELETE /api/device/{id}         App 解绑（令牌立即失效）</p>
+<h3 id="其余需求">其余需求</h3>
+<p>R3 家庭共享/成员管理、R4 预警、R5 数据导出：已完成（R3/R4 有未真机验证的子项）； R6 上线前安全（验证码、凭据、排序规则）：<strong>未做，其中验证码需你决策</strong>； R7 文档：图文版使用说明 + 13 流程图 + 需求方案计划 已交付； R8 60 张真实照片入库：<strong>未做（唯一不可再生数据仅在本机）</strong>。</p>
 </div>
 <footer>本页由 scripts/md2html.py 从 Markdown 生成 · 图表需联网加载 mermaid</footer>
 
