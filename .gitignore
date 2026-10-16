@@ -113,3 +113,7 @@ flutter-app/tool/ocr_bench_photo_data/
 flutter-app/converted_lcd/
 # OCR 真机调试的本地产物（诊断图，不入库）
 docs/ocr-debug/
+
+# 真实血压计照片与标注：唯一且不可再生的数据资产，必须入库（照片走 git-lfs）
+!flutter-app/dataset/images/*.jpg
+!flutter-app/dataset/labels_screen/*.json
