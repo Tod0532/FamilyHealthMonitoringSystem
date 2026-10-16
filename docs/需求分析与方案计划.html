@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>家庭健康中心 · 需求分析与方案计划</title>
+<style>
+:root { --fg:#1f2328; --muted:#656d76; --line:#d8dee4; --brand:#4caf50; --bg:#fff; --code:#f6f8fa; }
+* { box-sizing: border-box; }
+body { margin:0; background:#f3f5f7; color:var(--fg);
+  font-family:"Microsoft YaHei","PingFang SC","Helvetica Neue",Arial,sans-serif;
+  line-height:1.75; font-size:15px; }
+.page { max-width:1100px; margin:0 auto; background:var(--bg); padding:56px 64px 96px;
+  box-shadow:0 2px 24px rgba(0,0,0,.06); }
+h1 { font-size:30px; border-bottom:3px solid var(--brand); padding-bottom:14px; margin-top:0; }
+h2 { font-size:23px; margin-top:52px; padding-left:12px; border-left:6px solid var(--brand); }
+h3 { font-size:18px; margin-top:34px; color:#2a2f36; }
+h4 { font-size:16px; margin-top:24px; color:#3a4048; }
+p { margin:12px 0; }
+a { color:#17803d; text-decoration:none; }
+a:hover { text-decoration:underline; }
+img { max-width:100%; border:1px solid var(--line); border-radius:8px; margin:10px 0;
+  box-shadow:0 1px 6px rgba(0,0,0,.05); background:#fff; }
+table { border-collapse:collapse; width:100%; margin:16px 0; font-size:14px; }
+th,td { border:1px solid var(--line); padding:8px 12px; text-align:left; vertical-align:top; }
+th { background:#eef6ef; font-weight:600; }
+tr:nth-child(even) td { background:#fafbfc; }
+code { background:var(--code); padding:2px 6px; border-radius:4px;
+  font-family:Consolas,"Courier New",monospace; font-size:13px; }
+pre { background:var(--code); border:1px solid var(--line); border-radius:8px;
+  padding:14px 16px; overflow:auto; }
+pre code { background:none; padding:0; }
+figure.diagram { margin:22px 0; text-align:center; }
+figure.diagram img { border:1px solid var(--line); border-radius:8px; }
+pre.mermaid { background:#fff; border:1px dashed #cfd8dc; text-align:center; padding:18px; }
+blockquote { margin:14px 0; padding:10px 16px; border-left:4px solid var(--brand);
+  background:#f2f9f3; color:#2f3a33; border-radius:0 6px 6px 0; }
+blockquote p { margin:6px 0; }
+hr { border:none; border-top:1px solid var(--line); margin:36px 0; }
+ul,ol { padding-left:26px; }
+li { margin:5px 0; }
+.toc-note { color:var(--muted); font-size:13px; }
+footer { max-width:1100px; margin:0 auto; padding:18px 64px 60px; color:var(--muted); font-size:13px; }
+@media print { body{background:#fff;} .page{box-shadow:none;padding:0;} pre.mermaid{border:none;} }
+</style>
+</head>
+<body>
+<div class="page">
+<h1 id="需求分析与实施方案当前阶段">需求分析与实施方案（当前阶段）</h1>
+<blockquote><p>本文把项目当前的真实需求收敛成可验收的条目，给出技术方案与分阶段计划。</p><p>每一条都标注<strong>已验证的事实</strong>与<strong>缺口</strong>，避免"看起来完成了"。</p></blockquote>
+<hr>
+<h2 id="一需求梳理">一、需求梳理</h2>
+<h3 id="11-需求清单">1.1 需求清单</h3>
+<table>
+<thead><tr><th>编号</th><th>需求</th><th>已实现</th><th>缺口（真正待办）</th></tr></thead>
+<tbody>
+<tr><td><strong>R1</strong></td><td><strong>拍照自动读血压计数值</strong></td><td>端到端链路跑通：ONNX 定位 + TFLite 多头数字模型，60 张真实照片实测<strong>三项全对 71.7%</strong>（旧链路 0%）；已接入 App；APK 已构建</td><td>① 真机验证未完成（手机未授权 USB 调试）&lt;br/&gt;② 准确率偏低（71.7%），可用 60 张微调提到 85%+&lt;br/&gt;③ <strong>泛化能力未验证</strong>：两个模型都在这 60 张上训练，71.7% 属拟合度而非泛化</td></tr>
+<tr><td><strong>R2</strong></td><td><strong>手环心率 → 板子 → 服务器 → App</strong></td><td>板子主控确认为 <strong>ESP32-S3-WROOM-1</strong>（BLE+WiFi）；已用 nRF Connect 确认手环暴露标准心率服务 <strong>0x180D</strong>；固件已交付（BLE 主机 + WiFi 上报 + 断网缓存）</td><td>① 后端缺<strong>设备令牌 + 绑定</strong>接口（现在用账号口令，不适合量产）&lt;br/&gt;② App 缺设备管理页与来源标识&lt;br/&gt;③ 现场烧写联调未做</td></tr>
+<tr><td><strong>R3</strong></td><td>家庭共享与成员管理</td><td>已完成并修复过关键缺陷（成员增删改假实现、权限判定只看全局角色、401 语义错误）</td><td>扫码加入家庭、退出家庭 UI 未真机验证</td></tr>
+<tr><td><strong>R4</strong></td><td>健康预警</td><td>规则配置 + 记录列表 + 已读/已处理 已完成</td><td>测量提醒未验证；<strong>没有任何真实推送</strong>（只有 App 内列表）</td></tr>
+<tr><td><strong>R5</strong></td><td>数据导出</td><td>CSV / JSON / Excel + 保存/分享/复制 已完成</td><td>—</td></tr>
+<tr><td><strong>R6</strong></td><td>上线前安全</td><td>未做</td><td>① 注册验证码<strong>完全不校验</strong>（任意 6 位可注册任意手机号）&lt;br/&gt;② 数据库口令、文档中含明文凭据且已入库&lt;br/&gt;③ <code>user</code> 表排序规则与其它表不一致（有 <code>Illegal mix of collations</code> 隐患）</td></tr>
+<tr><td><strong>R7</strong></td><td>文档与交付</td><td>图文版使用说明 + 13 个流程图 + HTML 版 + README 已交付</td><td>需补"硬件接入"章节；OCR 基准/端到端脚本未纳入回归</td></tr>
+<tr><td><strong>R8</strong></td><td>数据资产安全</td><td>60 张真实照片 + 63 个标注<strong>只在本地</strong>，未入库</td><td>换机器克隆即丢失（336 MB 唯一原始数据）</td></tr>
+</tbody></table>
+<h3 id="12-需求的本质归纳">1.2 需求的本质归纳</h3>
+<p>散落的诉求其实收敛为三件事：</p>
+<ol>
+<li><strong>数据来源自动化</strong>（R1 拍照、R2 手环）—— 减少手工录入，这是产品的核心价值</li>
+<li><strong>数据可信与安全</strong>（R6、R8）—— 上线前提</li>
+<li><strong>可交付与可维护</strong>（R7）—— 让后续接手的人能改、能验</li>
+</ol>
+<hr>
+<h2 id="二方案设计">二、方案设计</h2>
+<h3 id="21-r2设备接入体系本次重点">2.1 R2：设备接入体系（本次重点）</h3>
+<p><strong>问题</strong>：现有固件用"账号+口令登录"向后端写数据。板子一旦被拆开，账号口令就泄露， 且令牌权限过大（能改资料、能看全家数据）。不适合量产。</p>
+<p><strong>方案：一次性绑定码 → 设备令牌（最小权限）</strong></p>
+<figure class="diagram"><img alt="流程图 1" src="images/diagram-01-features.png"></figure>
+<p><strong>接口设计</strong></p>
+<table>
+<thead><tr><th>接口</th><th>鉴权</th><th>说明</th></tr></thead>
+<tbody>
+<tr><td><code>POST /api/device/bind</code></td><td>绑定码</td><td>入参 <code>bindCode</code>、<code>deviceSn</code>、<code>deviceName</code>；返回 <code>deviceToken</code>、<code>memberId</code></td></tr>
+<tr><td><code>POST /api/device/health-data</code></td><td>设备令牌</td><td>入参 <code>dataType</code>、<code>value1</code>、<code>value2</code>、<code>measureTime</code>；<strong>只能写</strong>，不能读</td></tr>
+<tr><td><code>POST /api/device/heartbeat</code></td><td>设备令牌</td><td>上报在线状态、信号强度、电池（用于 App 显示设备是否在线）</td></tr>
+<tr><td><code>GET/DELETE /api/device</code></td><td>用户 JWT</td><td>App 查已绑定设备 / 解绑（解绑即令牌失效）</td></tr>
+<tr><td><code>POST /api/device/bind-code</code></td><td>用户 JWT</td><td>App 生成绑定码（绑定到指定成员）</td></tr>
+</tbody></table>
+<p><strong>数据模型</strong></p>
+<pre><code>device
+  id, user_id, member_id, device_sn(唯一), device_name, device_type
+  token_hash          -- 只存哈希，防拖库
+  bind_code, bind_code_expire
+  last_seen, status, firmware_version, created_at</code></pre>
+<p><code>health_data</code> 已有 <code>data_source</code> 字段：设备写入时置 <code>device</code>，并可选加 <code>device_id</code>。</p>
+<p><strong>App 侧</strong></p>
+<ul>
+<li>我的 →「设备管理」：生成绑定码（大字 + 二维码）、已绑定设备列表（在线状态 / 最近上报时间 / 解绑）</li>
+<li>健康数据列表：设备来源的记录加"设备"标签，与手工录入区分</li>
+</ul>
+<p><strong>固件侧（v2）</strong></p>
+<ul>
+<li>首次上电：BLE 配网（或过渡期保留硬编码 WiFi）+ 输入绑定码 → 换令牌 → 存 NVS</li>
+<li>上报改用 <code>X-Device-Token</code>，不再使用账号口令</li>
+<li>断网缓存持久化到 NVS（现在只在内存，断电即丢）</li>
+</ul>
+<h3 id="22-r1识别准确率与真机验证">2.2 R1：识别准确率与真机验证</h3>
+<p><strong>现状</strong>：链路正确（用仓库已有模型），但准确率与泛化都有缺口。</p>
+<table>
+<thead><tr><th>步骤</th><th>做法</th><th>预期</th></tr></thead>
+<tbody>
+<tr><td>真机验证</td><td>装新 APK（已构建），读 App 日志确认走新链路</td><td>确认端侧可用</td></tr>
+<tr><td>提准确率</td><td>用 60 张真实照片 + <strong>真实退化增强</strong>（±8° 旋转、缩放、亮度/对比、模拟反光与模糊、JPEG）微调 <code>bpressure_multihead.tflite</code></td><td>目标 ≥85%</td></tr>
+<tr><td>诚实评估</td><td>45 张微调 / <strong>15 张只做验证</strong>；报告验证集数字而非全量</td><td>结论可信</td></tr>
+<tr><td>泛化验证</td><td>需要<strong>不同机型</strong>的新照片（你手边若有别的血压计，拍 10~20 张价值远大于同机型再拍 100 张）</td><td>才知道能否推广</td></tr>
+</tbody></table>
+<h3 id="23-r6上线前安全必须做含一个需你决策的点">2.3 R6：上线前安全（必须做，含一个需你决策的点）</h3>
+<table>
+<thead><tr><th>项</th><th>方案</th><th>决策点</th></tr></thead>
+<tbody>
+<tr><td>注册验证码</td><td>A. 接入短信服务（需阿里云短信密钥与签名）&lt;br/&gt;B. 明确改为免验证注册，去掉验证码输入框，避免误导用户</td><td><strong>需要你选 A 或 B</strong></td></tr>
+<tr><td>凭据清理</td><td>从代码、README、systemd 单元中移除明文口令/密钥，改读环境变量；清理 git 历史</td><td>需确认是否接受改写历史</td></tr>
+<tr><td>排序规则</td><td><code>ALTER TABLE user CONVERT TO utf8mb4_unicode_ci</code>（重建表）</td><td>建议低峰期 + 先备份</td></tr>
+</tbody></table>
+<h3 id="24-r8数据资产">2.4 R8：数据资产</h3>
+<p>60 张真实照片 + 标注是<strong>唯一且不可再生的</strong>（原始 12MP，336 MB），必须入库：</p>
+<ul>
+<li>方案 A：<strong>Git LFS</strong>（原图无损，仓库不膨胀）—— 推荐</li>
+<li>方案 B：压缩入库（长边 1600 + JPEG 85，约 20 MB，损失原图精度，影响后续定位训练）</li>
+<li>方案 C：只入库标注 + 清单 + 校验和（照片仍留本地，接受风险）</li>
+</ul>
+<hr>
+<h2 id="三分阶段计划">三、分阶段计划</h2>
+<h3 id="p0-打通手环-服务器-app预计-15-天">P0 · 打通"手环 → 服务器 → App"（预计 1.5 天）</h3>
+<table>
+<thead><tr><th>任务</th><th>产出</th><th>验收标准</th></tr></thead>
+<tbody>
+<tr><td>后端设备体系</td><td><code>device</code> 表 + 5 个接口 + 设备令牌鉴权</td><td>用 curl 完成"绑码 → 换令牌 → 上报"全流程</td></tr>
+<tr><td>App 设备管理</td><td>绑定码页 / 设备列表 / 解绑 / 来源标签</td><td>生成的绑定码能被板子绑定成功</td></tr>
+<tr><td>固件 v2</td><td>绑定流程 + 令牌存 NVS + 设备上报 + 缓存持久化</td><td>板子上电 → 自动绑定 → 心率出现在指定成员下且标为"设备"</td></tr>
+</tbody></table>
+<p><strong>P0 完成即达成</strong>：心率数据从手环到 App 全自动，不依赖手机常开、不把账号口令放进硬件。</p>
+<h3 id="p1-ocr-收尾预计-1-天">P1 · OCR 收尾（预计 1 天）</h3>
+<ol>
+<li>真机验证（前置条件：手机上点"允许 USB 调试"）</li>
+<li>用 60 张做真实退化增强 → 微调多头模型 → 在 <strong>15 张 holdout</strong> 上评估</li>
+<li>把基准脚本（<code>eval_lcd_detector.py</code> / <code>eval_multihead.py</code> / <code>e2e_pipeline.py</code>）写成一条命令的回归</li>
+</ol>
+<p><strong>验收</strong>：holdout 上三项全对 ≥85%；回归脚本可一键复现。</p>
+<h3 id="p2-上线前安全预计-1-天含你的决策">P2 · 上线前安全（预计 1 天，含你的决策）</h3>
+<p>验证码方案（接短信 / 明确免验证）→ 凭据清理 → 排序规则统一 → 重新部署并冒烟。</p>
+<h3 id="p3-资产与文档预计-05-天">P3 · 资产与文档（预计 0.5 天）</h3>
+<p>真实照片入库（LFS 或压缩）→ 使用说明补"硬件接入"章节（含配网/绑定/排查流程图）→ 更新 README。</p>
+<h3 id="p4-完整性与体验可选按需排">P4 · 完整性与体验（可选，按需排）</h3>
+<ul>
+<li>预警<strong>真实推送</strong>（当前只有 App 内列表）：接入极光/个推，或服务端 + 手机通知</li>
+<li>未验证功能补齐：扫码加入家庭、测量提醒触发</li>
+<li>设备侧扩展：从手环健康服务里再订阅血氧/步数</li>
+</ul>
+<hr>
+<h2 id="四风险与依赖">四、风险与依赖</h2>
+<table>
+<thead><tr><th>风险</th><th>影响</th><th>应对</th></tr></thead>
+<tbody>
+<tr><td>手环<strong>只允许一个主机连接</strong></td><td>板子连着时 App 连不上手环</td><td>采集固定交给板子，App 只读服务器数据（当前方案已规避）</td></tr>
+<tr><td>ESP32 <strong>仅支持 2.4GHz WiFi</strong></td><td>家里若只有 5GHz 连不上</td><td>固件说明已标注；必要时加 BLE 配网提示</td></tr>
+<tr><td>设备令牌泄露</td><td>他人可伪造健康数据</td><td>令牌只存哈希、仅允许写、App 可随时解绑</td></tr>
+<tr><td>模型<strong>过拟合这 60 张</strong></td><td>换机型准确率骤降</td><td>引入不同机型的少量新照片做验证；增强训练</td></tr>
+<tr><td>手机 USB 授权</td><td>OCR 真机验证与部分联调阻塞</td><td>一次性人工确认</td></tr>
+<tr><td>数据只在本机</td><td>换设备即丢失 60 张原始数据</td><td>P3 入库（建议 LFS）</td></tr>
+</tbody></table>
+<hr>
+<h2 id="五建议的执行顺序">五、建议的执行顺序</h2>
+<pre><code>P0 设备接入  ──►  P1 OCR 收尾  ──►  P2 安全  ──►  P3 资产与文档  ──►  P4 体验
+   (1.5天)          (1天)            (1天)          (0.5天)          按需</code></pre>
+<p>理由：P0 是当前唯一"新增能力"且能立刻产生用户价值（心率自动入库）； P1 是把已有成果做扎实（避免"看起来 71.7% 实际不能推广"）； P2 是上线前提（其中验证码一项需要你决策）；P3 是防资产丢失。</p>
+</div>
+<footer>本页由 scripts/md2html.py 从 Markdown 生成 · 图表需联网加载 mermaid</footer>
+
+<script type="module">
+  try {
+    const { default: mermaid } = await import('https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs');
+    mermaid.initialize({ startOnLoad: true, theme: 'default', flowchart: { htmlLabels: true } });
+  } catch (e) {
+    document.querySelectorAll('pre.mermaid').forEach(function (el) {
+      el.insertAdjacentHTML('afterbegin',
+        '<div style="color:#b26a00;font-size:13px;margin-bottom:8px">' +
+        '（离线环境无法加载 mermaid，下面是流程图源码）</div>');
+    });
+  }
+</script>
+
+</body>
+</html>
