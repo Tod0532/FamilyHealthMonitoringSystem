@@ -177,6 +177,25 @@ python tool/eval_multihead.py                   # 数字模型 + 反推输出头
 <tr><td>烧写 ESP32</td><td>需真实硬件；固件未编译验证过</td></tr>
 <tr><td>低置信度 OCR 复核提示</td><td>当前读错时给的是"看似合理"的错值，建议加提示</td></tr>
 </tbody></table>
+<hr>
+<h2 id="六本机环境已就绪不在仓库里新会话看不到故记录在此">六、本机环境已就绪（不在仓库里，新会话看不到，故记录在此）</h2>
+<p>以下工具/依赖<strong>已经装好</strong>，直接可用，不必重装：</p>
+<table>
+<thead><tr><th>用途</th><th>已安装</th></tr></thead>
+<tbody>
+<tr><td>ONNX 推理与转换</td><td><code>onnxruntime</code> 1.31、<code>onnx</code> 1.20、<code>onnxsim</code>、<strong><code>onnx2tf</code> 2.6.9 + <code>tensorflow-cpu</code> 2.19.1</strong></td></tr>
+<tr><td>其他 Python</td><td><code>numpy</code>、<code>Pillow</code>、<code>rapidocr-onnxruntime</code>（看图里文字用，当前模型不能读图）</td></tr>
+<tr><td>流程图渲染</td><td><code>@mermaid-js/mermaid-cli</code>（装在 <code>%TEMP%\mmdcheck</code>，用于把 <code>docs/diagrams/*.mmd</code> 渲染成 PNG）</td></tr>
+<tr><td>版本管理</td><td>git-lfs 3.7.1（已 <code>git lfs install</code>，60 张照片走 LFS）</td></tr>
+<tr><td>Java</td><td>JDK 17 于 <code>C:\Program Files\Eclipse Adoptium\jdk-17.0.17.10-hotspot</code>（必须 17，非 21）</td></tr>
+</tbody></table>
+<p><strong>未安装</strong>（用到时才装）：</p>
+<ul>
+<li>ESP32 工具链（PlatformIO / Arduino ESP32）—— 固件因此<strong>从未编译验证过</strong></li>
+<li>Android SDK 之外的设备工具（<code>adb</code> 已有，路径见下）</li>
+</ul>
+<p>真机调试环境：手机 <code>SM02G4061983569</code>，需 <code>adb reverse tcp:8080 tcp:8080</code> 才能连本地后端。 adb 路径：<code>%LOCALAPPDATA%\Android\Sdk\platform-tools\adb.exe</code></p>
+<p><strong>手机连不上时</strong>：先 <code>adb kill-server &amp;&amp; adb start-server</code> 触发授权弹窗， 再让用户在手机上点「允许 USB 调试」（本次实测这样即可恢复）。</p>
 </div>
 <footer>本页由 scripts/md2html.py 从 Markdown 生成 · 图表需联网加载 mermaid</footer>
 
