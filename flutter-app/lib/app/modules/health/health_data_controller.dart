@@ -761,6 +761,9 @@ class HealthDataController extends GetxController {
               recordTime: _parseDateTime(item['measureTime']),
               notes: item['notes']?.toString(),
               createTime: _parseDateTime(item['createTime']),
+              // 来源字段必须一并带过来，否则列表无法把设备自动采集与手工录入分开
+              dataSource: item['dataSource']?.toString(),
+              deviceName: item['deviceName']?.toString(),
             );
 
             // 验证数据有效性

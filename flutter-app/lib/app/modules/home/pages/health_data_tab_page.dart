@@ -885,6 +885,8 @@ class _HealthDataTabPageState extends State<HealthDataTabPage> {
                     ),
                   ),
                   const Spacer(),
+                  // 设备自动采集的记录标注来源，避免与手工录入混淆
+                  if (data.isFromDevice) _buildSourceBadge(data.deviceName),
                   _buildLevelBadge(data.level),
                 ],
               ),
@@ -1032,6 +1034,30 @@ class _HealthDataTabPageState extends State<HealthDataTabPage> {
   }
 
   /// 格式化显示数值
+  /// 设备来源徽标：手工录入与硬件自动上报在列表里要一眼能分
+  Widget _buildSourceBadge(String? deviceName) {
+    return Container(
+      margin: EdgeInsets.only(right: 6.w),
+      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 2.h),
+      decoration: BoxDecoration(
+        color: Colors.blue.shade50,
+        borderRadius: BorderRadius.circular(10.r),
+        border: Border.all(color: Colors.blue.shade200),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.watch, size: 11.sp, color: Colors.blue.shade700),
+          SizedBox(width: 3.w),
+          Text(
+            '设备',
+            style: TextStyle(fontSize: 11.sp, color: Colors.blue.shade700),
+          ),
+        ],
+      ),
+    );
+  }
+
   String _formatDisplayValue(HealthData data) {
     switch (data.type) {
       case HealthDataType.bloodPressure:
