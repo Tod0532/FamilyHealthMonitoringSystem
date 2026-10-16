@@ -107,7 +107,11 @@ class BpTfliteDetector {
       }
 
       // 执行推理
-      _interpreter!.run(input, outputs);
+      // 多输出模型必须用 runForMultipleInputs（run() 只支持单输出，
+    // 会把 7 个头折叠成一个输出，导致 shape mismatch 而恒失败——这是既有 bug）。
+    _interpreter!.runForMultipleInputs([input], {
+      for (int i = 0; i < outputs.length; i++) i: outputs[i],
+    });
 
       // 解码输出
       return _decodeOutputs(outputs);

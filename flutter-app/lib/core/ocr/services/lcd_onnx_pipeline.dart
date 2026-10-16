@@ -229,18 +229,20 @@ class LcdOnnxPipeline {
     }
 
     final outCount = interp.getOutputTensors().length;
-    // 关键写法（与 App 里已跑通的 bp_tflite_detector 保持一致）：
-    //   · 每个输出按 [10] 分配（**不要带 batch 维 [1,10]**）
-    //   · 直接把 List 传给 run，**不要包成 Map{index: value}**
-    // 否则 tflite_flutter 会把 7 个输出当成一个 [7,10] 的输出，报
-    // "interpreter returned output of shape: [1,10] while shape provided is: [7,10]"
-    // 而这类异常被 catch 吞掉后只表现为"各尺度均无可信读数"，极难定位（真机踩到两次）。
-    final outputs = <List<double>>[];
+    // 多输出模型的正确调用方式（真机反复试出来的，三条缺一不可）：
+    //   1. 用 runForMultipleInputs —— run() 会把输出包成 {0: output}，
+    //      7 个头被当成一个 [7,10] 输出而失败
+    //   2. 输出用 Map<int, Object> 按头索引传
+    //   3. 每个头的形状必须是 **[1,10]**（带 batch 维）；写成 [10] 会报
+    //      "interpreter returned output of shape: [1,10] while provided [10]"
+    final outputs = <List<List<double>>>[];
     for (var i = 0; i < outCount; i++) {
-      outputs.add(List<double>.filled(10, 0.0));
+      outputs.add(List<List<double>>.generate(1, (_) => List<double>.filled(10, 0.0)));
     }
     try {
-      interp.run(input.reshape([1, 224, 224, 3]), outputs);
+      interp.runForMultipleInputs([input.reshape([1, 224, 224, 3])], {
+        for (var i = 0; i < outCount; i++) i: outputs[i],
+      });
     } catch (e) {
       lastTrace = '$lastTrace | 数字模型推理失败: $e';
       return null;
@@ -249,7 +251,7 @@ class LcdOnnxPipeline {
     final heads = List<int>.filled(outCount, 0);
     var conf = 1.0;
     for (var i = 0; i < outCount; i++) {
-      final row = outputs[i];
+      final row = outputs[i][0];
       var mx = -1e9;
       var arg = 0;
       for (var c = 0; c < row.length; c++) {
