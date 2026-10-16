@@ -188,3 +188,24 @@ CREATE TABLE IF NOT EXISTS health_content (
 CREATE INDEX IF NOT EXISTS idx_health_content_category ON health_content(category);
 CREATE INDEX IF NOT EXISTS idx_health_content_published ON health_content(is_published);
 CREATE INDEX IF NOT EXISTS idx_health_content_published_at ON health_content(published_at);
+
+-- ===== 设备接入表（手环心率桥等硬件）=====
+-- App 生成一次性绑定码 -> 设备换取令牌 -> 令牌只存哈希，只能写健康数据
+CREATE TABLE IF NOT EXISTS device (
+  id                BIGINT       NOT NULL,
+  user_id           BIGINT       NOT NULL,
+  member_id         BIGINT,
+  device_sn         VARCHAR(64)  NOT NULL,
+  device_name       VARCHAR(64),
+  device_type       VARCHAR(32),
+  token_hash        VARCHAR(128),
+  bind_code         VARCHAR(16),
+  bind_code_expire  TIMESTAMP,
+  last_seen         TIMESTAMP,
+  status            TINYINT      NOT NULL DEFAULT 1,
+  firmware_version  VARCHAR(32),
+  create_time       TIMESTAMP,
+  PRIMARY KEY (id)
+);
+CREATE UNIQUE INDEX IF NOT EXISTS uk_device_sn ON device (device_sn);
+CREATE INDEX IF NOT EXISTS idx_device_token ON device (token_hash);

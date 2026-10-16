@@ -23,7 +23,8 @@ public class WebConfig implements WebMvcConfigurer {
         registry.addInterceptor(roleInterceptor)
                 .addPathPatterns("/api/**")  // 拦截所有API请求
                 .excludePathPatterns(       // 排除不需要权限验证的路径
-                        "/api/auth/login",      // 登录接口
+                        "/api/device/bind", "/api/device/health-data", "/api/device/heartbeat",
+                          "/api/auth/login",      // 登录接口
                         "/api/auth/register",   // 注册接口
                         "/api/test/**",         // 测试接口
                         "/swagger-ui/**",       // Swagger UI

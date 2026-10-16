@@ -54,6 +54,7 @@ public class SecurityConfig {
                         // 公开访问的端点
                         .antMatchers(
                                 "/api/auth/**",
+                                  "/api/device/bind", "/api/device/health-data", "/api/device/heartbeat",
                                 "/api/test",
                                 "/knife4j/**",
                                 "/doc.html",
