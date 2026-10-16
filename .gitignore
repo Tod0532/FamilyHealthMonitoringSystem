@@ -108,3 +108,8 @@ flutter-app/tool/ocr_bench_photo_data/
 
 # 文档配图（使用说明的界面截图与图表）需要入库，不受上面的 *.png 规则影响
 !docs/images/*.png
+
+# ONNX->TFLite 转换的中间产物（可随时由 onnx2tf 重新生成）
+flutter-app/converted_lcd/
+# OCR 真机调试的本地产物（诊断图，不入库）
+docs/ocr-debug/
