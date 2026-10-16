@@ -155,6 +155,11 @@ class ProfileTabPage extends StatelessWidget {
             _buildSectionHeader('家庭'),
             _buildFamilyCard(),
 
+            // 设备接入：绑定手环心率桥等硬件
+            _buildSectionHeader('设备'),
+            _buildMenuItem(Icons.watch, '设备管理', '',
+                onTap: () => Get.toNamed('/profile/devices')),
+
             // 功能组3：数据管理 - 仅管理员可见
             PermissionBuilder(
               permissionCheck: PermissionUtils.isAdmin,

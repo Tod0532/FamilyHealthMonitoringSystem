@@ -28,6 +28,7 @@ import 'package:health_center_app/app/modules/profile/profile_edit_page.dart';
 import 'package:health_center_app/app/modules/profile/password_change_page.dart';
 import 'package:health_center_app/app/modules/profile/settings_page.dart';
 import 'package:health_center_app/app/modules/profile/about_page.dart';
+import 'package:health_center_app/app/modules/profile/device_manage_page.dart';
 import 'package:health_center_app/app/modules/device/device_binding.dart';
 import 'package:health_center_app/app/modules/device/device_list_page.dart';
 import 'package:health_center_app/app/modules/device/device_connect_page.dart';
@@ -210,6 +211,15 @@ class AppPages {
     ),
 
     // 关于页面
+    // 设备管理（绑定手环心率桥等硬件）
+    GetPage(
+      name: '/profile/devices',
+      page: () => const DeviceManagePage(),
+      binding: ProfileBinding(),
+      middlewares: [AuthMiddleware()],
+      transition: Transition.rightToLeft,
+    ),
+
     GetPage(
       name: '/profile/about',
       page: () => const AboutPage(),

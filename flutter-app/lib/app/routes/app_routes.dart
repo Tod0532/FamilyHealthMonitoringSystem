@@ -22,6 +22,7 @@ class AppRoutes {
   static const String passwordChange = '/profile/password';
   static const String settings = '/profile/settings';
   static const String about = '/profile/about';
+  static const String profileDevices = '/profile/devices';
   static const String deviceList = '/device/list';
   static const String deviceConnect = '/device/connect';
   static const String deviceData = '/device/data';
