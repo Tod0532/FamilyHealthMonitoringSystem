@@ -217,6 +217,55 @@ public class DeviceServiceImpl implements DeviceService {
     }
 
     @Override
+    public List<DeviceDtos.DeviceLatestVO> listLatest(Long userId) {
+        List<Device> devices = deviceMapper.selectList(new LambdaQueryWrapper<Device>()
+                .eq(Device::getUserId, userId)
+                .eq(Device::getStatus, 1)
+                .isNotNull(Device::getTokenHash)
+                .orderByDesc(Device::getLastSeen));
+        final LocalDateTime now = LocalDateTime.now();
+        List<DeviceDtos.DeviceLatestVO> out = new java.util.ArrayList<>();
+        for (Device d : devices) {
+            DeviceDtos.DeviceLatestVO vo = new DeviceDtos.DeviceLatestVO();
+            vo.setDeviceId(d.getId());
+            vo.setDeviceName(d.getDeviceName());
+            vo.setMemberId(d.getMemberId());
+            FamilyMember m = familyMemberMapper.selectById(d.getMemberId());
+            vo.setMemberName(m == null ? "" : m.getName());
+            vo.setOnline(d.getLastSeen() != null
+                    && d.getLastSeen().isAfter(now.minusMinutes(5)));
+            vo.setLastSeen(d.getLastSeen() == null ? "" : d.getLastSeen().format(FMT));
+
+            // 该设备最近一次"设备来源"的心率记录
+            HealthData latest = healthDataMapper.selectOne(new LambdaQueryWrapper<HealthData>()
+                    .eq(HealthData::getMemberId, d.getMemberId())
+                    .eq(HealthData::getDataType, "heart_rate")
+                    .eq(HealthData::getDataSource, "device")
+                    .orderByDesc(HealthData::getMeasureTime)
+                    .last("limit 1"));
+            if (latest != null) {
+                vo.setHeartRate(latest.getValue1());
+                vo.setMeasureTime(latest.getMeasureTime() == null
+                        ? "" : latest.getMeasureTime().format(FMT));
+                if (latest.getMeasureTime() != null) {
+                    final long age = java.time.Duration.between(
+                            latest.getMeasureTime(), now).getSeconds();
+                    vo.setAgeSeconds(Math.max(0, age));
+                    // 超过 20 秒没有新值即视为陈旧：宁可显示"已断开"，
+                    // 也不要把几分钟前的旧读数当成实时值（会误判健康状况）
+                    vo.setStale(age > 20);
+                } else {
+                    vo.setStale(true);
+                }
+            } else {
+                vo.setStale(true);
+            }
+            out.add(vo);
+        }
+        return out;
+    }
+
+    @Override
     public void unbind(Long userId, Long deviceId) {
         Device d = deviceMapper.selectById(deviceId);
         if (d == null || !d.getUserId().equals(userId)) {

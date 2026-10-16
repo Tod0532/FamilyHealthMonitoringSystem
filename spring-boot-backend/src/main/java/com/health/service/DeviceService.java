@@ -31,6 +31,9 @@ public interface DeviceService {
     /** App：解绑（令牌立即失效） */
     void unbind(Long userId, Long deviceId);
 
+    /** App：各设备最近一次上报（供心率实时监控轮询） */
+    List<DeviceDtos.DeviceLatestVO> listLatest(Long userId);
+
     /** 内部：按令牌取设备，失败抛业务异常 */
     Device requireByToken(String deviceToken);
 }

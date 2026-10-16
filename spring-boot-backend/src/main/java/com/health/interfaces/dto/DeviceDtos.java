@@ -68,6 +68,26 @@ public class DeviceDtos {
         private String measureTime;
     }
 
+    /** 实时监控用：设备最近一次上报 */
+    @Data
+    public static class DeviceLatestVO {
+        private Long deviceId;
+        private String deviceName;
+        private Long memberId;
+        private String memberName;
+        /** 最近一次心率值（无数据时为 null） */
+        private BigDecimal heartRate;
+        /** 该值的测量时间 */
+        private String measureTime;
+        /** 距今秒数 */
+        private Long ageSeconds;
+        /** 是否陈旧：超过 20 秒没有新值，App 应显示"已断开"而不是当成实时值 */
+        private Boolean stale;
+        /** 设备最近心跳时间（判断设备是否在线） */
+        private String lastSeen;
+        private Boolean online;
+    }
+
     /** App 侧看到的设备信息 */
     @Data
     public static class DeviceVO {

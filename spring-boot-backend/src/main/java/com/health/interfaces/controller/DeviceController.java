@@ -46,6 +46,14 @@ public class DeviceController {
         return ApiResponse.success(deviceService.listMine(SecurityUtil.getUserId(request)));
     }
 
+    @Operation(summary = "各设备最近一次上报（App 心率实时监控轮询用）")
+    @GetMapping("/latest")
+    public ApiResponse<List<DeviceDtos.DeviceLatestVO>> latest(
+            HttpServletRequest request) {
+        return ApiResponse.success(
+                deviceService.listLatest(SecurityUtil.getUserId(request)));
+    }
+
     @Operation(summary = "解绑设备（App）")
     @DeleteMapping("/{id}")
     public ApiResponse<Void> unbind(@PathVariable Long id, HttpServletRequest request) {
