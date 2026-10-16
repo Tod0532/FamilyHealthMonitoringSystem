@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 
 import '../../../core/network/dio_provider.dart';
+import '../../routes/app_routes.dart';
 
 /// 设备管理页：绑定硬件（如 ESP32 手环心率桥）、查看与解绑
 ///
@@ -124,6 +125,18 @@ class _DeviceManagePageState extends State<DeviceManagePage> {
                     ),
                   _buildBindCard(),
                   SizedBox(height: 16.h),
+                  // 已绑定设备时，从这里直接进实时监控（绑定完最自然的下一步）
+                  if (_devices.isNotEmpty) ...[
+                    SizedBox(
+                      width: double.infinity,
+                      child: FilledButton.tonalIcon(
+                        onPressed: () => Get.toNamed(AppRoutes.heartRateMonitor),
+                        icon: const Icon(Icons.monitor_heart),
+                        label: const Text('查看心率实时监控'),
+                      ),
+                    ),
+                    SizedBox(height: 16.h),
+                  ],
                   _buildDeviceList(),
                 ],
               ),

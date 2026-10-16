@@ -157,6 +157,8 @@ class ProfileTabPage extends StatelessWidget {
 
             // 设备接入：绑定手环心率桥等硬件
             _buildSectionHeader('设备'),
+            _buildMenuItem(Icons.favorite, '心率实时监控', '',
+                onTap: () => Get.toNamed(AppRoutes.heartRateMonitor)),
             _buildMenuItem(Icons.watch, '设备管理', '',
                 onTap: () => Get.toNamed('/profile/devices')),
 

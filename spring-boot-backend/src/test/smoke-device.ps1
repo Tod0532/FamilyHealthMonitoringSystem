@@ -54,8 +54,11 @@ Invoke-RestMethod "$base/api/device/health-data" -Method POST -Headers $dhead -C
 Write-Host "    已上报 $hr bpm @ $ts"
 
 Write-Host "=== 7. 校验：数据是否进了健康数据 ==="
-$hd = Invoke-RestMethod "$base/api/health-data?page=1&size=5" -Headers $auth
-$found = $hd.data.records | Where-Object { $_.dataType -eq 'heart_rate' -and [int]$_.value1 -eq $hr }
+# 注意：/api/health-data 的 data 是**数组**（不是 MyBatis Plus 的 records/total 分页对象）。
+# 原来写成 $hd.data.records 会静默得到空数组，于是永远报"没找到上报记录"——
+# 是脚本自己的假失败，不是链路问题（实测踩到）
+$hd = Invoke-RestMethod "$base/api/health-data?page=1&size=50" -Headers $auth
+$found = $hd.data | Where-Object { $_.dataType -eq 'heart_rate' -and [int]$_.value1 -eq $hr }
 if ($found) { Write-Host "    ✅ 找到设备上报记录：$($found.value1) bpm，来源 $($found.dataSource)，设备 $($found.deviceName)" }
 else { Write-Host "    ❌ 没找到上报记录" }
 

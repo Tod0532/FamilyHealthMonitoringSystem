@@ -12,10 +12,14 @@
 //  BLE 从机通常只允许一个主机连接 —— 手机连上后板子就连不上。
 //  让板子常连手环，手机只负责看数据，不会互相抢连接。
 //
-//  上报用现有接口（POST /api/health-data），因此**后端无需改动**即可跑通：
-//    1) POST /api/auth/login {phone,password} → 拿 accessToken
-//    2) POST /api/health-data {memberId,dataType,value1,...} 带 Bearer token
-//  token 过期会自动重新登录；断网时读数进环形缓存，恢复后续传。
+//  上报用现有接口（POST /api/device/health-data），因此**后端无需改动**即可跑通：
+//    1) POST /api/device/bind {bindCode,deviceSn,...} → 拿 deviceToken（存哈希，长期有效）
+//    2) POST /api/device/health-data {dataType,value1,...} 带 X-Device-Token 头
+//  token 失效（被 App 解绑）返回 401，这里会自动清空并重新用绑定码绑定；
+//  断网时读数进环形缓存，恢复后续传。
+//
+//  上报节奏：5 秒一次（HEARTBEAT_REPORT_MS），配合 App 的实时监控页轮询。
+//  服务端对入库做了节流，见 DeviceServiceImpl.report。
 //
 //  如需改成"设备令牌"模式（不用账号密码），见 README 的说明。
 // ============================================================================
@@ -52,8 +56,13 @@ static const char* FIRMWARE_VER = "v2.0";
 static const char* BAND_NAME = "HR-287";
 
 // 上报策略：心率发生明显变化才上报，或至少每 HEARTBEAT_REPORT_MS 报一次
+//
+// 实时监控要求 3~5 秒级的刷新，所以这里把周期从 60 秒降到 5 秒。
+// 注意：5 秒一报 = 一天约 1.7 万条，服务端有落库节流
+// （见 DeviceServiceImpl.report：变化 <3bpm 且距上次入库 <60 秒时只更新实时值、
+//   不写 health_data），否则会把数据库刷爆。两端阈值保持一致。
 static const int   HR_CHANGE_THRESHOLD = 3;         // 变化 ≥3 bpm 就报
-static const uint32_t HEARTBEAT_REPORT_MS = 60000;  // 否则每 60 秒报一次
+static const uint32_t HEARTBEAT_REPORT_MS = 5000;   // 否则每 5 秒报一次
 static const uint32_t HR_STALE_MS = 10000;          // 超过 10 秒没新数据视为无效
 
 // ============================== 常量 ==============================

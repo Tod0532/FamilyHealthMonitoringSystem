@@ -29,6 +29,8 @@ import 'package:health_center_app/app/modules/profile/password_change_page.dart'
 import 'package:health_center_app/app/modules/profile/settings_page.dart';
 import 'package:health_center_app/app/modules/profile/about_page.dart';
 import 'package:health_center_app/app/modules/profile/device_manage_page.dart';
+import 'package:health_center_app/app/modules/profile/heart_rate_monitor_page.dart';
+import 'package:health_center_app/app/routes/app_routes.dart';
 import 'package:health_center_app/app/modules/device/device_binding.dart';
 import 'package:health_center_app/app/modules/device/device_list_page.dart';
 import 'package:health_center_app/app/modules/device/device_connect_page.dart';
@@ -215,6 +217,15 @@ class AppPages {
     GetPage(
       name: '/profile/devices',
       page: () => const DeviceManagePage(),
+      binding: ProfileBinding(),
+      middlewares: [AuthMiddleware()],
+      transition: Transition.rightToLeft,
+    ),
+
+    // 心率实时监控（3 秒轮询 /api/device/latest，离开页面停止轮询）
+    GetPage(
+      name: AppRoutes.heartRateMonitor,
+      page: () => const HeartRateMonitorPage(),
       binding: ProfileBinding(),
       middlewares: [AuthMiddleware()],
       transition: Transition.rightToLeft,

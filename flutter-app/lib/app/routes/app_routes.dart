@@ -23,6 +23,8 @@ class AppRoutes {
   static const String settings = '/profile/settings';
   static const String about = '/profile/about';
   static const String profileDevices = '/profile/devices';
+  /// 心率实时监控（轮询设备最近一次上报）
+  static const String heartRateMonitor = '/profile/heart-rate';
   static const String deviceList = '/device/list';
   static const String deviceConnect = '/device/connect';
   static const String deviceData = '/device/data';

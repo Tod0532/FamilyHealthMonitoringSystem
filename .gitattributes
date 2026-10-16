@@ -1,1 +1,7 @@
 flutter-app/dataset/images/*.jpg filter=lfs diff=lfs merge=lfs -text
+
+# Windows 上 core.autocrlf=true，PowerShell 脚本一旦走 EOL 转换，
+# UTF-8 BOM 就可能被去掉；而**含中文的 .ps1 少了 BOM，PS 5.1 会按 GBK 读**，
+# 直接语法解析失败（症状是"函数名不认得"这类莫名其妙报错，见 docs/交接说明.md）。
+# 冒烟脚本必须字节级保持原样，所以显式关掉文本转换。
+spring-boot-backend/src/test/*.ps1 -text
