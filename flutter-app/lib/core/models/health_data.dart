@@ -60,6 +60,12 @@ class HealthData {
   final DateTime recordTime;
   final String? notes;
   final DateTime createTime;
+  /// 数据来源：manual=手工录入，device=硬件自动上报（如手环心率桥）
+  final String? dataSource;
+  /// 上报设备名（dataSource=device 时有值）
+  final String? deviceName;
+  /// 是否为设备自动采集
+  bool get isFromDevice => dataSource == 'device';
 
   HealthData({
     required this.id,
@@ -72,6 +78,8 @@ class HealthData {
     required this.recordTime,
     this.notes,
     required this.createTime,
+    this.dataSource,
+    this.deviceName,
   });
 
   factory HealthData.fromJson(Map<String, dynamic> json) {
@@ -130,6 +138,8 @@ class HealthData {
         level: HealthDataLevel.fromString(json['level'] ?? 'normal'),
         recordTime: _safeParseDateTime(timeStr) ?? DateTime.now(),
         notes: json['notes'],
+      dataSource: json['dataSource'] as String?,
+      deviceName: json['deviceName'] as String?,
         createTime: _safeParseDateTime(json['createTime'] ?? json['created_at']) ?? DateTime.now(),
       );
     } catch (e) {

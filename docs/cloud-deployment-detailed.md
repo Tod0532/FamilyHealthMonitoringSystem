@@ -466,7 +466,7 @@ spring:
   datasource:
     url: jdbc:mysql://localhost:3306/health_center_db?useSSL=false&serverTimezone=Asia/Shanghai
     username: health_app
-    password: Health@123456
+    password: <已打码：请用环境变量注入，勿写入仓库>
 ```
 
 找到 `app.cors` 部分，确保允许跨域：

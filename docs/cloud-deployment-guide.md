@@ -243,7 +243,7 @@ spring:
   datasource:
     url: jdbc:mysql://localhost:3306/health_center_db?useSSL=false&serverTimezone=Asia/Shanghai
     username: health_app
-    password: YourStrongPassword123!
+    password: <已打码：请用环境变量注入，勿写入仓库>
 
 server:
   port: 8080

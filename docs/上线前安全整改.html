@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>上线前安全整改</title>
+<style>
+:root { --fg:#1f2328; --muted:#656d76; --line:#d8dee4; --brand:#4caf50; --bg:#fff; --code:#f6f8fa; }
+* { box-sizing: border-box; }
+body { margin:0; background:#f3f5f7; color:var(--fg);
+  font-family:"Microsoft YaHei","PingFang SC","Helvetica Neue",Arial,sans-serif;
+  line-height:1.75; font-size:15px; }
+.page { max-width:1100px; margin:0 auto; background:var(--bg); padding:56px 64px 96px;
+  box-shadow:0 2px 24px rgba(0,0,0,.06); }
+h1 { font-size:30px; border-bottom:3px solid var(--brand); padding-bottom:14px; margin-top:0; }
+h2 { font-size:23px; margin-top:52px; padding-left:12px; border-left:6px solid var(--brand); }
+h3 { font-size:18px; margin-top:34px; color:#2a2f36; }
+h4 { font-size:16px; margin-top:24px; color:#3a4048; }
+p { margin:12px 0; }
+a { color:#17803d; text-decoration:none; }
+a:hover { text-decoration:underline; }
+img { max-width:100%; border:1px solid var(--line); border-radius:8px; margin:10px 0;
+  box-shadow:0 1px 6px rgba(0,0,0,.05); background:#fff; }
+table { border-collapse:collapse; width:100%; margin:16px 0; font-size:14px; }
+th,td { border:1px solid var(--line); padding:8px 12px; text-align:left; vertical-align:top; }
+th { background:#eef6ef; font-weight:600; }
+tr:nth-child(even) td { background:#fafbfc; }
+code { background:var(--code); padding:2px 6px; border-radius:4px;
+  font-family:Consolas,"Courier New",monospace; font-size:13px; }
+pre { background:var(--code); border:1px solid var(--line); border-radius:8px;
+  padding:14px 16px; overflow:auto; }
+pre code { background:none; padding:0; }
+figure.diagram { margin:22px 0; text-align:center; }
+figure.diagram img { border:1px solid var(--line); border-radius:8px; }
+pre.mermaid { background:#fff; border:1px dashed #cfd8dc; text-align:center; padding:18px; }
+blockquote { margin:14px 0; padding:10px 16px; border-left:4px solid var(--brand);
+  background:#f2f9f3; color:#2f3a33; border-radius:0 6px 6px 0; }
+blockquote p { margin:6px 0; }
+hr { border:none; border-top:1px solid var(--line); margin:36px 0; }
+ul,ol { padding-left:26px; }
+li { margin:5px 0; }
+.toc-note { color:var(--muted); font-size:13px; }
+footer { max-width:1100px; margin:0 auto; padding:18px 64px 60px; color:var(--muted); font-size:13px; }
+@media print { body{background:#fff;} .page{box-shadow:none;padding:0;} pre.mermaid{border:none;} }
+</style>
+</head>
+<body>
+<div class="page">
+<h1 id="上线前安全整改r6">上线前安全整改（R6）</h1>
+<blockquote><p>本文列出必须在<strong>正式对外</strong>前处理的安全问题，按风险排序。</p><p>每项都给出可直接执行的步骤；涉及生产配置的改动<strong>必须安排维护窗口</strong>，</p><p>因为配置与环境变量不同步会导致服务起不来。</p></blockquote>
+<hr>
+<h2 id="1-注册验证码完全不校验最高风险">1. 注册验证码完全不校验（最高风险）🔴</h2>
+<p><strong>现状</strong>：<code>UserServiceImpl</code> 直接跳过短信校验，且系统里没有发码接口。 结果是<strong>任何人可以用任意 6 位数字注册任意手机号</strong>，包括别人的号码。</p>
+<p><strong>两种处理方式，需二选一（这是产品决策，不是技术问题）：</strong></p>
+<table>
+<thead><tr><th>方案</th><th>做法</th><th>影响</th></tr></thead>
+<tbody>
+<tr><td>A. 接入真实短信</td><td>接入阿里云短信，<code>sendCode</code> 真实下发、<code>register</code> 校验并做频率限制（同号 60s 一次、每日上限）</td><td>需要你的阿里云短信签名与模板；有短信费用</td></tr>
+<tr><td>B. 明确免验证</td><td>去掉注册页的验证码输入框，后端文档写明"当前为免验证注册"</td><td>零成本但任何人可注册任意号码，仅适合内测</td></tr>
+</tbody></table>
+<p><strong>在做出选择之前，建议先限制注册入口</strong>（例如仅内网可访问注册接口）， 避免内测期内被批量注册。</p>
+<hr>
+<h2 id="2-明文凭据已进入-git-仓库-">2. 明文凭据已进入 Git 仓库 🔴</h2>
+<p><strong>现状</strong>（<code>git ls-files</code> 可查）：</p>
+<table>
+<thead><tr><th>文件</th><th>泄露内容</th></tr></thead>
+<tbody>
+<tr><td><code>spring-boot-backend/src/main/resources/application-prod.yml</code></td><td>数据库口令、JWT 密钥</td></tr>
+<tr><td><code>spring-boot-backend/src/main/resources/application.yml</code></td><td>JWT 密钥等</td></tr>
+<tr><td><code>deploy/server/application-prod.yml</code></td><td>数据库口令</td></tr>
+<tr><td><code>flutter-app/android/app/keystore.properties</code></td><td><strong>Android 签名密钥口令</strong>（泄露后可被人重签名冒充 App）</td></tr>
+<tr><td>多个 <code>docs/*.md</code></td><td>同上（<strong>已打码</strong>，见本次提交）</td></tr>
+</tbody></table>
+<p><strong>整改步骤（需维护窗口）：</strong></p>
+<pre><code># 1) 服务器上先设置环境变量（写入 /etc/health-center.env，权限 600）
+cat &gt; /etc/health-center.env &lt;&lt;&#x27;EOF&#x27;
+DB_PASSWORD=&lt;真实口令&gt;
+JWT_SECRET=&lt;新的强随机串&gt;
+EOF
+chmod 600 /etc/health-center.env
+
+# 2) systemd 单元里引用它
+#    /etc/systemd/system/health-app.service 增加：
+#    EnvironmentFile=/etc/health-center.env
+
+# 3) 配置文件改为占位符（不写真实值）
+#    spring.datasource.password: ${DB_PASSWORD}
+#    jwt.secret: ${JWT_SECRET}
+
+# 4) 重启并验证
+systemctl daemon-reload &amp;&amp; systemctl restart health-app
+curl -s localhost:8080/api/auth/login -H &#x27;Content-Type: application/json&#x27; \
+     -d &#x27;{&quot;phone&quot;:&quot;13800138000&quot;,&quot;password&quot;:&quot;123456&quot;}&#x27; | head -c 200
+
+# 5) 清理 git 历史（会被重写的提交，需团队知会）
+#    git filter-repo --path &lt;涉密文件&gt; --invert-paths
+#    然后强推；所有协作者需重新克隆</code></pre>
+<p><strong>注意</strong>：口令一旦进过仓库就应视为已泄露 —— 即使清理了历史， 也<strong>必须更换数据库口令与 JWT 密钥</strong>（第 1 步里的 <code>&lt;真实口令&gt;</code> 要用新值）。</p>
+<hr>
+<h2 id="3-数据库排序规则不一致-">3. 数据库排序规则不一致 🟡</h2>
+<p><strong>现状</strong>：<code>user</code> 表是 <code>utf8mb4_0900_ai_ci</code>，其余 6 张表是 <code>utf8mb4_unicode_ci</code>。 两表 JOIN 比较字符串时可能报 <code>Illegal mix of collations</code>。</p>
+<p><strong>整改步骤（低峰期执行，先备份）：</strong></p>
+<pre><code>-- 备份
+CREATE TABLE user_bak_collation AS SELECT * FROM user;
+
+-- 统一（会重建表，期间该表短暂锁写）
+ALTER TABLE `user` CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- 校验
+SELECT TABLE_NAME, TABLE_COLLATION FROM information_schema.TABLES
+ WHERE TABLE_SCHEMA=&#x27;health_center_db&#x27; ORDER BY TABLE_NAME;</code></pre>
+<hr>
+<h2 id="4-设备令牌已完成无需整改">4. 设备令牌（已完成，无需整改）✅</h2>
+<p>设备接入已按最小权限实现：令牌只存 SHA-256 哈希、只能写健康数据、 App 可随时解绑使其立即失效。<strong>固件里不再保存 App 账号口令</strong>（v2 已改）。</p>
+<hr>
+<h2 id="5-其它建议-">5. 其它建议 🟢</h2>
+<ul>
+<li><code>scripts/dbviewer</code> 用的是只读账号 ✅（已确认 README 里也是只读连接），</li>
+</ul>
+<p>但口令仍应从环境变量读，不要写在代码/文档里</p>
+<ul>
+<li>生产 CORS 应显式限定域名，不要用 <code>*</code></li>
+<li>建议给 <code>/api/auth/**</code> 加登录失败频率限制（防暴力破解）</li>
+</ul>
+<hr>
+<h2 id="优先级建议">优先级建议</h2>
+<table>
+<thead><tr><th>顺序</th><th>项</th><th>理由</th></tr></thead>
+<tbody>
+<tr><td>1</td><td>注册验证码（方案 A/B 二选一）</td><td>直接影响真实用户账号安全</td></tr>
+<tr><td>2</td><td>更换数据库口令与 JWT 密钥 + 环境变量化</td><td>凭据已泄露，越早换越好</td></tr>
+<tr><td>3</td><td>Android 签名口令外置</td><td>影响 App 分发可信度</td></tr>
+<tr><td>4</td><td>排序规则统一</td><td>隐患，低峰期做即可</td></tr>
+</tbody></table>
+</div>
+<footer>本页由 scripts/md2html.py 从 Markdown 生成 · 图表需联网加载 mermaid</footer>
+
+<script type="module">
+  try {
+    const { default: mermaid } = await import('https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs');
+    mermaid.initialize({ startOnLoad: true, theme: 'default', flowchart: { htmlLabels: true } });
+  } catch (e) {
+    document.querySelectorAll('pre.mermaid').forEach(function (el) {
+      el.insertAdjacentHTML('afterbegin',
+        '<div style="color:#b26a00;font-size:13px;margin-bottom:8px">' +
+        '（离线环境无法加载 mermaid，下面是流程图源码）</div>');
+    });
+  }
+</script>
+
+</body>
+</html>
