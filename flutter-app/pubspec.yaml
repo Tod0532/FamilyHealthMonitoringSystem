@@ -121,9 +121,13 @@ flutter:
     - assets/tessdata/eng.traineddata
     # 血压数字识别模型：bp_tflite_detector.dart 通过 tflite_flutter 加载。
     - assets/models/bpressure_multihead.tflite
+    # ONNX 定位模型：新链路 lcd_onnx_pipeline.dart 需要它。
+    # 注意：这一行曾被注释掉（当时 Dart 侧确实不加载它），导致 APK 里没有该文件，
+    # 真机上表现为"新链路模型未就绪"、只能回退旧链路。
+    - assets/models/lcd_detector.onnx
     #
     # 以下资源刻意不打包（原先用目录声明时被全量打进 APK，约 18MB 无效体积）：
-    #   assets/models/lcd_detector.onnx       训练产物，Dart 侧从不加载（YOLOv8n 导出）
+    #   assets/models/lcd_detector.pt         训练产物，App 不加载（YOLOv8n 权重）
     #   assets/models/lcd_detector.pt         训练产物，同上
     #   assets/models/bpressure_model.tflite  旧版单头模型，已被 multihead 取代
     #   assets/tessdata/bp_test_photo.png     调试用测试照片

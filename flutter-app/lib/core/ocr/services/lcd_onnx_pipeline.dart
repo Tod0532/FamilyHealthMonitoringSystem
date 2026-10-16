@@ -50,11 +50,17 @@ class LcdOnnxPipeline {
         ..setIntraOpNumThreads(2)
         ..setSessionGraphOptimizationLevel(GraphOptimizationLevel.ortEnableAll);
       final bytes = await _loadAsset(_detModel);
-      if (bytes == null) return false;
+      if (bytes == null) {
+        lastTrace = '定位模型资产缺失: $_detModel（检查 pubspec assets 是否包含它）';
+        return false;
+      }
       _det = OrtSession.fromBuffer(bytes, opts);
 
       final digitBytes = await _loadAsset(_digitModel);
-      if (digitBytes == null) return false;
+      if (digitBytes == null) {
+        lastTrace = '数字模型资产缺失: $_digitModel';
+        return false;
+      }
       _digits = Interpreter.fromBuffer(digitBytes);
 
       _ready = true;
