@@ -11,6 +11,7 @@ import com.health.exception.BusinessException;
 import com.health.exception.ErrorCode;
 import com.health.interfaces.dto.DeviceDtos;
 import com.health.service.DeviceService;
+import org.springframework.beans.factory.annotation.Autowired;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -41,6 +42,10 @@ public class DeviceServiceImpl implements DeviceService {
     private final DeviceMapper deviceMapper;
     private final FamilyMemberMapper familyMemberMapper;
     private final HealthDataMapper healthDataMapper;
+
+    /** 预警评估器：设备上报的数据同样要过规则判定 */
+    @Autowired
+    private AlertEvaluator alertEvaluator;
 
     private static final SecureRandom RANDOM = new SecureRandom();
     private static final int BIND_CODE_MINUTES = 10;
@@ -175,6 +180,11 @@ public class DeviceServiceImpl implements DeviceService {
         data.setDeleted(0);
         healthDataMapper.insert(data);
 
+        // 走同样的预警判定：设备上报此前直接插库、绕过了规则评估，
+        // 导致心率越界不会产生预警记录（实时监控里这是必须补的）
+        alertEvaluator.evaluate(d.getUserId(), d.getMemberId(),
+                req.getDataType(), req.getValue1());
+
         d.setLastSeen(LocalDateTime.now());
         deviceMapper.updateById(d);
         log.info("设备 {} 上报 {}={}（成员 {}）",
@@ -242,6 +252,11 @@ public class DeviceServiceImpl implements DeviceService {
                     .eq(HealthData::getDataType, "heart_rate")
                     .eq(HealthData::getDataSource, "device")
                     .orderByDesc(HealthData::getMeasureTime)
+                    // 同一秒内可能有多条（设备 5 秒一报，测试时更密），
+                    // 只用 measureTime 排序结果不确定，会出现"实时值不更新"
+                    // （实测：先报 75 再报 128，取回的却是 75）。
+                    // 雪花 id 单调递增，用它做兜底排序。
+                    .orderByDesc(HealthData::getId)
                     .last("limit 1"));
             if (latest != null) {
                 vo.setHeartRate(latest.getValue1());
