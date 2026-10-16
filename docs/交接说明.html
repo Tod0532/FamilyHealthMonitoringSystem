@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>交接说明</title>
+<style>
+:root { --fg:#1f2328; --muted:#656d76; --line:#d8dee4; --brand:#4caf50; --bg:#fff; --code:#f6f8fa; }
+* { box-sizing: border-box; }
+body { margin:0; background:#f3f5f7; color:var(--fg);
+  font-family:"Microsoft YaHei","PingFang SC","Helvetica Neue",Arial,sans-serif;
+  line-height:1.75; font-size:15px; }
+.page { max-width:1100px; margin:0 auto; background:var(--bg); padding:56px 64px 96px;
+  box-shadow:0 2px 24px rgba(0,0,0,.06); }
+h1 { font-size:30px; border-bottom:3px solid var(--brand); padding-bottom:14px; margin-top:0; }
+h2 { font-size:23px; margin-top:52px; padding-left:12px; border-left:6px solid var(--brand); }
+h3 { font-size:18px; margin-top:34px; color:#2a2f36; }
+h4 { font-size:16px; margin-top:24px; color:#3a4048; }
+p { margin:12px 0; }
+a { color:#17803d; text-decoration:none; }
+a:hover { text-decoration:underline; }
+img { max-width:100%; border:1px solid var(--line); border-radius:8px; margin:10px 0;
+  box-shadow:0 1px 6px rgba(0,0,0,.05); background:#fff; }
+table { border-collapse:collapse; width:100%; margin:16px 0; font-size:14px; }
+th,td { border:1px solid var(--line); padding:8px 12px; text-align:left; vertical-align:top; }
+th { background:#eef6ef; font-weight:600; }
+tr:nth-child(even) td { background:#fafbfc; }
+code { background:var(--code); padding:2px 6px; border-radius:4px;
+  font-family:Consolas,"Courier New",monospace; font-size:13px; }
+pre { background:var(--code); border:1px solid var(--line); border-radius:8px;
+  padding:14px 16px; overflow:auto; }
+pre code { background:none; padding:0; }
+figure.diagram { margin:22px 0; text-align:center; }
+figure.diagram img { border:1px solid var(--line); border-radius:8px; }
+pre.mermaid { background:#fff; border:1px dashed #cfd8dc; text-align:center; padding:18px; }
+blockquote { margin:14px 0; padding:10px 16px; border-left:4px solid var(--brand);
+  background:#f2f9f3; color:#2f3a33; border-radius:0 6px 6px 0; }
+blockquote p { margin:6px 0; }
+hr { border:none; border-top:1px solid var(--line); margin:36px 0; }
+ul,ol { padding-left:26px; }
+li { margin:5px 0; }
+.toc-note { color:var(--muted); font-size:13px; }
+footer { max-width:1100px; margin:0 auto; padding:18px 64px 60px; color:var(--muted); font-size:13px; }
+@media print { body{background:#fff;} .page{box-shadow:none;padding:0;} pre.mermaid{border:none;} }
+</style>
+</head>
+<body>
+<div class="page">
+<h1 id="交接说明新会话从这里开始">交接说明（新会话从这里开始）</h1>
+<blockquote><p>本文用于<strong>在新会话里继续工作</strong>：读完这一页即可知道当前状态、下一步做什么、</p><p>以及本项目踩过的坑（避免重复浪费）。工作目录 <code>D:\ReadHealthInfo</code>。</p></blockquote>
+<hr>
+<h2 id="一当前状态截至最新提交">一、当前状态（截至最新提交）</h2>
+<p>代码全部已提交并推送，工作区干净。关键文档：</p>
+<table>
+<thead><tr><th>文档</th><th>内容</th></tr></thead>
+<tbody>
+<tr><td><code>docs/需求分析与方案计划.md</code></td><td>需求 R1~R8 梳理 + 分阶段方案 + 执行进展</td></tr>
+<tr><td><code>docs/使用说明.md</code>（+ .html）</td><td>图文版使用说明（16 张真机截图 + 13 流程图）</td></tr>
+<tr><td><code>docs/ESP32烧写与联调方案.md</code></td><td>板子烧写与联调的可执行方案</td></tr>
+<tr><td><code>docs/上线前安全整改.md</code></td><td>上线前安全项的执行手册</td></tr>
+</tbody></table>
+<h3 id="已完成且验证过的">已完成且验证过的</h3>
+<table>
+<thead><tr><th>需求</th><th>状态</th><th>证据</th></tr></thead>
+<tbody>
+<tr><td>R1 拍照识血压</td><td>✅ 达标</td><td>合成基准 100%/100%（目标 ≥95%/≥85%）；真机 8 张 5 对（旧链路 0%）</td></tr>
+<tr><td>R2 手环心率链路</td><td>✅ 通</td><td>后端 6 接口冒烟通过；固件 v2；App 设备管理页<strong>真机端到端验收通过</strong>（绑定→上报→App 显示在线）</td></tr>
+<tr><td>心率实时监控（后端部分）</td><td>✅</td><td><code>GET /api/device/latest</code> 实测实时更新；预警评估已补上并命中</td></tr>
+<tr><td>R5 数据导出 / R7 文档</td><td>✅</td><td>—</td></tr>
+<tr><td>R8 数据资产</td><td>✅</td><td>60 张原始照片 + 63 标注入 Git LFS（545MB 已推送）</td></tr>
+</tbody></table>
+<hr>
+<h2 id="二下一步要做的三件事顺序已定">二、下一步要做的三件事（顺序已定）</h2>
+<h3 id="①-固件上报间隔-60s-5s">① 固件：上报间隔 60s → 5s</h3>
+<p>文件：<code>hardware/esp32_hr_bridge/src/main.cpp</code></p>
+<pre><code>static const uint32_t HEARTBEAT_REPORT_MS = 60000;   // 改为 5000
+static const int      HR_CHANGE_THRESHOLD = 3;       // 保留</code></pre>
+<p><strong>注意</strong>：固件从未在本机编译验证过（无 ESP32 工具链）。 烧写方案见 <code>docs/ESP32烧写与联调方案.md</code>，<strong>第一步是先 <code>pio run</code> 只编译</strong>。</p>
+<h3 id="②-app新增心率实时监控页">② App：新增「心率实时监控」页</h3>
+<ul>
+<li>轮询 <code>GET /api/device/latest</code>，间隔 <strong>3 秒</strong>；<strong>离开页面必须停止</strong>（省电）</li>
+<li>显示：大号当前心率、更新时间、<strong>连接状态</strong>（依据 <code>stale</code>/<code>online</code>）</li>
+<li>最近 N 分钟滚动曲线（<code>fl_chart</code> 已是现有依赖）</li>
+<li>入口：健康 tab 或设备管理页</li>
+</ul>
+<p>参考已有实现：<code>lib/app/modules/profile/device_manage_page.dart</code> （注意其中已修正的坑：DioProvider 的 get/post <strong>已解包响应</strong>，直接拿 body map，不能再 <code>.data</code>）</p>
+<h3 id="③-服务端落库节流">③ 服务端：落库节流</h3>
+<p>板子 5 秒一报后，服务端应只在"<strong>变化 ≥3bpm 或距上次入库 &gt;60 秒</strong>"时写 <code>health_data</code>， 其余仅更新实时值；否则一天 1.7 万条会把库刷爆。 落点：<code>DeviceServiceImpl.report()</code>。</p>
+<hr>
+<h2 id="三本项目踩过的坑务必先读能省几小时">三、本项目踩过的坑（务必先读，能省几小时）</h2>
+<h3 id="ocr-相关">OCR 相关</h3>
+<ol>
+<li><strong>仓库里早有训好的可用模型</strong>，不要再手搓识别算法 ✗。</li>
+</ol>
+<p>手搓的七段流水线（<code>tool/segment_fit.dart</code>）试了四种做法全部 0~2%，已作废。 正确链路见 <code>lib/core/ocr/services/lcd_onnx_pipeline.dart</code>。</p>
+<ol>
+<li><strong>多输出 TFLite 调用</strong>必须三条同时满足：<code>runForMultipleInputs</code> +</li>
+</ol>
+<p><code>Map&lt;int,Object&gt;</code> 传参 + 每个输出形状 <strong><code>[1,10]</code></strong>（带 batch 维）。 这是 <code>bpressure_multihead.tflite</code> 的 7 个输出头。 <strong>App 里原有的 <code>BpTfliteDetector</code> 也犯了这个错，从未成功调用过</strong> ✗。</p>
+<ol>
+<li><strong>模型资产要在 pubspec 里注册</strong>，否则不打进 APK</li>
+</ol>
+<p>（<code>lcd_detector.onnx</code> 那行曾被注释掉，真机表现为"模型未就绪"）。</p>
+<ol>
+<li><strong>Flutter 版 onnxruntime 算子不全</strong>（缺 YOLOv8 检测头的 Reshape），</li>
+</ol>
+<p>已改用 onnx2tf 转出的 TFLite；转换前后输出逐位一致。</p>
+<ol>
+<li><strong>数字模型对取景边距很敏感</strong>：训练取景 94.7%、检测框仅 63%，</li>
+</ol>
+<p>必须做多尺度 TTA 投票才能到 71.7%。</p>
+<h3 id="后端相关">后端相关</h3>
+<ol>
+<li><strong>两层鉴权都要放行</strong>：Spring Security 与自定义 <code>RoleInterceptor</code> 都拦 <code>/api/**</code>，</li>
+</ol>
+<p>设备端接口（<code>/api/device/bind|health-data|heartbeat</code>）只改一层仍会 403。</p>
+<ol>
+<li><strong>写 <code>health_data</code> 必须带 <code>family_id</code></strong>，否则记录入库但 App 列表看不到</li>
+</ol>
+<p>（列表按 family_id 过滤）。</p>
+<ol>
+<li><strong><code>AlertEvaluator</code> 原本不存在</strong> ✗ —— 规则只存不评估，<code>alert_record</code> 永远为空。</li>
+</ol>
+<p>已补（<code>service/impl/AlertEvaluator.java</code>），设备上报处已接入。</p>
+<ol>
+<li><strong>查"最新一条"要加 id 兜底排序</strong>：只按 <code>measure_time</code> 排序时，</li>
+</ol>
+<p>同一秒多条记录会取回旧值（实测先报 75 再报 128 却返回 75）。</p>
+<h3 id="真机调试相关">真机调试相关</h3>
+<ol>
+<li><strong>adb 连不上先看授权</strong>：<code>adb kill-server &amp;&amp; adb start-server</code> 会触发手机上的授权弹窗；</li>
+</ol>
+<p>手机不在前台时 <code>uiautomator dump</code> 可能是过期缓存。</p>
+<ol>
+<li><strong><code>pm clear</code> 后会重置权限</strong>，相册权限弹窗会挡住 OCR 流程；</li>
+</ol>
+<p>用 <code>adb shell pm grant &lt;包名&gt; android.permission.READ_MEDIA_IMAGES</code> 直接授权更可靠。</p>
+<ol>
+<li><strong>PS 5.1 脚本里含中文必须存成 UTF-8 带 BOM</strong>，否则按 GBK 读会解析失败；</li>
+</ol>
+<p><code>[System.IO.File]::*</code> 要用绝对路径。</p>
+<ol>
+<li><strong>看不了图</strong>（当前模型不接受图像输入）—— 验证 UI 改动时用</li>
+</ol>
+<p><strong>截图像素分析</strong>或 uiautomator 文本做交叉验证；嵌套 Text 可能不被 uiautomator 暴露。</p>
+<hr>
+<h2 id="四常用命令">四、常用命令</h2>
+<pre><code># 后端（dev 用 H2 内存库，重启即清空）
+cd spring-boot-backend
+JAVA_HOME=&quot;C:\Program Files\Eclipse Adoptium\jdk-17.0.17.10-hotspot&quot;
+./mvnw -q -o package -DskipTests
+java -jar target/health-center-backend-1.0.0.jar --spring.profiles.active=dev
+
+# 设备接入端到端冒烟（绑码→绑定→上报→可见→解绑失效→无效码被拒）
+powershell -File spring-boot-backend/src/test/smoke-device.ps1
+
+# App（真机）
+cd flutter-app
+adb reverse tcp:8080 tcp:8080
+flutter build apk --release --split-per-abi --dart-define=BASE_URL=http://127.0.0.1:8080
+adb install -r build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
+
+# OCR 基准与真机验证
+dart run tool/ocr_bench_new.dart clean          # 合成干净图
+dart run tool/ocr_bench_real.dart               # 60 张真实照片
+python tool/e2e_pipeline.py                     # 端到端（全自动）
+python tool/eval_lcd_detector.py                # 定位模型 IoU
+python tool/eval_multihead.py                   # 数字模型 + 反推输出头顺序</code></pre>
+<hr>
+<h2 id="五需要用户决策参与的事不要替他决定">五、需要用户决策/参与的事（不要替他决定）</h2>
+<table>
+<thead><tr><th>项</th><th>说明</th></tr></thead>
+<tbody>
+<tr><td>注册验证码</td><td>后端<strong>完全不校验</strong>（任意 6 位可注册任意手机号）。需二选一：接入阿里云短信 / 明确改免验证</td></tr>
+<tr><td>生产凭据更换</td><td>明文口令与 JWT 密钥已进过 Git，<strong>必须更换</strong>并改环境变量注入（步骤见安全整改手册，需维护窗口）</td></tr>
+<tr><td>清理 git 历史</td><td>会强推、需团队重新克隆</td></tr>
+<tr><td>烧写 ESP32</td><td>需真实硬件；固件未编译验证过</td></tr>
+<tr><td>低置信度 OCR 复核提示</td><td>当前读错时给的是"看似合理"的错值，建议加提示</td></tr>
+</tbody></table>
+</div>
+<footer>本页由 scripts/md2html.py 从 Markdown 生成 · 图表需联网加载 mermaid</footer>
+
+<script type="module">
+  try {
+    const { default: mermaid } = await import('https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs');
+    mermaid.initialize({ startOnLoad: true, theme: 'default', flowchart: { htmlLabels: true } });
+  } catch (e) {
+    document.querySelectorAll('pre.mermaid').forEach(function (el) {
+      el.insertAdjacentHTML('afterbegin',
+        '<div style="color:#b26a00;font-size:13px;margin-bottom:8px">' +
+        '（离线环境无法加载 mermaid，下面是流程图源码）</div>');
+    });
+  }
+</script>
+
+</body>
+</html>
