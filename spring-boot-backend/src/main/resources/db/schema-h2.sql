@@ -164,6 +164,9 @@ CREATE INDEX IF NOT EXISTS idx_alert_record_member_id ON alert_record(member_id)
 CREATE INDEX IF NOT EXISTS idx_alert_record_status ON alert_record(status);
 CREATE INDEX IF NOT EXISTS idx_alert_record_type ON alert_record(alert_type);
 CREATE INDEX IF NOT EXISTS idx_alert_record_create_time ON alert_record(create_time);
+-- 预警冷却查询专用（WHERE user_id=? AND rule_id=? ORDER BY create_time DESC）
+CREATE INDEX IF NOT EXISTS idx_alert_record_user_rule_time
+    ON alert_record(user_id, rule_id, create_time);
 
 -- ============================================================================
 -- 健康内容表（暂无对应实体，保留以兼容后续内容接口）

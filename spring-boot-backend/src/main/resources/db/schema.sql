@@ -150,7 +150,11 @@ CREATE TABLE IF NOT EXISTS `alert_record` (
     KEY `idx_member_id` (`member_id`),
     KEY `idx_status` (`status`),
     KEY `idx_alert_type` (`alert_type`),
-    KEY `idx_create_time` (`create_time`)
+    KEY `idx_create_time` (`create_time`),
+    -- 预警冷却查询专用：WHERE user_id=? AND rule_id=? [AND member_id=?] ORDER BY create_time DESC。
+    -- 单列索引选择性不足，而 alert_record 会随预警持续增长，不能靠全表扫描。
+    -- 已有的库用 db/migration-alert-dedup.sql 补（**索引先上，代码后上**）。
+    KEY `idx_user_rule_time` (`user_id`, `rule_id`, `create_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='预警记录表';
 
 -- ============================================================================
