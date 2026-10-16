@@ -24,6 +24,7 @@
 #include <WiFi.h>
 #include <HTTPClient.h>
 #include <ArduinoJson.h>
+#include <Preferences.h>
 #include <NimBLEDevice.h>
 #include <time.h>
 
@@ -37,13 +38,14 @@ static const char* WIFI_PASS = "你的WiFi密码";
 // 板子要填电脑的局域网 IP，例如 http://192.168.1.10:8080）
 static const char* API_BASE = "http://139.129.108.119:8080";
 
-// 用于登录的账号（与 App 同一个账号，数据就会出现在同一个家庭里）
-static const char* API_PHONE = "13800138000";
-static const char* API_PASSWORD = "abc123456";
+// 设备绑定（推荐用这个，不要把 App 账号口令写进固件）
+// 先在 App「我的 → 设备管理」生成 6 位绑定码，填到这里，首次上电用它换令牌；
+// 令牌会存进 NVS，之后同一块板子不再需要绑定码。
+static const char* BIND_CODE = "000000";
+static const char* DEVICE_SN = "HR-BRIDGE-001";
+static const char* FIRMWARE_VER = "v2.0";
 
-// 这条心率记录归属到哪个家庭成员（memberId）。
-// 取法：App → 成员页，或直接查库 `select id,name from family_member;`
-static const long MEMBER_ID = 1;
+// 注意：不再需要 memberId —— 归属由设备令牌决定（绑定码就是为某个成员生成的）
 
 // 手环的广播名（可用 nRF Connect 看到的那个名字，例如 "HR-287" / "G81-31824"）
 // 留空表示"连接第一个广播了 0x180D 的设备"，更省事但可能连到别的设备
@@ -62,7 +64,8 @@ static volatile uint32_t g_lastHrMs = 0;
 static volatile bool     g_connected = false;
 
 static String g_token;
-static uint32_t g_tokenAtMs = 0;
+static Preferences g_prefs;
+static const char* NVS_NS = "hrbridge";
 static const uint32_t TOKEN_TTL_MS = 90 * 60 * 1000UL; // 提前于后端 2h 过期
 
 // 断网缓存（环形）
@@ -200,34 +203,39 @@ static void ensureWiFi() {
 static bool login() {
   if (WiFi.status() != WL_CONNECTED) return false;
   HTTPClient http;
-  String url = String(API_BASE) + "/api/auth/login";
+  String url = String(API_BASE) + "/api/device/bind";
   http.begin(url);
   http.addHeader("Content-Type", "application/json");
   StaticJsonDocument<256> req;
-  req["phone"] = API_PHONE;
-  req["password"] = API_PASSWORD;
+  req["bindCode"] = BIND_CODE;
+  req["deviceSn"] = DEVICE_SN;
+  req["deviceName"] = "ESP32-BLE-HR";
+  req["deviceType"] = "esp32_hr_bridge";
+  req["firmwareVersion"] = FIRMWARE_VER;
   String body;
   serializeJson(req, body);
   const int code = http.POST(body);
   String resp = http.getString();
   http.end();
   if (code != 200) {
-    Serial.printf("[API] 登录失败 HTTP %d: %s\n", code, resp.c_str());
+    Serial.printf("[API] 绑定失败 HTTP %d: %s\n", code, resp.c_str());
     return false;
   }
   DynamicJsonDocument res(4096);
   if (deserializeJson(res, resp) != DeserializationError::Ok) {
-    Serial.println("[API] 登录响应解析失败");
+    Serial.println("[API] 绑定响应解析失败");
     return false;
   }
-  const char* tk = res["data"]["accessToken"] | "";
+  const char* tk = res["data"]["deviceToken"] | "";
   if (strlen(tk) == 0) {
-    Serial.printf("[API] 响应里没有 accessToken: %s\n", resp.c_str());
+    Serial.printf("[API] 响应里没有 deviceToken（绑定码是否过期？）: %s\n", resp.c_str());
     return false;
   }
   g_token = tk;
-  g_tokenAtMs = millis();
-  Serial.println("[API] ✅ 登录成功，已取得 token");
+  g_prefs.putString("devtoken", g_token);   // 存 NVS，之后不再需要绑定码
+  Serial.println("[API] ✅ 绑定成功，设备令牌已保存到 NVS");
+  const char* mn = res["data"]["memberName"] | "";
+  Serial.printf("[API]    归属成员: %s\n", mn);
   return true;
 }
 
@@ -244,17 +252,17 @@ static String nowIso() {
 // 上报一条心率
 static bool postHeartRate(int hr, long epochSec) {
   if (WiFi.status() != WL_CONNECTED) return false;
-  if (g_token.isEmpty() || millis() - g_tokenAtMs > TOKEN_TTL_MS) {
+  // 设备令牌长期有效；被 App 解绑后服务端返回 401，这里会清空并重新绑定
+  if (g_token.isEmpty()) {
     if (!login()) return false;
   }
   HTTPClient http;
-  String url = String(API_BASE) + "/api/health-data";
+  String url = String(API_BASE) + "/api/device/health-data";
   http.begin(url);
   http.addHeader("Content-Type", "application/json");
-  http.addHeader("Authorization", "Bearer " + g_token);
+  http.addHeader("X-Device-Token", g_token);   // 设备令牌，不再是用户 JWT
 
   DynamicJsonDocument req(512);
-  req["memberId"] = MEMBER_ID;
   req["dataType"] = "heart_rate";
   req["value1"] = hr;
   req["unit"] = "bpm";
@@ -316,6 +324,14 @@ void setup() {
   NimBLEDevice::init("HealthBridge");
   NimBLEDevice::setPower(ESP_PWR_LVL_P9); // 增强发射功率，连接更稳
 
+  // 先从 NVS 读设备令牌；没有才需要用绑定码去换
+  g_prefs.begin(NVS_NS, false);
+  g_token = g_prefs.getString("devtoken", "");
+  if (g_token.length() > 0) {
+    Serial.println("[API] 已从 NVS 读取设备令牌");
+  } else {
+    Serial.println("[API] 尚无设备令牌，将用绑定码换取");
+  }
   ensureWiFi();
   if (WiFi.status() == WL_CONNECTED) login();
 
