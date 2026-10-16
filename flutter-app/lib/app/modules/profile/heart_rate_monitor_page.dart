@@ -53,17 +53,25 @@ class _HeartRateMonitorPageState extends State<HeartRateMonitorPage>
   static const int _windowMinutes = 30;
   static const int _maxPoints = 200;
 
-  late final Timer _timer;
+  /// 轮询定时器。
+  ///
+  /// 这里**必须**是可空字段，不能用 `late final`：本页要"退到后台停、回前台再起"，
+  /// 会对它**多次赋值**，而 `late final` 的第二次赋值会抛
+  /// `LateInitializationError: Field '_timer' has already been initialized.`
+  /// —— 这个错 **`flutter analyze` 和编译都不报**（实测 0 error），
+  /// 只在真机"退到后台再回前台"那一刻炸。
+  ///
+  /// 而且炸的方式特别阴：赋值的右半段 `Timer.periodic(...)` 已经先执行完了，
+  /// 异常一抛这个新 Timer 就再没有任何引用 —— 于是漏出一个**永远不会被
+  /// cancel 的 3 秒定时器**，从此每 3 秒发一次请求直到 App 退出，
+  /// 恰好是本页注释里想避免的"一晚上把电耗光"。
+  Timer? _timer;
 
   /// 是否正在请求中：防止慢请求与下一次轮询叠加
   bool _busy = false;
 
   /// 页面是否可见（退出页面或退到后台时置 false，定时器随之停掉）
   bool _active = true;
-
-  /// 后台期间缓冲区里可能堆了多次 didChangeAppLifecycleState，
-  /// 用它避免重复重启定时器
-  bool _timerRunning = false;
 
   bool _loading = true;
   String? _error;
@@ -89,16 +97,26 @@ class _HeartRateMonitorPageState extends State<HeartRateMonitorPage>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _timer = Timer.periodic(_pollInterval, (_) => _fetch());
-    _timerRunning = true;
+    _startTimer();
     _fetch();
+  }
+
+  /// 启动轮询。已启动时重复调用无副作用（后台可能连发多次 resumed）
+  void _startTimer() {
+    if (_timer != null) return;
+    _timer = Timer.periodic(_pollInterval, (_) => _fetch());
+  }
+
+  /// 停止轮询。用可空字段后这里天然幂等，不需要额外的 running 标志
+  void _stopTimer() {
+    _timer?.cancel();
+    _timer = null;
   }
 
   @override
   void dispose() {
     // 离开页面立即停止轮询（省电）
-    _timer.cancel();
-    _timerRunning = false;
+    _stopTimer();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -110,10 +128,7 @@ class _HeartRateMonitorPageState extends State<HeartRateMonitorPage>
     // 否则息屏后仍在每 3 秒请求一次，一晚上就把电耗光。
     if (state == AppLifecycleState.resumed) {
       _active = true;
-      if (!_timerRunning) {
-        _timer = Timer.periodic(_pollInterval, (_) => _fetch());
-        _timerRunning = true;
-      }
+      _startTimer();
       // 后台期间界面上的读数是过期的，回到前台立刻刷一次，
       // 不要让用户先看到 5 分钟前的数字
       if (_needImmediateRefresh) {
@@ -125,8 +140,7 @@ class _HeartRateMonitorPageState extends State<HeartRateMonitorPage>
         state == AppLifecycleState.detached) {
       _active = false;
       _needImmediateRefresh = true;
-      _timer.cancel();
-      _timerRunning = false;
+      _stopTimer();
     }
   }
 
