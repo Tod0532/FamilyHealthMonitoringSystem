@@ -97,13 +97,20 @@ class SevenSegmentOcrService {
       //   旧链路：干净合成七段图 48 张，收缩压正确率 0%，三项全对 0%
       //   本识别器：干净图 48/48、退化图 144/144 全部正确
       // 因此优先使用它；失败时再走原有链路（保留兼容与兜底）。
-      // ===== 最高优先级：ONNX 定位 + TFLite 多头数字模型 =====
-      // 实测（60 张真实照片，全自动）：三项全对 71.7%，
+      // ===== 最高优先级：TFLite 定位 + TFLite 多头数字模型 =====
+      // 实测（60 张真实照片，全自动）：三项全对 74.1%，
       // 而旧检测链在同一批照片上是 0%。详见 docs/使用说明.md 9.3。
-      _log('尝试 ONNX+TFLite 新链路...');
+      //
+      // ⚠️ 这里喂的是 **originalImage**，不是前面被 `BloodPressureScreenDetector`
+      // 裁过的 `image`：新链路自带定位模型，还会在检测框周围做 81 组多尺度试探，
+      // 不需要（也不应该）先被旧检测器裁一刀。旧检测器本身不可靠 ——
+      // 代码上方就记着它曾把 900x620 裁到 180x180；真机上还观察到它把一张照片
+      // 裁成低置信度区域后，新链路的检测置信度从 0.95 掉到 0.13、读数也跟着错。
+      // 旧链路的几段（通用七段 / 欧姆龙 / 通用数字检测）仍然用裁过的 `image`。
+      _log('尝试 TFLite 新链路（用原图，不做预裁剪）...');
       try {
         if (await LcdOnnxPipeline.init()) {
-          final r = LcdOnnxPipeline.recognize(image);
+          final r = LcdOnnxPipeline.recognize(originalImage);
           if (r != null && _isValidBloodPressure(r.$1, r.$2)) {
             // 带上可信度信号：识别**成功**不等于识别**可信**。
             // 读错时给的是"看着合理"的错值（138/88 → 133/88），用户看不出来，

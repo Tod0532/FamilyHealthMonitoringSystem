@@ -80,15 +80,39 @@ class OcrQuality {
   /// 液晶屏定位框置信度下限
   static const double detConfMin = 0.30;
 
-  /// 是否需要人工核对
-  bool get needsReview => agree < agreeMin || detConf < detConfMin;
+  /// 按一致度分档时"直接可接受"的下限（≥ 它就不打扰用户）
+  ///
+  /// 实测分档（`tool/ocr_lab.py --tiers`，60 张真实照片，75 组候选）：
+  ///   agree ≥ 0.60        → 该档准确率 92.6%（27 张）
+  ///   0.40 ≤ agree &lt; 0.60 → 该档准确率 **100%**（12 张）
+  ///   0.30 ≤ agree &lt; 0.40 → 该档准确率 80.0%（5 张）
+  ///   agree &lt; 0.30        → 14 张里只有 2 张对（该档准确率 14%）
+  static const double agreeAutoAccept = 0.40;
+
+  /// 是否**连结果都不该给**（拒绝填值，请用户重拍或手动输入）
+  ///
+  /// 这一档不是为了"更准"，而是为了**不让错值有机会进表单**：
+  /// agree &lt; 0.30 的 14 张里有 12 张是错的。与其填一个"看着很合理"的错血压，
+  /// 不如直接说"没认准"。
+  ///
+  /// 同一批 60 张上的效果：填出的值准确率 **74.1% → 93.2%**，
+  /// 代价是 24% 的照片需要重拍或手动输入。
+  bool get rejected => agree < agreeMin;
+
+  /// 是否需要人工核对（排除被拒绝的那些——它们连值都不填）
+  bool get needsReview =>
+      !rejected && (agree < agreeAutoAccept || detConf < detConfMin);
 
   /// 给用户看的原因（不要写"置信度 0.43"这种内部术语，要说人话）
   String get reviewReason {
+    if (rejected) {
+      return '同一张照片反复识别的结果不一致'
+          '（只有 ${(agree * 100).round()}% 的尝试给出相同读数），没认准';
+    }
     final problems = <String>[];
-    if (agree < agreeMin) {
-      problems.add('同一张照片反复识别的结果不一致'
-          '（只有 ${(agree * 100).round()}% 的尝试给出相同读数）');
+    if (agree < agreeAutoAccept) {
+      problems.add('同一张照片反复识别的结果只有'
+          '${(agree * 100).round()}% 一致，请重点核对');
     }
     if (detConf < detConfMin) {
       problems.add('没能稳定地找到血压计屏幕'
@@ -106,7 +130,7 @@ class OcrQuality {
       'weight=${weightShare.toStringAsFixed(2)} '
       'margin=${margin.toStringAsFixed(2)} '
       'meanGeo=${meanGeo.toStringAsFixed(3)} '
-      'needsReview=$needsReview';
+      'needsReview=$needsReview rejected=$rejected';
 
   @override
   String toString() => 'OcrQuality($debugLabel)';

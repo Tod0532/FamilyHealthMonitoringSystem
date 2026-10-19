@@ -351,10 +351,10 @@ def analyze(rows):
                   f"（{pct(fc/max(1,len(correct)))}）")
 
     print("")
-    print("=== 提醒：错值里"自信地读错"的那些，任何置信度信号都抓不到 ===")
+    print("=== 提醒：错值里「自信地读错」的那些，任何置信度信号都抓不到 ===")
     for r in sorted(wrong, key=lambda r: -r["agree"])[:3]:
         print(f"  {r['base']:<18} 一致度 {r['agree']:.2f} 框 {r['det_conf']:.2f}"
-              f" —— 它看起来"很确定"，只能靠用户对着血压计屏幕核对")
+              f" —— 它看起来「很确定」，只能靠用户对着血压计屏幕核对")
 
 
 def load_rows():

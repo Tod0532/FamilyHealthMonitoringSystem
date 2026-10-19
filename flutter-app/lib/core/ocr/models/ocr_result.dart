@@ -38,10 +38,17 @@ class OcrResult {
   /// 拿不到质量信号（兜底链）时**更要**提示，而不是不提示。
   bool get needsReview => (quality?.needsReview ?? false) || fromFallback;
 
+  /// 是否**连值都不该填**（识别没认准，应该让用户重拍或手动输入）
+  ///
+  /// 实测依据（60 张真实照片，`tool/ocr_lab.py --tiers`）：
+  /// 一致度 < 0.30 的 14 张里 12 张是错的。与其填一个"看着很合理"的错血压，
+  /// 不如干脆不填 —— 填出值的准确率因此从 74.1% 提到 93.2%。
+  bool get rejected => quality?.rejected ?? false;
+
   /// 给用户看的核对原因
   String get reviewReason {
     final q = quality;
-    if (q != null && q.needsReview) {
+    if (q != null && (q.needsReview || q.rejected)) {
       return q.reviewReason;
     }
     if (fromFallback) {
