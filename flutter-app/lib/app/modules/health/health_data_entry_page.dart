@@ -749,17 +749,19 @@ class _HealthDataEntryPageState extends State<HealthDataEntryPage> {
     _applyOcrQuality(result);
   }
 
-  /// 识别可信度偏低时挂上"请核对"提示
+  /// 识别可信度偏低、或结果来自兜底链时，挂上"请核对"提示
   ///
   /// 为什么要这一步：血压计**读错**的时候给的是"看着很合理"的错值
   /// （真值 138/88 被读成 133/88），用户看不出来就直接存了 —— 这比识别失败更危险。
-  /// 判据不是拍脑袋定的：见 `lib/core/ocr/models/ocr_quality.dart` 与标定脚本
-  /// `tool/confidence_calibration.py`（60 张真实照片跑完整 81 组 TTA）。
+  /// 两种情况都要提示：
+  ///   1. 新链路给了可信度信号且偏低（判据经 60 张真实照片标定）
+  ///   2. 结果来自兜底链（通用七段/欧姆龙/通用数字检测）—— 它们没有可信度信号，
+  ///      真机实测读错且当时没有任何提示
   void _applyOcrQuality(OcrResult result) {
     if (!mounted) return;
     setState(() {
       _reviewPending = result.needsReview;
-      _reviewNote = result.quality?.reviewReason ?? '';
+      _reviewNote = result.needsReview ? result.reviewReason : '';
     });
   }
 

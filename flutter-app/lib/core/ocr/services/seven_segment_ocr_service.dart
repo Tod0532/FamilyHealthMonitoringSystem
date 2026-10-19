@@ -37,6 +37,15 @@ class SevenSegmentOcrService {
     }
 
     isProcessing = true;
+    // 逐个阶段计时：真机实测"新链路失败 → 兜底链"那一次总共花了 **77 秒**，
+    // 而事后无法判断时间花在哪 —— 没有计时就只能靠猜。这里把每一段都打出来。
+    final watch = Stopwatch()..start();
+    int lastMark = 0;
+    void mark(String stage) {
+      final now = watch.elapsedMilliseconds;
+      _log('⏱ $stage: ${now - lastMark}ms（累计 ${now}ms）');
+      lastMark = now;
+    }
 
     try {
       _log('开始七段数码管识别: ${imageFile.path}');
@@ -120,7 +129,11 @@ class SevenSegmentOcrService {
       } catch (e) {
         _log('新链路异常: $e');
       }
+      mark('新链路（含 81 组 TTA）');
 
+      // 以下都是**兜底链**：没有可信度信号，实测会给出"看着合理"的错值
+      // （真机实测真值 117/80/57 被读成 116/66 且当时没有任何提示）。
+      // 因此兜底结果一律带 fromFallback，让录入页强制要求人工核对。
       _log('尝试通用七段识别器...');
       try {
         final lcd = await LcdSegmentReader.recognize(image);
@@ -128,25 +141,30 @@ class SevenSegmentOcrService {
             _isValidBloodPressure(lcd.systolic, lcd.diastolic)) {
           _log('✓ 通用七段识别成功: ${lcd.systolic}/${lcd.diastolic}, '
               '${lcd.pulse} bpm (置信度 ${lcd.confidence.toStringAsFixed(2)})');
+          _log('  ⚠ 这是兜底链的结果，将要求用户核对');
           return OcrResult(
             rawText: '${lcd.systolic}/${lcd.diastolic} mmHg, ${lcd.pulse} bpm',
             systolic: lcd.systolic.toDouble(),
             diastolic: lcd.diastolic.toDouble(),
             heartRate: lcd.pulse.toDouble(),
+            fromFallback: true,
           );
         }
         _log('✗ 通用七段识别未通过校验: ${LcdSegmentReader.lastTrace}');
       } catch (e) {
         _log('✗ 通用七段识别异常: $e');
       }
+      mark('通用七段识别器');
 
       // 方法1: 尝试使用欧姆龙专用检测器
       _log('尝试欧姆龙血压计专用识别...');
       final omronResult = await _recognizeWithOmronDetector(image);
       if (omronResult != null && omronResult.isValid) {
         _log('欧姆龙识别成功: ${omronResult.description}');
-        return omronResult;
+        _log('  ⚠ 这是兜底链的结果，将要求用户核对');
+        return omronResult.copyWith(fromFallback: true);
       }
+      mark('欧姆龙专用识别');
 
       // 方法2: 通用数字区域检测
       _log('尝试通用数字区域检测...');
@@ -180,11 +198,13 @@ class SevenSegmentOcrService {
       // 组合数字序列
       final digitSequence = digits.map((d) => d.digit.toString()).join();
       _log('识别的数字序列: $digitSequence');
+      mark('通用数字区域检测');
 
       // 解析健康数值
       final result = _parseHealthValues(digits, digitSequence);
 
-      return result;
+      // 同样是兜底链的结果 → 强制核对
+      return result.copyWith(fromFallback: true);
 
     } catch (e, stackTrace) {
       _log('识别异常: $e');

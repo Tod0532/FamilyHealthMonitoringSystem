@@ -115,5 +115,39 @@ void main() {
       expect(r.quality, isNotNull);
       expect(r.needsReview, isTrue);
     });
+
+    test('来自兜底链的结果即使没有质量信号，也必须要求核对', () {
+      // 真机实测：新链路失败后回退到欧姆龙链，真值 117/80/57 被读成 116/66，
+      // 而当时没有任何提示，用户直接就存了。所以兜底结果一律要求核对。
+      final r = OcrResult(
+        rawText: '116/66 mmHg',
+        systolic: 116,
+        diastolic: 66,
+        fromFallback: true,
+      );
+      expect(r.isValid, isTrue);
+      expect(r.quality, isNull, reason: '兜底链没有质量信号');
+      expect(r.needsReview, isTrue, reason: '没有可信度信号时更要提示，而不是不提示');
+      expect(r.reviewReason, contains('备用识别方式'));
+    });
+
+    test('兜底链 + 新链路质量信号同时存在时，优先说清具体的可信度原因', () {
+      final r = OcrResult(
+        rawText: '140/85 mmHg',
+        systolic: 140,
+        diastolic: 85,
+        quality: good(agree: 0.1),
+        fromFallback: true,
+      );
+      expect(r.needsReview, isTrue);
+      expect(r.reviewReason, contains('不一致'), reason: '能说清原因就说清');
+    });
+
+    test('copyWith 能标成兜底结果', () {
+      final r = OcrResult(rawText: 'x', systolic: 120, diastolic: 80)
+          .copyWith(fromFallback: true);
+      expect(r.needsReview, isTrue);
+      expect(r.reviewReason, contains('备用识别方式'));
+    });
   });
 }

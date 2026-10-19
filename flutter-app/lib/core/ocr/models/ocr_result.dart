@@ -20,14 +20,35 @@ class OcrResult {
   /// 此时**不做**"请核对"提示 —— 没有依据就不要打扰用户。
   final OcrQuality? quality;
 
+  /// 这条结果来自"备用识别方式"（新链路失败后的兜底链）
+  ///
+  /// 为什么单独标出来：兜底链（通用七段识别器 / 欧姆龙专用 / 通用数字检测）
+  /// **没有可信度信号**，而实测它们会给出"看着合理"的错值 ——
+  /// 真机实测：真值 117/80/57 被欧姆龙链读成 116/66，而当时**没有任何提示**，
+  /// 用户直接就存了。所以兜底结果一律要求人工核对。
+  final bool fromFallback;
+
   /// 是否有效（至少识别出一个有效数值）
   bool get isValid => systolic != null || diastolic != null || heartRate != null;
 
   /// 是否需要用户人工核对
   ///
   /// 注意与 [isValid] 的区别：识别**成功**（有值）不等于识别**可信**。
-  /// 血压计读错时给的是"看着合理"的错值，用户看不出来，所以要用质量信号兜一层。
-  bool get needsReview => quality?.needsReview ?? false;
+  /// 血压计读错时给的是"看着合理"的错值，用户看不出来，所以要用质量信号兜一层；
+  /// 拿不到质量信号（兜底链）时**更要**提示，而不是不提示。
+  bool get needsReview => (quality?.needsReview ?? false) || fromFallback;
+
+  /// 给用户看的核对原因
+  String get reviewReason {
+    final q = quality;
+    if (q != null && q.needsReview) {
+      return q.reviewReason;
+    }
+    if (fromFallback) {
+      return '这次用的是备用识别方式，可信度无法评估，识别结果请核对';
+    }
+    return '识别结果请核对';
+  }
 
   OcrResult({
     required this.rawText,
@@ -35,6 +56,7 @@ class OcrResult {
     this.diastolic,
     this.heartRate,
     this.quality,
+    this.fromFallback = false,
   });
 
   /// 创建空结果
@@ -54,6 +76,7 @@ class OcrResult {
     double? diastolic,
     double? heartRate,
     OcrQuality? quality,
+    bool? fromFallback,
   }) {
     return OcrResult(
       rawText: rawText ?? this.rawText,
@@ -61,6 +84,7 @@ class OcrResult {
       diastolic: diastolic ?? this.diastolic,
       heartRate: heartRate ?? this.heartRate,
       quality: quality ?? this.quality,
+      fromFallback: fromFallback ?? this.fromFallback,
     );
   }
 
