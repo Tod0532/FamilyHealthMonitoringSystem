@@ -74,6 +74,7 @@
 - `docs/需求分析与方案计划.md` - 需求梳理 + 分阶段方案 + 执行进展
 - `docs/使用说明.md` - 图文版使用说明（截图 + 流程图）
 - `docs/ESP32烧写与联调方案.md` - 板子烧写与联调步骤
+- `docs/硬件采购单.md` - 搭建硬件平台的采购清单（含价格区间、三档预算、采购坑）
 - `docs/上线前安全整改.md` - 上线前安全项执行手册
 - `docs/coding-standards.md` - 代码规范（命名、注释、Git提交）
 - `docs/build-troubleshooting.md` - 编译问题及解决方案
